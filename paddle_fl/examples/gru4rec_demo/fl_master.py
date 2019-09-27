@@ -1,0 +1,82 @@
+import paddle.fluid as fluid
+import paddle_fl as fl
+from paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+
+class Model(object):
+    def __init__(self):
+        pass
+
+    def gru4rec_network(self,
+                        vocab_size=37483,
+                        hid_size=10,
+                        init_low_bound=-0.04,
+                        init_high_bound=0.04):
+        """ network definition """
+        emb_lr_x = 10.0
+        gru_lr_x = 1.0
+        fc_lr_x = 1.0
+        # Input data
+        src_wordseq = fluid.layers.data(
+            name="src_wordseq", shape=[1], dtype="int64", lod_level=1)
+        dst_wordseq = fluid.layers.data(
+            name="dst_wordseq", shape=[1], dtype="int64", lod_level=1)
+
+        emb = fluid.layers.embedding(
+            input=src_wordseq,
+            size=[vocab_size, hid_size],
+            param_attr=fluid.ParamAttr(
+                initializer=fluid.initializer.Uniform(
+                    low=init_low_bound, high=init_high_bound),
+                learning_rate=emb_lr_x),
+            #is_distributed=True,
+            is_sparse=False)
+        fc0 = fluid.layers.fc(input=emb,
+                              size=hid_size * 3,
+                              param_attr=fluid.ParamAttr(
+                                  initializer=fluid.initializer.Uniform(
+                                      low=init_low_bound, high=init_high_bound),
+                                  learning_rate=gru_lr_x))
+        gru_h0 = fluid.layers.dynamic_gru(
+            input=fc0,
+            size=hid_size,
+            param_attr=fluid.ParamAttr(
+                initializer=fluid.initializer.Uniform(
+                    low=init_low_bound, high=init_high_bound),
+                learning_rate=gru_lr_x))
+
+        fc = fluid.layers.fc(input=gru_h0,
+                             size=vocab_size,
+                             act='softmax',
+                             param_attr=fluid.ParamAttr(
+                                 initializer=fluid.initializer.Uniform(
+                                     low=init_low_bound, high=init_high_bound),
+                                 learning_rate=fc_lr_x))
+        cost = fluid.layers.cross_entropy(input=fc, label=dst_wordseq)
+        acc = fluid.layers.accuracy(input=fc, label=dst_wordseq, k=20)
+        self.loss = fluid.layers.mean(x=cost)
+        self.startup_program = fluid.default_startup_program()
+
+
+
+model = Model()
+model.gru4rec_network()
+
+job_generator = JobGenerator()
+optimizer = fluid.optimizer.SGD(learning_rate=2.0)
+job_generator.set_optimizer(optimizer)
+job_generator.set_losses([model.loss])
+job_generator.set_startup_program(model.startup_program)
+
+build_strategy = FLStrategyFactory()
+build_strategy.fed_avg = True
+build_strategy.inner_step = 10
+strategy = build_strategy.create_fl_strategy()
+
+# endpoints will be collected through the cluster
+# in this example, we suppose endpoints have been collected
+endpoints = ["127.0.0.1:8181"]
+output = "fl_job_config"
+job_generator.generate_fl_job(
+    strategy, server_endpoints=endpoints, worker_num=2, output=output)
+# fl_job_config will  be dispatched to workers
