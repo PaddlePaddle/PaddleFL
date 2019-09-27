@@ -2,12 +2,12 @@
 
 .. toctree::
     :maxdepth: 1
-    :caption: Introduction
+    :caption: QuickStart
     :hidden:
 
-    introduction.rst
+    quick_start.rst
 
-.. mdinclude:: markdown/introduction.md
+.. mdinclude:: markdown/quick_start.md
 
 
 Quick Start
@@ -17,11 +17,11 @@ Quick Start
     :caption: Quick Start
     :hidden:
 
-    instruction.rst
+    quick_start.rst
 
-See instruction_ for quick start.
+See quick_start_ for quick start.
 
-.. _instruction: instruction.html
+.. _instruction: quick_start.html
 
 
 
