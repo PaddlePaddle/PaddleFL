@@ -1,6 +1,8 @@
 Quick Start Instructions
 ========================
 
+.. mdinclude:: md/logo.md
+
 Install PaddleFL
 ----------------
 To install PaddleFL, we need the following packages.
