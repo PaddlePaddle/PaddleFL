@@ -1,4 +1,4 @@
-## Step 1: Define Federated Learning Master and Generate FLJob
+## Step 1: Define Federated Learning Compile-Time
 
 We define very simple multiple layer perceptron for demonstration. When multiple organizations
 agree to share data knowledge through PaddleFL, a model can be defined with agreement from these organizations. A FLJob can be generated and saved. Programs needed to be run each node will be generated separately in FLJob.
@@ -54,11 +54,11 @@ job_generator.generate_fl_job(
     strategy, server_endpoints=endpoints, worker_num=2, output=output)
 ```
 
-## Step 2: Dispatch FL Worker Job and FL Server Job to Distributed Nodes
+## Step 2: Issue FL Job to Organizations
 
 We can define a secure service to send programs to each node in FLJob. There are two types of nodes in distributed federated learning job. One is FL Server, the other is FL Trainer. A FL Trainer is owned by individual organization and an organization can have multiple FL Trainers given different amount of data knowledge the organization is willing to share. A FL Server is owned by a secure distributed training cluster. By means of security of the cluster, all organizations participated in the Federated Training Job should agree to trust the cluster is secure.
 
-## Step 3: Start Trainer FLJob and Server FLJob
+## Step 3: Start Federated Learning Run-Time
 
 On FL Trainer Node, a training script is defined as follows:
 

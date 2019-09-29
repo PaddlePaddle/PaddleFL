@@ -8,7 +8,7 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-<img src='_static/FL-framework.png' width = "1300" height = "310" align="middle"/>
+<img src='images/FL-framework.png' width = "1300" height = "310" align="middle"/>
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL.
 
 #### Federated Learning Strategy
@@ -26,7 +26,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ## Framework design of PaddleFL
 
-<img src='_static/FL-training.png' width = "1300" height = "310" align="middle"/>
+<img src='images/FL-training.png' width = "1300" height = "310" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
@@ -54,3 +54,23 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 - Vertical Federated Learning Strategies and more horizontal federated learning strategies will be open sourced.
 
+## Reference
+
+[1]. Jakub Kone\u010Dn, H. Brendan McMahan, Daniel Ramage, Peter Richtik. **Federated Optimization: D\
+istributed Machine Learning for On-Device Intelligence.** 2016
+
+[2]. H. Brendan McMahan, Eider Moore, Daniel Ramage, Blaise Agera y Arcas. **Federated Learning of Deep\
+ Networks using Model Averaging.** 2017
+
+[3]. Jakub Kone\u010Dn, H. Brendan McMahan, Felix X. Yu, Peter Richtik, Ananda Theertha Suresh, Davepen Bacon. **Federated Learning: Strategies for Improving Communication Efficiency.** 2016
+
+[4]. Qiang Yang, Yang Liu, Tianjian Chen, Yongxin Tong. **Federated Machine Learning: Concept and Applications.** 2019
+
+[5]. Kai He, Liu Yang, Jue Hong, Jinghua Jiang, Jieming Wu, Xu Dong et al. **PrivC  - A framework for efficient Secure Two-Party Computation. In Proceedings of 15th EAI International Conference on Security and Privacy in Communication Networks.** SecureComm 2019
+
+[6]. Mart Abadi, Andy Chu, Ian Goodfellow, H. Brendan McMahan, Ilya Mironov, Kunal Talwar, Li Zhang. *\
+*Deep Learning with Differential Privacy.** 2016
+
+[7]. Virginia Smith, Chao-Kai Chiang, Maziar Sanjabi, Ameet Talwalkar. **Federated Multi-Task Learning** 2016
+
+[8]. Yang Liu, Tianjian Chen, Qiang Yang. **Secure Federated Transfer Learning.** 2018
