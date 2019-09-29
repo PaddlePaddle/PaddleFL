@@ -63,55 +63,38 @@ job_generator.generate_fl_job(
 
 ```
 
-To build a gcn layer, one can use our pre-defined ```pgl.layers.gcn``` or just write a gcn layer with message passing interface.
-```python
-import paddle.fluid as fluid
-def gcn_layer(graph_wrapper, node_feature, hidden_size, act):
-    def send_func(src_feat, dst_feat, edge_feat):
-        return src_feat["h"]
-    
-    def recv_func(msg):
-        return fluid.layers.sequence_pool(msg, "sum")
-    
-    message = graph_wrapper.send(send_func, nfeat_list=[("h", node_feature)])
-    output = graph_wrapper.recv(recv_func, message)
-    output = fluid.layers.fc(output, size=hidden_size, act=act)
-    return output
+### How to work in RunTime
+
+```sh 
+python -u fl_server.py >server0.log &
+python -u fl_trainer.py 0 data/ >trainer0.log &
+python -u fl_trainer.py 1 data/ >trainer1.log &
 ```
-
-### Datasets
-
-The datasets contain three citation networks: CORA, PUBMED, CITESEER. The details for these three datasets can be found in the [paper](https://arxiv.org/abs/1609.02907).
-
-### Dependencies
-
-- paddlepaddle>=1.4 (The speed can be faster in 1.5.)
-- pgl
+fl_trainer.py define the reader. 
+```python
+r = Gru4rec_Reader()
+train_reader = r.reader(train_file_dir, place, batch_size=10)
+```
 
 ### Performance
+We train gru4rec model with FedAvg Strategy for 40 epochs. We use first 1/20 rsc15 data as our dataset including 40w session and 3w7 item dictionary. We also constuct baselines including standard single mode and distributed parameter server mode.
 
-We train our models for 200 epochs and report the accuracy on the test dataset.
+```sh
+# download code and readme
+wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchmark.tar
+```
 
-| Dataset | Accuracy | Speed with paddle 1.4 <br> (epoch time) | Speed with paddle 1.5 <br> (epoch time)|
+| Dataset | single/distributed | distribute mode | recall@20|
 | --- | --- | --- |---|
-| Cora | ~81% | 0.0106s | 0.0104s | 
-| Pubmed | ~79% | 0.0210s  | 0.0154s |
-| Citeseer | ~71% | 0.0175s | 0.0177s | 
+| all data | single | - | 0.508 | 
+| all data | distributed 4 node | parameter server  | 0.501 |
+| all data | distributed 4 node | FedAvg | 0.504 | 
+| 1/4 part-0 | single | - | 0.286 | 
+| 1/4 part-1 | single | - | 0.277 | 
+| 1/4 part-2 | single | - | 0.269 | 
+| 1/4 part-3 | single | - | 0.282 | 
 
 
-### How to run
-
-For examples, use gpu to train gcn on cora dataset.
-```
-python train.py --dataset cora --use_cuda
-```
-
-#### Hyperparameters
-
-- dataset: The citation dataset "cora", "citeseer", "pubmed".
-- use_cuda: Use gpu if assign use_cuda. 
+<img src='fl_benchmark.png' width = "1300" height = "310" align="middle"/>
 
 
-### View the Code
-
-See the code [here](gcn_examples_code.html)
