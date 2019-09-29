@@ -81,7 +81,7 @@ train_reader = r.reader(train_file_dir, place, batch_size=10)
 ```
 
 ### Performance
-We train gru4rec model with FedAvg Strategy for 40 epochs. We use first 1/20 rsc15 data as our dataset including 40w session and 3w7 item dictionary. We also constuct baselines including standard single mode and distributed parameter server mode.
+Experiment simulate the real scene which everyone has only one part of all data. To approve the FedAvg Strategy's effective, we construct baselines. First baseline is the traditional way which all data stored together. We compare the single mode and distribute Parameter Server mode. The results below show that FedAvg Strategy with spilted data is same effective with traditional way. Second baseline trains model with only one part data and results show smaller data reuslt in worse precision.  
 
 ```sh
 # download code and readme
@@ -97,8 +97,6 @@ wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchma
 | 1/4 part-1 | single | - | 0.277 | 
 | 1/4 part-2 | single | - | 0.269 | 
 | 1/4 part-3 | single | - | 0.282 | 
-
-We can find Distributed mode PS and FedAvg is equal in recall@20 ,  and more data could offer better result.
 
 
 <img src="fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
