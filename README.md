@@ -9,7 +9,7 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-<img src='images/FL-framework.png' width = "1500" height = "260" align="middle"/>
+<img src='images/FL-framework.png' width = "1300" height = "220" align="middle"/>
 
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
 
@@ -30,7 +30,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ## Framework design of PaddleFL
 
-<img src='images/FL-training.png' width = "1500" height = "260" align="middle"/>
+<img src='images/FL-training.png' width = "1300" height = "220" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
