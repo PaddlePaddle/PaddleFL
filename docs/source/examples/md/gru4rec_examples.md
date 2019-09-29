@@ -95,6 +95,10 @@ wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchma
 | 1/4 part-3 | single | - | 0.282 | 
 
 
-<img src='fl_benchmark.png' width = "1300" height = "310" align="middle"/>
+<p align="center">
+<img src="fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
+fl benchmark
+</p>
+
 
 
