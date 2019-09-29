@@ -25,14 +25,14 @@ sh download.sh
 ```
 
 ### How to work in PaddleFL
-PaddleFL has two period , CompileTime and RunTime. In CompileTime, a federated learning task is defined by fl_master. In RunTime, a federated learning job is executed on fl_server and fl_trainer in distributed cluster .
+PaddleFL has two phases , CompileTime and RunTime. In CompileTime, a federated learning task is defined by fl_master. In RunTime, a federated learning job is executed on fl_server and fl_trainer in distributed clusters.
 
 ```sh
 sh run.sh
 ```
 
 ### How to work in CompileTime
-In this example, we implement it in fl_master.py
+In this example, we implement compile time programs in fl_master.py
 ```sh
 # please run fl_master to generate fl_job
 python fl_master.py
@@ -80,24 +80,26 @@ r = Gru4rec_Reader()
 train_reader = r.reader(train_file_dir, place, batch_size=10)
 ```
 
-### Performance
-An experiment simulate the real scenarios in which everyone has only one part of the whole dataset. To evaluate the FedAvg Strategy's effectiveness, we construct baselines through simulated experiments. First baseline is the traditional way which all data stored together. We compare the single mode and distribute Parameter Server mode. The results below show that FedAvg Strategy with spilted data is same effective with traditional way. Second baseline trains model with only one part data and results show smaller data reuslt in worse precision.  
+### Simulated experiments on real world dataset
+To show the concept and effectiveness of horizontal federated learning with PaddleFL, a simulated experiment is conducted on an open source dataset with a real world task. In horizontal federated learning, a group of organizations are doing similar tasks based on private dataset and they are willing to collaborate on a certain task. The goal of the collaboration is to improve the task accuracy with federated learning. 
+
+The simulated experiment suppose all organizations have homogeneous dataset and homogeneous task which is an ideal case. The whole dataset is from small part of [Rsc15] and each organization has a subset as a private dataset. To show the performanc e improvement under federated learning, models based on each organization's private dataset are trained and a model under distributed federated learning is trained. A model based on traditional parameter server training is also trained where the whole dataset is owned by a single organization.
+
+From the table and the figure given below, model evaluation results are similar between federated learning and traditional parameter server training. It is clear that compare with models trained with only private dataset, models' performance for each organization get significant improvement with federated learning.
 
 ```sh
 # download code and readme
 wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchmark.tar
 ```
 
-| Dataset | single/distributed | distribute mode | recall@20|
+| Dataset | training methods | FL Strategy | recall@20|
 | --- | --- | --- |---|
-| all data | single | - | 0.508 | 
-| all data | distributed 4 node | Parameter Server  | 0.504 |
-| all data | distributed 4 node | FedAvg | 0.504 | 
-| 1/4 part-0 | single | - | 0.286 | 
-| 1/4 part-1 | single | - | 0.277 | 
-| 1/4 part-2 | single | - | 0.269 | 
-| 1/4 part-3 | single | - | 0.282 | 
-
+| the whole dataset | private training | -  | 0.504 |
+| the whole dataset | federated learning | FedAvg | 0.504 | 
+| 1/4 of the whole dataset | private training | - | 0.286 | 
+| 1/4 of the whole dataset | private training | - | 0.277 | 
+| 1/4 of the whole dataset | private training | - | 0.269 | 
+| 1/4 of the whole dataset | private training | - | 0.282 | 
 
 <img src="fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
 
