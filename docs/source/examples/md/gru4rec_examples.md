@@ -1,4 +1,4 @@
-# Train gru4rec model with FedAvg Strategy
+# Example to train gru4rec model with FedAvg Strategy
 
 This doc introduce how to use PaddleFL to train model with Fl Strategy.
 
@@ -16,7 +16,7 @@ python setup.py install
 
 
 ### Datasets
-We use [Rsc15](https://2015.recsyschallenge.com) dataset as our data. 
+Public Dataset [Rsc15](https://2015.recsyschallenge.com) 
 
 ```sh
 #download data
@@ -26,6 +26,10 @@ sh download.sh
 
 ### How to work in PaddleFL
 PaddleFL has two period , CompileTime and RunTime. In CompileTime, define a federated learning task by fl_master. In RunTime, train a federated learning job by fl_server and fl_trainer .
+
+```sh
+sh run.sh
+```
 
 ### How to work in CompileTime
 In this example, we implement it in fl_master.py
@@ -70,7 +74,7 @@ python -u fl_server.py >server0.log &
 python -u fl_trainer.py 0 data/ >trainer0.log &
 python -u fl_trainer.py 1 data/ >trainer1.log &
 ```
-fl_trainer.py define the reader. 
+fl_trainer.py can define own reader according to data. 
 ```python
 r = Gru4rec_Reader()
 train_reader = r.reader(train_file_dir, place, batch_size=10)
@@ -87,18 +91,17 @@ wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchma
 | Dataset | single/distributed | distribute mode | recall@20|
 | --- | --- | --- |---|
 | all data | single | - | 0.508 | 
-| all data | distributed 4 node | parameter server  | 0.501 |
+| all data | distributed 4 node | Parameter Server  | 0.504 |
 | all data | distributed 4 node | FedAvg | 0.504 | 
 | 1/4 part-0 | single | - | 0.286 | 
 | 1/4 part-1 | single | - | 0.277 | 
 | 1/4 part-2 | single | - | 0.269 | 
 | 1/4 part-3 | single | - | 0.282 | 
 
+We can find Distributed mode PS and FedAvg is equal in recall@20 ,  and more data could offer better result.
 
-<p align="center">
+
 <img src="fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
-fl benchmark
-</p>
 
 
 
