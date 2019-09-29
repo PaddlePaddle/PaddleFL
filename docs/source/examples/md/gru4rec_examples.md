@@ -1,18 +1,18 @@
 # Example to train gru4rec model with FedAvg Strategy
 
-This doc introduce how to use PaddleFL to train model with Fl Strategy.
+This document introduces how to use PaddleFL to train a model with Fl Strategy.
 
 ### Dependencies
 - paddlepaddle>=1.6
 
 ### How to install PaddleFL
-please use the python which has installed paddlepaddle.
+Please use python which has paddlepaddle installed
 ```sh
 python setup.py install
 ```
 
 ### Model
-[Gru4rec](https://arxiv.org/abs/1511.06939) is the classical session-based recommendation model. The details implement by paddlepaddle is [here](https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec).
+[Gru4rec](https://arxiv.org/abs/1511.06939) is a classical session-based recommendation model. Detailed implementations with paddlepaddle is [here](https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec).
 
 
 ### Datasets
@@ -25,7 +25,7 @@ sh download.sh
 ```
 
 ### How to work in PaddleFL
-PaddleFL has two period , CompileTime and RunTime. In CompileTime, define a federated learning task by fl_master. In RunTime, train a federated learning job by fl_server and fl_trainer .
+PaddleFL has two period , CompileTime and RunTime. In CompileTime, a federated learning task is defined by fl_master. In RunTime, a federated learning job is executed on fl_server and fl_trainer in distributed cluster .
 
 ```sh
 sh run.sh
@@ -81,7 +81,7 @@ train_reader = r.reader(train_file_dir, place, batch_size=10)
 ```
 
 ### Performance
-Experiment simulate the real scene which everyone has only one part of all data. To approve the FedAvg Strategy's effective, we construct baselines. First baseline is the traditional way which all data stored together. We compare the single mode and distribute Parameter Server mode. The results below show that FedAvg Strategy with spilted data is same effective with traditional way. Second baseline trains model with only one part data and results show smaller data reuslt in worse precision.  
+An experiment simulate the real scenarios in which everyone has only one part of the whole dataset. To evaluate the FedAvg Strategy's effectiveness, we construct baselines through simulated experiments. First baseline is the traditional way which all data stored together. We compare the single mode and distribute Parameter Server mode. The results below show that FedAvg Strategy with spilted data is same effective with traditional way. Second baseline trains model with only one part data and results show smaller data reuslt in worse precision.  
 
 ```sh
 # download code and readme
