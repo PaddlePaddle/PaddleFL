@@ -1,5 +1,7 @@
 :github_url: https://github.com/PaddlePaddle/PaddleFL
 
+.. mdinclude:: md/logo.md
+
 Quick Start
 ===========
 .. toctree::
