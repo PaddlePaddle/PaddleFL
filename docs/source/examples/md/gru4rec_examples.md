@@ -1,4 +1,4 @@
-# Example to train gru4rec model with FedAvg Strategy
+# Example in recommendation with FedAvg
 
 This document introduces how to use PaddleFL to train a model with Fl Strategy.
 
