@@ -1,6 +1,5 @@
-# PaddleFL
 
-<img src='docs/source/_static/FL-logo.png'>
+<img src='docs/source/_static/FL-logo.png' width = "400" height = "160">
 
 PaddleFL is an open source federated learning framework based on PaddlePaddle. Researchers can easily replicate and compare different federated learning algorithms with PaddleFL. Developers can also benefit from PaddleFL in that it is easy to deploy a federated learning system in large scale distributed clusters. In PaddleFL, serveral federated learning strategies will be provided with application in computer vision, natural language processing, recommendation and so on. Application of traditional machine learning training strategies such as Multi-task learning, Transfer Learning in Federated Learning settings will be provided. Based on PaddlePaddle's large scale distributed training and elastic scheduling of training job on Kubernetes, PaddleFL can be easily deployed based on full-stack open sourced software.
 
@@ -10,7 +9,7 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-<img src='images/FL-framework.png' width = "1300" height = "260" align="middle"/>
+<img src='images/FL-framework.png' width = "1500" height = "260" align="middle"/>
 
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
 
@@ -31,7 +30,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ## Framework design of PaddleFL
 
-<img src='images/FL-training.png' width = "1300" height = "260" align="middle"/>
+<img src='images/FL-training.png' width = "1500" height = "260" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
