@@ -50,26 +50,13 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 - **FL-Worker**: Each organization participates in federated learning will have one or more federated workers that will communicate with the federated parameter server.
 
-## Install Guide
+## Install Guide and Quick-Start
 
-``` shell
-python setup.py install
-python -c "import paddle_fl as fl"
-```
-
-## Quick-Start Example
-
-``` shell
-cd paddle_fl/demo
-python fl_master.py
-python fl_server.py 2> server0.errlog > server0.stdlog &
-python fl_trainer.py 0 2> trainer0.errlog > trainer0.stdlog &
-python fl_trainer.py 1 2> trainer0.errlog > trainer0.stdlog &
-```
+Please reference [Quick Start](https://paddlefl.readthedocs.io/en/latest/instruction.html) for installation and quick-start example.
 
 ## Benchmark task
 
-Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 
+Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
 ## On Going and Future Work
 
