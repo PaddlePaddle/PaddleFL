@@ -49,26 +49,14 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 - **FL-Worker**: 参与联合学习的每个组织都将有一个或多个与联合参数服务器通信的联合工作者。
 
-## 安装指南
+## 安装指南和快速入门
 
-``` shell
-python setup.py install
-python -c "import paddle_fl as fl"
-```
-
-## 快速入门
-
-``` shell
-cd paddle_fl/demo
-python fl_master.py
-python fl_server.py 2> server0.errlog > server0.stdlog &
-python fl_trainer.py 0 2> trainer0.errlog > trainer0.stdlog &
-python fl_trainer.py 1 2> trainer0.errlog > trainer0.stdlog &
-```
+请参考[快速开始](https://paddlefl.readthedocs.io/en/latest/instruction.html)。
 
 ## 性能测试
 
-Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 
+Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 一个基于联邦学习训练Gru4Rec模型的示例请参考[Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
+
 
 ## 正在进行与发展方向
 
