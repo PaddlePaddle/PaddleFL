@@ -84,11 +84,25 @@ class FedAvgTrainer(FLTrainer):
     def start(self):
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
+        self.step = 0
 
     def set_trainer_job(self, job):
         super(FedAvgTrainer, self).set_trainer_job(job)
         self._send_program = job._trainer_send_program
         self._recv_program = job._trainer_recv_program
+
+    def reset(self):
+        self.cur_step = 0
+
+    def run(self, feed, fetch):
+        if self.cur_step % self._step == 0:
+            self.exe.run(self._recv_program)
+        self.exe.run(self._main_program, 
+                     feed=feed,
+                     fetch_list=fetch)
+        if self.cur_step % self._step == 0:
+            self.exe.run(self._send_program)
+        self.cur_step += 1
 
     def train_inner_loop(self, reader):
         self.exe.run(self._recv_program)
