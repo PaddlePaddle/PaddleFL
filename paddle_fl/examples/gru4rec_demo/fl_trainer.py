@@ -5,7 +5,8 @@ import paddle.fluid as fluid
 import numpy as np
 import sys
 import os
-
+import logging
+logging.basicConfig(filename="test.log", filemode="w", format="%(asctime)s %(name)s:%(levelname)s:%(message)s", datefmt="%d-%M-%Y %H:%M:%S", level=logging.DEBUG)
 
 trainer_id = int(sys.argv[1]) # trainer id for each guest
 place = fluid.CPUPlace()
@@ -23,4 +24,7 @@ step_i = 0
 while not trainer.stop():
     step_i += 1
     print("batch %d start train" % (step_i))
-    trainer.train_inner_loop(train_reader) 
+    for data in train_reader():
+        print(data)
+        trainer.run(feed=data,
+                    fetch=[])

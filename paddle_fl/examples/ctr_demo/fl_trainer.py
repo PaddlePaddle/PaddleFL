@@ -2,6 +2,9 @@ from paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
 from paddle_fl.core.master.fl_job import FLRunTimeJob
 import numpy as np
 import sys
+import logging
+logging.basicConfig(filename="test.log", filemode="w", format="%(asctime)s %(name)s:%(levelname)s:%(message)s", datefmt="%d-%M-%Y %H:%M:%S", level=logging.DEBUG)
+
 
 def reader():
     for i in range(1000):
@@ -23,5 +26,7 @@ step_i = 0
 while not trainer.stop():
     step_i += 1
     print("batch %d start train" % (step_i))
-    trainer.train_inner_loop(reader)
-    trainer.save_inference_program(output_folder)
+    for data in reader():
+        trainer.run(feed=data, fetch=[])
+    if step_i % 100 == 0:
+        trainer.save_inference_program(output_folder)

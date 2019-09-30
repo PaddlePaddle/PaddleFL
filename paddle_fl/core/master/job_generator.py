@@ -29,6 +29,8 @@ class JobGenerator(object):
         # inner optimizer
         self._optimizer = \
             fluid.optimizer.SGD(learning_rate=0.001)
+        self._feed_names = []
+        self._target_names = []
 
 
     def set_optimizer(self, optimizer):
@@ -54,6 +56,18 @@ class JobGenerator(object):
         self._startup_prog = startup
 
     def set_infer_feed_and_target_names(self, feed_names, target_names):
+        if not isinstance(feed_names, list) or not isinstance(target_names, list):
+            raise ValueError("input should be list in set_infer_feed_and_target_names")
+        '''
+        print(feed_names)
+        print(target_names)
+        for item in feed_names:
+            if type(item) != str:
+                raise ValueError("item in feed_names should be string")
+        for item in target_names:
+            if type(item) != str:
+                raise ValueError("item in target_names should be string")
+        '''
         self._feed_names = feed_names
         self._target_names = target_names
 

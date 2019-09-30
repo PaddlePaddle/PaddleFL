@@ -22,4 +22,7 @@ step_i = 0
 while not trainer.stop():
     step_i += 1
     print("batch %d start train" % (step_i))
-    trainer.train_inner_loop(reader)
+    for data in reader():
+        trainer.run(feed=data, fetch=[])
+    if step_i % 100 == 0:
+        trainer.save_inference_program(output_folder)

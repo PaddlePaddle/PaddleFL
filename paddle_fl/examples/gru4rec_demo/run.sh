@@ -1,3 +1,5 @@
+unset http_proxy
+unset https_proxy
 python fl_master.py
 sleep 2
 python -u fl_server.py >server0.log &

@@ -30,7 +30,8 @@ class FLJobBase(object):
     def _load_str_list(self, input_file):
         res = []
         with open(input_file, "r") as fin:
-            res.append(fin.readline().strip())
+            for line in fin:
+                res.append(line.strip())
         return res
 
     def _save_strategy(self, strategy, output_file):

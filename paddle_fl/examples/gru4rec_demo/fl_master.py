@@ -17,13 +17,13 @@ class Model(object):
         gru_lr_x = 1.0
         fc_lr_x = 1.0
         # Input data
-        src_wordseq = fluid.layers.data(
+        self.src_wordseq = fluid.layers.data(
             name="src_wordseq", shape=[1], dtype="int64", lod_level=1)
-        dst_wordseq = fluid.layers.data(
+        self.dst_wordseq = fluid.layers.data(
             name="dst_wordseq", shape=[1], dtype="int64", lod_level=1)
 
         emb = fluid.layers.embedding(
-            input=src_wordseq,
+            input=self.src_wordseq,
             size=[vocab_size, hid_size],
             param_attr=fluid.ParamAttr(
                 initializer=fluid.initializer.Uniform(
@@ -45,15 +45,17 @@ class Model(object):
                     low=init_low_bound, high=init_high_bound),
                 learning_rate=gru_lr_x))
 
-        fc = fluid.layers.fc(input=gru_h0,
+        self.fc = fluid.layers.fc(input=gru_h0,
                              size=vocab_size,
                              act='softmax',
                              param_attr=fluid.ParamAttr(
                                  initializer=fluid.initializer.Uniform(
                                      low=init_low_bound, high=init_high_bound),
                                  learning_rate=fc_lr_x))
-        cost = fluid.layers.cross_entropy(input=fc, label=dst_wordseq)
-        acc = fluid.layers.accuracy(input=fc, label=dst_wordseq, k=20)
+        cost = fluid.layers.cross_entropy(
+            input=self.fc, label=self.dst_wordseq)
+        acc = fluid.layers.accuracy(
+            input=self.fc, label=self.dst_wordseq, k=20)
         self.loss = fluid.layers.mean(x=cost)
         self.startup_program = fluid.default_startup_program()
 
@@ -67,6 +69,8 @@ optimizer = fluid.optimizer.SGD(learning_rate=2.0)
 job_generator.set_optimizer(optimizer)
 job_generator.set_losses([model.loss])
 job_generator.set_startup_program(model.startup_program)
+job_generator.set_infer_feed_and_target_names(
+    [model.src_wordseq.name, model.dst_wordseq.name], [model.fc.name])
 
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True

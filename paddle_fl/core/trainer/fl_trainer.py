@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import paddle.fluid as fluid
+import logging
 
 class FLTrainerFactory(object):
     def __init__(self):
@@ -32,6 +33,7 @@ class FLTrainerFactory(object):
 
 class FLTrainer(object):
     def __init__(self):
+        self._logger = logging.getLogger("FLTrainer")
         pass
 
     def set_trainer_job(self, job):
@@ -47,15 +49,12 @@ class FLTrainer(object):
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
 
-    def train_inner_loop(self, reader):
-        now_step = 0
-        for data in reader():
-            now_step += 1
-            if now_step > self._step:
-                break
-            self.exe.run(self._main_program,
-                         feed=data,
-                         fetch_list=[])
+    def run(self, feed, fetch):
+        self._logger.debug("begin to run")
+        self.exe.run(self._main_program,
+                     feed=feed,
+                     fetch_list=fetch)
+        self._logger.debug("end to run current batch")
 
     def save_inference_program(self, output_folder):
         target_vars = []
@@ -84,7 +83,7 @@ class FedAvgTrainer(FLTrainer):
     def start(self):
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
-        self.step = 0
+        self.cur_step = 0
 
     def set_trainer_job(self, job):
         super(FedAvgTrainer, self).set_trainer_job(job)
@@ -95,26 +94,19 @@ class FedAvgTrainer(FLTrainer):
         self.cur_step = 0
 
     def run(self, feed, fetch):
+        self._logger.debug("begin to run FedAvgTrainer, cur_step=%d, inner_step=%d" %
+                           (self.cur_step, self._step))
         if self.cur_step % self._step == 0:
+            self._logger.debug("begin to run recv program")
             self.exe.run(self._recv_program)
+        self._logger.debug("begin to run current step")
         self.exe.run(self._main_program, 
                      feed=feed,
                      fetch_list=fetch)
         if self.cur_step % self._step == 0:
+            self._logger.debug("begin to run send program")
             self.exe.run(self._send_program)
         self.cur_step += 1
-
-    def train_inner_loop(self, reader):
-        self.exe.run(self._recv_program)
-        now_step = 0
-        for data in reader():
-            now_step += 1
-            if now_step > self._step:
-                break
-            self.exe.run(self._main_program,
-                         feed=data,
-                         fetch_list=[])
-        self.exe.run(self._send_program)
 
     def stop(self):
         return False
