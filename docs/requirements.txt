@@ -1,3 +1,4 @@
 sphinx==2.1.0
 mistune
-crate-docs-theme
+sphinx_rtd_theme
+paddlepaddle
