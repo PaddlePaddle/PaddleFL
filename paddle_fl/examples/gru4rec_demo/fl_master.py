@@ -9,7 +9,7 @@ class Model(object):
 
     def gru4rec_network(self,
                         vocab_size=37483,
-                        hid_size=10,
+                        hid_size=100,
                         init_low_bound=-0.04,
                         init_high_bound=0.04):
         """ network definition """
@@ -29,7 +29,6 @@ class Model(object):
                 initializer=fluid.initializer.Uniform(
                     low=init_low_bound, high=init_high_bound),
                 learning_rate=emb_lr_x),
-            #is_distributed=True,
             is_sparse=False)
         fc0 = fluid.layers.fc(input=emb,
                               size=hid_size * 3,
@@ -54,7 +53,7 @@ class Model(object):
                                  learning_rate=fc_lr_x))
         cost = fluid.layers.cross_entropy(
             input=self.fc, label=self.dst_wordseq)
-        acc = fluid.layers.accuracy(
+        self.acc = fluid.layers.accuracy(
             input=self.fc, label=self.dst_wordseq, k=20)
         self.loss = fluid.layers.mean(x=cost)
         self.startup_program = fluid.default_startup_program()
@@ -70,11 +69,11 @@ job_generator.set_optimizer(optimizer)
 job_generator.set_losses([model.loss])
 job_generator.set_startup_program(model.startup_program)
 job_generator.set_infer_feed_and_target_names(
-    [model.src_wordseq.name, model.dst_wordseq.name], [model.fc.name])
+    [model.src_wordseq.name, model.dst_wordseq.name], [model.loss.name, model.acc.name])
 
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True
-build_strategy.inner_step = 10
+build_strategy.inner_step = 1
 strategy = build_strategy.create_fl_strategy()
 
 # endpoints will be collected through the cluster
@@ -82,5 +81,5 @@ strategy = build_strategy.create_fl_strategy()
 endpoints = ["127.0.0.1:8181"]
 output = "fl_job_config"
 job_generator.generate_fl_job(
-    strategy, server_endpoints=endpoints, worker_num=2, output=output)
+    strategy, server_endpoints=endpoints, worker_num=4, output=output)
 # fl_job_config will  be dispatched to workers

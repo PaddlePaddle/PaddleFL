@@ -10,7 +10,7 @@ logging.basicConfig(filename="test.log", filemode="w", format="%(asctime)s %(nam
 
 trainer_id = int(sys.argv[1]) # trainer id for each guest
 place = fluid.CPUPlace()
-train_file_dir = "mid_data/node1/0/"
+train_file_dir = "mid_data/node4/%d/" % trainer_id
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
@@ -18,13 +18,23 @@ trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer.start()
 
 r = Gru4rec_Reader()
-train_reader = r.reader(train_file_dir, place)
+train_reader = r.reader(train_file_dir, place, batch_size = 125)
 
+output_folder = "model_node4"
 step_i = 0
 while not trainer.stop():
     step_i += 1
     print("batch %d start train" % (step_i))
     for data in train_reader():
-        print(data)
-        trainer.run(feed=data,
-                    fetch=[])
+        #print(np.array(data['src_wordseq']))
+        ret_avg_cost = trainer.run(feed=data,
+                    fetch=["mean_0.tmp_0"])
+        avg_ppl = np.exp(ret_avg_cost[0])
+        newest_ppl = np.mean(avg_ppl)
+        print("ppl:%.3f" % (newest_ppl))
+    save_dir = (output_folder + "/epoch_%d") % step_i
+    if trainer_id == 0:
+        print("start save")
+        trainer.save_inference_program(save_dir)
+    if step_i >= 40:
+        break
