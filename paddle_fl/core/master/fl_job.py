@@ -201,11 +201,14 @@ class FLRunTimeJob(FLJobBase):
         main_fn = "%s/trainer.main.program" % folder_name
         self._trainer_main_program = self._load_program(main_fn)
         
-        send_fn = "%s/trainer.send.program" % folder_name
-        self._trainer_send_program = self._load_program(send_fn)
+        try:
+            send_fn = "%s/trainer.send.program" % folder_name
+            self._trainer_send_program = self._load_program(send_fn)
 
-        recv_fn = "%s/trainer.recv.program" % folder_name
-        self._trainer_recv_program = self._load_program(recv_fn)
+            recv_fn = "%s/trainer.recv.program" % folder_name
+            self._trainer_recv_program = self._load_program(recv_fn)
+        except:
+            pass
 
         endpoints_fn = "%s/endpoints" % folder
         self._endpoints = self._load_endpoints(endpoints_fn)

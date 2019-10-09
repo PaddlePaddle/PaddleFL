@@ -128,7 +128,7 @@ class DPSGDStrategy(FLStrategyBase):
                              trainers=trainers,
                              sync_mode=sync_mode,
                              startup_program=startup_program)
-        main = transpiler.get_trainer_program()
+        main = transpiler.get_trainer_program(wait_port=False)
         job._trainer_startup_programs.append(startup_program)
         job._trainer_main_programs.append(main)
 

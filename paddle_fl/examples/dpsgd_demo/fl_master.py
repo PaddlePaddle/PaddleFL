@@ -8,39 +8,33 @@ class Model(object):
     def __init__(self):
         pass
 
-    def mlp(self, inputs, label, hidden_size=128):
-        self.concat = fluid.layers.concat(inputs, axis=1)
-        self.fc1 = fluid.layers.fc(input=self.concat, size=256, act='relu')
-        self.fc2 = fluid.layers.fc(input=self.fc1, size=128, act='relu')
-        self.predict = fluid.layers.fc(input=self.fc2, size=2, act='softmax')
-        self.sum_cost = fluid.layers.cross_entropy(input=self.predict, label=label)
-        self.accuracy = fluid.layers.accuracy(input=self.predict, label=label)
-        self.loss = fluid.layers.reduce_mean(self.sum_cost)
+    def lr_network(self):
+        self.inputs = fluid.layers.data(name='img', shape=[1, 28, 28], dtype="float32")
+        self.label = fluid.layers.data(name='label', shape=[1],dtype='int64')
+        self.predict = fluid.layers.fc(input=self.inputs, size=10, act='softmax')
+        self.sum_cost = fluid.layers.cross_entropy(input=self.predict, label=self.label)
+        self.accuracy = fluid.layers.accuracy(input=self.predict, label=self.label)
+        self.loss = fluid.layers.mean(self.sum_cost)
         self.startup_program = fluid.default_startup_program()
 
-inputs = [fluid.layers.data( \
-            name=str(slot_id), shape=[5],
-            dtype="float32")
-          for slot_id in range(3)]
-label = fluid.layers.data( \
-            name="label",
-            shape=[1],
-            dtype='int64')
 
 model = Model()
-model.mlp(inputs, label)
+model.lr_network()
 
-STEP_EPSILON = 10
+STEP_EPSILON = 0.1
 DELTA = 0.00001
 SIGMA = math.sqrt(2.0 * math.log(1.25/DELTA)) / STEP_EPSILON
-CLIP = 10.0
-batch_size = 1
+CLIP = 4.0
+batch_size = 64
 
 job_generator = JobGenerator()
-optimizer = fluid.optimizer.Dpsgd(0.1, clip=CLIP, batch_size=float(batch_size), sigma=0.0 * SIGMA)
+optimizer = fluid.optimizer.Dpsgd(0.1, clip=CLIP, batch_size=float(batch_size), sigma=CLIP * SIGMA)
+# optimizer = fluid.optimizer.SGD(learning_rate=0.1)
 job_generator.set_optimizer(optimizer)
 job_generator.set_losses([model.loss])
 job_generator.set_startup_program(model.startup_program)
+job_generator.set_infer_feed_and_target_names(
+    [model.inputs.name, model.label.name], [model.loss.name, model.accuracy.name])
 
 build_strategy = FLStrategyFactory()
 build_strategy.dpsgd = True
