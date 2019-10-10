@@ -110,10 +110,43 @@ class DPSGDStrategy(FLStrategyBase):
     def __init__(self):
         super(DPSGDStrategy, self).__init__()
 
+    @property
+    def learning_rate(self):
+        return self._learning_rate
+
+    @learning_rate.setter
+    def learning_rate(self, s):
+        self._learning_rate = s
+
+    @property
+    def clip(self):
+        return self._clip
+
+    @clip.setter
+    def clip(self, s):
+        self._clip = s
+
+    @property
+    def batch_size(self):
+        return self._batch_size
+
+    @batch_size.setter
+    def batch_size(self, s):
+        self._batch_size = s
+
+    @property
+    def sigma(self):
+        return self._sigma
+
+    @sigma.setter
+    def sigma(self, s):
+        self._sigma = s
+
     def minimize(self, optimizer=None, losses=[]):
         """
-        Do nothing in DPSGDStrategy in minimize function
+        Define Dpsgd optimizer
         """
+        optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
         optimizer.minimize(losses[0])
 
     def _build_trainer_program_for_job(
@@ -128,7 +161,7 @@ class DPSGDStrategy(FLStrategyBase):
                              trainers=trainers,
                              sync_mode=sync_mode,
                              startup_program=startup_program)
-        main = transpiler.get_trainer_program()
+        main = transpiler.get_trainer_program(wait_port=False)
         job._trainer_startup_programs.append(startup_program)
         job._trainer_main_programs.append(main)
 
