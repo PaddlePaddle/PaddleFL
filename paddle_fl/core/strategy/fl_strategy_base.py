@@ -144,10 +144,9 @@ class DPSGDStrategy(FLStrategyBase):
 
     def minimize(self, optimizer=None, losses=[]):
         """
-        Define Dpsgd optimizeer
+        Define Dpsgd optimizer
         """
         optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
-        print(str(optimizer))
         optimizer.minimize(losses[0])
 
     def _build_trainer_program_for_job(
