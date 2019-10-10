@@ -1,6 +1,6 @@
 # PaddleFL
 
-PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可以很轻松地用PaddleFL复制和比较不同的联邦学习算法。开发人员也可以从padderFL中获益，因为用PaddleFL在大规模分布式集群中部署联邦学习系统很容易。PaddleFL提供了很多联邦学习策略及其在计算机视觉、自然语言处理、推荐算法等领域的应用。此外，PaddleFL还将提供传统机器学习训练策略的应用，例如多任务学习、联邦学习环境下的转移学习。依靠着PaddlePaddle的大规模分布式训练和Kubernetes的训练工作弹性调度，PaddleFL可以基于全栈开源软件轻松地部署。
+PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可以很轻松地用PaddleFL复制和比较不同的联邦学习算法。开发人员也可以从padderFL中获益，因为用PaddleFL在大规模分布式集群中部署联邦学习系统很容易。PaddleFL提供很多联邦学习策略及其在计算机视觉、自然语言处理、推荐算法等领域的应用。此外，PaddleFL还将提供传统机器学习训练策略的应用，例如多任务学习、联邦学习环境下的迁移学习。依靠着PaddlePaddle的大规模分布式训练和Kubernetes对训练任务的弹性调度能力，PaddleFL可以基于全栈开源软件轻松地部署。
 
 ## 联邦学习
 
@@ -10,13 +10,13 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 <img src='images/FL-framework.png' width = "1300" height = "310" align="middle"/>
 
-在padderfl中，水平和垂直联合学习策略将根据[4]中给出的分类来实现。PaddleFL也将提供在自然语言处理，计算机视觉和推荐算法等领域的应用演示。
+在PaddleFL中，横向和纵向联邦学习策略将根据[4]中给出的分类来实现。PaddleFL也将提供在自然语言处理，计算机视觉和推荐算法等领域的应用示例。
 
 #### 联邦学习策略
 
-- **垂直联邦学习**: 带privc的逻辑回归，带第三方privc的神经网络[5]
+- **纵向联邦学习**: 带privc的逻辑回归，带第三方privc的神经网络[5]
 
-- **水平联邦学习**: 联邦平均 [2]，差分隐私 [6]
+- **横向联邦学习**: 联邦平均 [2]，差分隐私 [6]
 
 #### 训练策略
 
@@ -31,7 +31,7 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 <img src='images/FL-training.png' width = "1300" height = "310" align="middle"/>
 
-在PadderFL中，用于定义联邦学习任务和联邦学习训练工作的组件如下：
+在PaddeFL中，用于定义联邦学习任务和联邦学习训练工作的组件如下：
 
 #### 编译时
 
@@ -39,15 +39,15 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 - **User-Defined-Program**: PaddlePaddle的程序定义了机器学习模型结构和训练策略，如多任务学习。
 
-- **Distributed-Config**: 在联邦学习中，系统应该部署在分布式环境中。分布式训练配置定义分布式训练节点信息。
+- **Distributed-Config**: 在联邦学习中，系统会部署在分布式环境中。分布式训练配置定义分布式训练节点信息。
 
-- **FL-Job-Generator**: 给定FL-Strategy, User-Defined Program 和 Distributed Training Config，联邦服务端和工作端的FL-Job将通过FL Job Generator生成。FL-Jobs 被发送到组织和联邦参数服务器以进行运行时执行。
+- **FL-Job-Generator**: 给定FL-Strategy, User-Defined Program 和 Distributed Training Config，联邦参数的Server端和Worker端的FL-Job将通过FL Job Generator生成。FL-Jobs 被发送到组织和联邦参数服务器以进行联合训练。
 
 #### 运行时
 
 - **FL-Server**: 在云或第三方集群中运行的联邦参数服务器。
 
-- **FL-Worker**: 参与联合学习的每个组织都将有一个或多个与联合参数服务器通信的联合工作者。
+- **FL-Worker**: 参与联合学习的每个组织都将有一个或多个与联合参数服务器通信的Worker。
 
 ## 安装指南和快速入门
 
@@ -58,7 +58,7 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 一个基于联邦学习训练Gru4Rec模型的示例请参考[Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
 
-## 正在进行与发展方向
+## 正在进行的工作
 
 - 联邦学习在公共数据集上的实验基准。
 
