@@ -11,7 +11,7 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-<img src='images/FL-framework.png' width = "1000" height = "320" align="middle"/>
+<img src='images/FL-framework-zh.png' width = "1000" height = "320" align="middle"/>
 
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
 
