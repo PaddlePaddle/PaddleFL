@@ -8,7 +8,7 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 ## PaddleFL概述
 
-<img src='images/FL-framework.png' width = "1300" height = "310" align="middle"/>
+<img src='images/FL-framework-zh.png' width = "1300" height = "310" align="middle"/>
 
 在PaddleFL中，横向和纵向联邦学习策略将根据[4]中给出的分类来实现。PaddleFL也将提供在自然语言处理，计算机视觉和推荐算法等领域的应用示例。
 
