@@ -24,6 +24,7 @@ class FLStrategyFactory(object):
     def __init__(self):
         self._fed_avg = False
         self._dpsgd = False
+        self._sec_agg = False
         self._inner_step = 1
 
     @property
@@ -43,6 +44,14 @@ class FLStrategyFactory(object):
         self._dpsgd = s
 
     @property
+    def sec_agg(self):
+        return self._sec_agg
+
+    @sec_agg.setter
+    def sec_agg(self, s):
+        self._sec_agg = s
+
+    @property
     def inner_step(self):
         return self._inner_step
 
@@ -58,10 +67,17 @@ class FLStrategyFactory(object):
             strategy = FedAvgStrategy()
             strategy._fed_avg = True
             strategy._dpsgd = False
+            strategy._sec_agg = False
         elif self._dpsgd == True:
             strategy = DPSGDStrategy()
             strategy._fed_avg = False
             strategy._dpsgd = True
+            strategy._sec_agg = False
+        elif self._sec_agg == True:
+            strategy = FedAvgStrategy()
+            strategy._fed_avg = False
+            strategy._dpsgd = False
+            strategy._sec_agg = True
         strategy._inner_step = self._inner_step
         return strategy
 
@@ -146,7 +162,7 @@ class DPSGDStrategy(FLStrategyBase):
         """
         Define Dpsgd optimizer
         """
-        optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
+        # optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
         optimizer.minimize(losses[0])
 
     def _build_trainer_program_for_job(

@@ -13,6 +13,7 @@
 # limitations under the License.
 import paddle.fluid as fluid
 import logging
+import numpy
 
 class FLTrainerFactory(object):
     def __init__(self):
@@ -26,6 +27,9 @@ class FLTrainerFactory(object):
             trainer.set_trainer_job(job)
         elif strategy._dpsgd == True:
             trainer = FLTrainer()
+            trainer.set_trainer_job(job)
+        elif strategy._sec_agg == True:
+            trainer = SecAggTrainer()
             trainer.set_trainer_job(job)
         trainer.set_trainer_job(job)
         return trainer
@@ -93,22 +97,72 @@ class FedAvgTrainer(FLTrainer):
     def reset(self):
         self.cur_step = 0
 
-    def run(self, feed, fetch):
+    def run(self, feed, fetch, train_id, mask):
         self._logger.debug("begin to run FedAvgTrainer, cur_step=%d, inner_step=%d" %
                            (self.cur_step, self._step))
         if self.cur_step % self._step == 0:
             self._logger.debug("begin to run recv program")
             self.exe.run(self._recv_program)
+        scope = fluid.global_scope()
+        print("****** fc_0.b_0: {0}".format(numpy.array(scope.find_var("fc_0.b_0").get_tensor())))
+        print("****** fc_0.w_0: {0}".format(numpy.array(scope.find_var("fc_0.w_0").get_tensor())))
         self._logger.debug("begin to run current step")
         loss = self.exe.run(self._main_program, 
                      feed=feed,
                      fetch_list=fetch)
         if self.cur_step % self._step == 0:
             self._logger.debug("begin to run send program")
+            scope = fluid.global_scope()
+            name1 = "fc_0.b_0.opti.trainer_" + str(train_id)
+            name2 = "fc_0.w_0.opti.trainer_" + str(train_id)
+            fluid.global_scope().var(name1).get_tensor().set(numpy.array(scope.find_var(name1).get_tensor()) + mask, fluid.CPUPlace())
+            fluid.global_scope().var(name2).get_tensor().set(numpy.array(scope.find_var(name2).get_tensor()) + mask, fluid.CPUPlace())
             self.exe.run(self._send_program)
         self.cur_step += 1
         return loss
 
     def stop(self):
         return False
-        
+       
+ 
+class SecAggTrainer(FLTrainer):
+    def __init__(self):
+        super(SecAggTrainer, self).__init__()
+        pass
+
+    def start(self):
+        self.exe = fluid.Executor(fluid.CPUPlace())
+        self.exe.run(self._startup_program)
+        self.cur_step = 0
+
+    def set_trainer_job(self, job):
+        super(SecAggTrainer, self).set_trainer_job(job)
+        self._send_program = job._trainer_send_program
+        self._recv_program = job._trainer_recv_program
+
+    def reset(self):
+        self.cur_step = 0
+
+    def run(self, feed, fetch, param_name_list, mask):
+        self._logger.debug("begin to run SecAggTrainer, cur_step=%d, inner_step=%d" %
+                           (self.cur_step, self._step))
+        if self.cur_step % self._step == 0:
+            self._logger.debug("begin to run recv program")
+            self.exe.run(self._recv_program)
+        scope = fluid.global_scope()
+        self._logger.debug("begin to run current step")
+        loss = self.exe.run(self._main_program, 
+                     feed=feed,
+                     fetch_list=fetch)
+        if self.cur_step % self._step == 0:
+            self._logger.debug("begin to run send program")
+            scope = fluid.global_scope()
+            for param_name in param_name_list:
+                fluid.global_scope().var(param_name).get_tensor().set(numpy.array(scope.find_var(param_name).get_tensor()) + mask, fluid.CPUPlace())
+            self.exe.run(self._send_program)
+        self.cur_step += 1
+        return loss
+
+    def stop(self):
+        return False
+
