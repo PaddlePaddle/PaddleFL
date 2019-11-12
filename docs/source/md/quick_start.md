@@ -88,8 +88,12 @@ step_i = 0
 while not trainer.stop():
     step_i += 1
     print("batch %d start train" % (step_i))
-    trainer.train_inner_loop(reader)
-    trainer.save_inference_program(output_folder)
+    trainer.run(feed=data, fetch=[])
+    if trainer_id == 0:
+        print("start saving model")
+        trainer.save_inference_program(output_folder)
+    if step_i >= 100:
+       break
 ```
 
 On FL Server Node, a training script is defined as follows:
