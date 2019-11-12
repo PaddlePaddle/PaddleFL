@@ -18,6 +18,7 @@ We can run
 .. code-block:: sh
 
     python setup.py install
-
+    or
+    pip install paddle-fl
 
 .. mdinclude:: md/quick_start.md
