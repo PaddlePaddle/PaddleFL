@@ -26,11 +26,10 @@ from paddle_fl.version import fl_version
 def python_version():
     return [int(v) for v in platform.python_version().split(".")]
 
-
 max_version, mid_version, min_version = python_version()
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0',
+    'six >= 1.10.0', 'protobuf >= 3.1.0','paddlepaddle >= 1.6'
 ]
 
 if max_version < 3:
