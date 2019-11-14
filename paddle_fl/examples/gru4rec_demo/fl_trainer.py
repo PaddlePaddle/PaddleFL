@@ -27,6 +27,7 @@ while not trainer.stop():
     print("batch %d start train" % (step_i))
     for data in train_reader():
         #print(np.array(data['src_wordseq']))
+
         ret_avg_cost = trainer.run(feed=data,
                     fetch=["mean_0.tmp_0"])
         avg_ppl = np.exp(ret_avg_cost[0])

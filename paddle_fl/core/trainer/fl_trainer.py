@@ -44,10 +44,14 @@ class FLTrainer(object):
         self._step = job._strategy._inner_step
         self._feed_names = job._feed_names
         self._target_names = job._target_names
+        self._scheduler_ep = job._scheduler_ep
 
     def start(self):
+        current_ep = "to be added"
+        self.agent = FLAgent(self._scheduler_ep, current_ep)
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
+        self.agent.connect_scheduler()
 
     def run(self, feed, fetch):
         self._logger.debug("begin to run")
@@ -73,6 +77,8 @@ class FLTrainer(object):
         # ask for termination with master endpoint
         # currently not open sourced, will release the code later
         # TODO(guru4elephant): add connection with master
+        while not self.agent.can_join_training():
+            
         return False
 
 class FedAvgTrainer(FLTrainer):
@@ -108,7 +114,4 @@ class FedAvgTrainer(FLTrainer):
             self.exe.run(self._send_program)
         self.cur_step += 1
         return loss
-
-    def stop(self):
-        return False
         
