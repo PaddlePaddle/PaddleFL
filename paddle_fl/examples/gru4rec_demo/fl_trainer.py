@@ -14,7 +14,9 @@ train_file_dir = "mid_data/node4/%d/" % trainer_id
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
+job._scheduler_ep = "127.0.0.1:9091"
 trainer = FLTrainerFactory().create_fl_trainer(job)
+trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
 trainer.start()
 
 r = Gru4rec_Reader()
@@ -25,10 +27,14 @@ step_i = 0
 while not trainer.stop():
     step_i += 1
     print("batch %d start train" % (step_i))
+    train_step = 0
     for data in train_reader():
         #print(np.array(data['src_wordseq']))
         ret_avg_cost = trainer.run(feed=data,
                     fetch=["mean_0.tmp_0"])
+        train_step += 1
+	if train_step == trainer._step:
+		break
         avg_ppl = np.exp(ret_avg_cost[0])
         newest_ppl = np.mean(avg_ppl)
         print("ppl:%.3f" % (newest_ppl))

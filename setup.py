@@ -37,6 +37,8 @@ if max_version < 3:
 else:
     REQUIRED_PACKAGES += ["numpy"]
 
+REQUIRED_PACKAGES += ["unittest2"]
+
 setup(
     name='paddle_fl',
     version=fl_version.replace('-', ''),
