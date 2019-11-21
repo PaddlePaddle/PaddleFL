@@ -74,7 +74,7 @@ class FLStrategyFactory(object):
             strategy._dpsgd = True
             strategy._sec_agg = False
         elif self._sec_agg == True:
-            strategy = FedAvgStrategy()
+            strategy = SecAggStrategy()
             strategy._fed_avg = False
             strategy._dpsgd = False
             strategy._sec_agg = True
@@ -162,7 +162,7 @@ class DPSGDStrategy(FLStrategyBase):
         """
         Define Dpsgd optimizer
         """
-        # optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
+        optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
         optimizer.minimize(losses[0])
 
     def _build_trainer_program_for_job(
@@ -255,87 +255,23 @@ class FedAvgStrategy(FLStrategyBase):
             job._server_main_programs.append(main_prog)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+class SecAggStrategy(FedAvgStrategy):
+    """
+    DPSGDStrategy: this is model averaging optimization proposed in
+    Aaron Segal, Antonio Marcedone, Benjamin Kreuter, et al. 
+    Practical Secure Aggregation  for Privacy-Preserving Machine Learning, 
+    The 24th ACM Conference on Computer and Communications Security ( CCS2017 ).
+    """
+    def __init__(self):
+        super(SecAggStrategy, self).__init__()
+        self._param_name_list = []
+
+    @property
+    def param_name_list(self):
+        return self._param_name_list
+
+    @param_name_list.setter
+    def param_name_list(self, s):
+        self._param_name_list = s
 
 

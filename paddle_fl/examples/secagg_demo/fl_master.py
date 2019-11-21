@@ -35,7 +35,14 @@ job_generator.set_infer_feed_and_target_names(
     [inputs.name, label.name], [model.loss.name])
 
 build_strategy = FLStrategyFactory()
+#build_strategy.fed_avg = True
+
 build_strategy.sec_agg = True
+param_name_list = []
+param_name_list.append("fc_0.w_0.opti.trainer_") # need trainer_id when running
+param_name_list.append("fc_0.b_0.opti.trainer_") 
+build_strategy.param_name_list = param_name_list
+
 build_strategy.inner_step = 10
 strategy = build_strategy.create_fl_strategy()
 
