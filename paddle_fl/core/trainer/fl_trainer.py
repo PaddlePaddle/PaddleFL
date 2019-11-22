@@ -111,6 +111,20 @@ class FedAvgTrainer(FLTrainer):
     def reset(self):
         self.cur_step = 0
 
+    def run_with_epoch(self,reader,feeder,fetch,num_epoch):
+	self._logger.debug("begin to run recv program")
+        self.exe.run(self._recv_program)
+	epoch = 0
+	for i in range(num_epoch):
+	    print(epoch)
+	    for data in reader():
+		self.exe.run(self._main_program,
+                           feed=feeder.feed(data),
+                           fetch_list=fetch)
+	    self.cur_step += 1
+	    epoch += 1
+	self._logger.debug("begin to run send program")
+        self.exe.run(self._send_program)
     def run(self, feed, fetch):
         self._logger.debug("begin to run FedAvgTrainer, cur_step=%d, inner_step=%d" %
                            (self.cur_step, self._step))
