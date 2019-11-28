@@ -24,6 +24,7 @@ class FLStrategyFactory(object):
     def __init__(self):
         self._fed_avg = False
         self._dpsgd = False
+        self._sec_agg = False
         self._inner_step = 1
 
     @property
@@ -43,6 +44,14 @@ class FLStrategyFactory(object):
         self._dpsgd = s
 
     @property
+    def sec_agg(self):
+        return self._sec_agg
+
+    @sec_agg.setter
+    def sec_agg(self, s):
+        self._sec_agg = s
+
+    @property
     def inner_step(self):
         return self._inner_step
 
@@ -58,10 +67,17 @@ class FLStrategyFactory(object):
             strategy = FedAvgStrategy()
             strategy._fed_avg = True
             strategy._dpsgd = False
+            strategy._sec_agg = False
         elif self._dpsgd == True:
             strategy = DPSGDStrategy()
             strategy._fed_avg = False
             strategy._dpsgd = True
+            strategy._sec_agg = False
+        elif self._sec_agg == True:
+            strategy = SecAggStrategy()
+            strategy._fed_avg = False
+            strategy._dpsgd = False
+            strategy._sec_agg = True
         strategy._inner_step = self._inner_step
         return strategy
 
@@ -239,87 +255,23 @@ class FedAvgStrategy(FLStrategyBase):
             job._server_main_programs.append(main_prog)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+class SecAggStrategy(FedAvgStrategy):
+    """
+    DPSGDStrategy: this is model averaging optimization proposed in
+    Aaron Segal, Antonio Marcedone, Benjamin Kreuter, et al. 
+    Practical Secure Aggregation  for Privacy-Preserving Machine Learning, 
+    The 24th ACM Conference on Computer and Communications Security ( CCS2017 ).
+    """
+    def __init__(self):
+        super(SecAggStrategy, self).__init__()
+        self._param_name_list = []
+
+    @property
+    def param_name_list(self):
+        return self._param_name_list
+
+    @param_name_list.setter
+    def param_name_list(self, s):
+        self._param_name_list = s
 
 

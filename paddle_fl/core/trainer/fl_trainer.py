@@ -14,6 +14,9 @@
 import paddle.fluid as fluid
 import logging
 from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
+import numpy
+import hmac
+from .diffiehellman.diffiehellman import DiffieHellman
 
 class FLTrainerFactory(object):
     def __init__(self):
@@ -27,6 +30,9 @@ class FLTrainerFactory(object):
             trainer.set_trainer_job(job)
         elif strategy._dpsgd == True:
             trainer = FLTrainer()
+            trainer.set_trainer_job(job)
+        elif strategy._sec_agg == True:
+            trainer = SecAggTrainer()
             trainer.set_trainer_job(job)
         trainer.set_trainer_job(job)
         return trainer
@@ -91,6 +97,7 @@ class FLTrainer(object):
 	print("ready to train")
 	return False
 
+
 class FedAvgTrainer(FLTrainer):
     def __init__(self):
         super(FedAvgTrainer, self).__init__()
@@ -126,4 +133,104 @@ class FedAvgTrainer(FLTrainer):
             self.exe.run(self._send_program)
         self.cur_step += 1
         return loss
-        
+
+    def stop(self):
+        return False
+       
+ 
+class SecAggTrainer(FLTrainer):
+    def __init__(self):
+        super(SecAggTrainer, self).__init__()
+        pass
+
+    @property
+    def trainer_id(self):
+        return self._trainer_id
+
+    @trainer_id.setter
+    def trainer_id(self, s):
+        self._trainer_id = s
+
+    @property
+    def trainer_num(self):
+        return self._trainer_num
+
+    @trainer_num.setter
+    def trainer_num(self, s):
+        self._trainer_num = s
+
+    @property
+    def key_dir(self):
+        return self._key_dir
+
+    @key_dir.setter
+    def key_dir(self, s):
+        self._key_dir = s
+
+    @property
+    def step_id(self):
+        return self._step_id
+
+    @step_id.setter
+    def step_id(self, s):
+        self._step_id = s
+
+    def start(self):
+        self.exe = fluid.Executor(fluid.CPUPlace())
+        self.exe.run(self._startup_program)
+        self.cur_step = 0
+
+    def set_trainer_job(self, job):
+        super(SecAggTrainer, self).set_trainer_job(job)
+        self._send_program = job._trainer_send_program
+        self._recv_program = job._trainer_recv_program
+        self_step = job._strategy._inner_step
+        self._param_name_list = job._strategy._param_name_list
+
+    def reset(self):
+        self.cur_step = 0
+
+    def run(self, feed, fetch):
+        self._logger.debug("begin to run SecAggTrainer, cur_step=%d, inner_step=%d" %
+                           (self.cur_step, self._step))
+        if self.cur_step % self._step == 0:
+            self._logger.debug("begin to run recv program")
+            self.exe.run(self._recv_program)
+        scope = fluid.global_scope()
+        self._logger.debug("begin to run current step")
+        loss = self.exe.run(self._main_program, 
+                     feed=feed,
+                     fetch_list=fetch)
+        if self.cur_step % self._step == 0:
+            self._logger.debug("begin to run send program")
+            noise = 0.0
+            scale = pow(10.0, 5)
+            digestmod="SHA256"
+            # 1. load priv key and other's pub key
+            dh = DiffieHellman(group=15, key_length=256)
+            dh.load_private_key(self._key_dir + str(self._trainer_id) + "_priv_key.txt")
+            key = str(self._step_id).encode("utf-8")
+            for i in range(self._trainer_num):
+                if i != self._trainer_id:
+                    f = open(self._key_dir + str(i) + "_pub_key.txt", "r")
+                    public_key = int(f.read())
+                    dh.generate_shared_secret(public_key, echo_return_key=True)
+                    msg = dh.shared_key.encode("utf-8")
+                    hex_res1 = hmac.new(key=key, msg=msg, digestmod=digestmod).hexdigest()
+                    current_noise = int(hex_res1[0:8], 16) / scale
+                    if i > self._trainer_id:
+                        noise = noise + current_noise
+                    else:
+                        noise = noise - current_noise
+
+            scope = fluid.global_scope()
+            for param_name in self._param_name_list:
+                fluid.global_scope().var(param_name + str(self._trainer_id)).get_tensor().set(
+                    numpy.array(scope.find_var(param_name + str(self._trainer_id)).get_tensor()) + noise, fluid.CPUPlace())
+            self.exe.run(self._send_program)
+        self.cur_step += 1
+        return loss
+
+    def stop(self):
+        return False
+
