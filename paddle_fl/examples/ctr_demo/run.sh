@@ -2,8 +2,13 @@ unset http_proxy
 unset https_proxy
 python fl_master.py
 sleep 2
+python -u fl_scheduler.py > scheduler.log &
+sleep 5
 python -u fl_server.py >server0.log &
 sleep 2
-python -u fl_trainer.py 0 >trainer0.log &
-sleep 2
-python -u fl_trainer.py 1 >trainer1.log &
+for ((i=0;i<5;i++))
+do 
+    python -u fl_trainer.py $i >trainer$i.log &
+    sleep 2
+done
+	

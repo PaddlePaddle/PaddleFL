@@ -176,6 +176,7 @@ class FLRunTimeJob(FLJobBase):
         self._server_main_program = None
         self._feed_names = None
         self._target_names = None
+        self._scheduler_ep = None	
 
     def _load_strategy(self, input_file):
         import pickle

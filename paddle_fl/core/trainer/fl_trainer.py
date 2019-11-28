@@ -13,6 +13,7 @@
 # limitations under the License.
 import paddle.fluid as fluid
 import logging
+from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
 import hmac
 from .diffiehellman.diffiehellman import DiffieHellman
@@ -50,17 +51,24 @@ class FLTrainer(object):
         self._step = job._strategy._inner_step
         self._feed_names = job._feed_names
         self._target_names = job._target_names
+        self._scheduler_ep = job._scheduler_ep
+	self._current_ep = None
+	self.cur_step = 0
 
     def start(self):
+        #current_ep = "to be added"
+        self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
+        self.agent.connect_scheduler()
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
 
     def run(self, feed, fetch):
         self._logger.debug("begin to run")
         self.exe.run(self._main_program,
-                     feed=feed,
-                     fetch_list=fetch)
+                      feed=feed,
+                      fetch_list=fetch)
         self._logger.debug("end to run current batch")
+	self.cur_step += 1
 
     def save_inference_program(self, output_folder):
         target_vars = []
@@ -79,7 +87,15 @@ class FLTrainer(object):
         # ask for termination with master endpoint
         # currently not open sourced, will release the code later
         # TODO(guru4elephant): add connection with master
-        return False
+	if self.cur_step != 0:
+		while not self.agent.finish_training():
+			print('wait others finish')
+			continue
+        while not self.agent.can_join_training():
+		print("wait permit")
+		continue    
+	print("ready to train")
+	return False
 
 
 class FedAvgTrainer(FLTrainer):
@@ -88,9 +104,11 @@ class FedAvgTrainer(FLTrainer):
         pass
 
     def start(self):
+	#current_ep = "to be added"
+        self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
+	self.agent.connect_scheduler()
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
-        self.cur_step = 0
 
     def set_trainer_job(self, job):
         super(FedAvgTrainer, self).set_trainer_job(job)
@@ -168,7 +186,6 @@ class SecAggTrainer(FLTrainer):
         self._recv_program = job._trainer_recv_program
         self_step = job._strategy._inner_step
         self._param_name_list = job._strategy._param_name_list
-        
 
     def reset(self):
         self.cur_step = 0
