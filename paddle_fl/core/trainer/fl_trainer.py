@@ -13,13 +13,10 @@
 # limitations under the License.
 import paddle.fluid as fluid
 import logging
-<<<<<<< HEAD
 from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
-=======
 import numpy
 import hmac
 from .diffiehellman.diffiehellman import DiffieHellman
->>>>>>> 3145ed186544ac195bb957c22a638461d8e480bd
 
 class FLTrainerFactory(object):
     def __init__(self):
@@ -150,11 +147,6 @@ class FedAvgTrainer(FLTrainer):
             self.exe.run(self._send_program)
         self.cur_step += 1
         return loss
-<<<<<<< HEAD
-=======
-
-    def stop(self):
-        return False
        
  
 class SecAggTrainer(FLTrainer):
@@ -205,8 +197,6 @@ class SecAggTrainer(FLTrainer):
         self._recv_program = job._trainer_recv_program
         self_step = job._strategy._inner_step
         self._param_name_list = job._strategy._param_name_list
->>>>>>> 3145ed186544ac195bb957c22a638461d8e480bd
-        
 
     def reset(self):
         self.cur_step = 0
