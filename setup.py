@@ -29,7 +29,7 @@ def python_version():
 max_version, mid_version, min_version = python_version()
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0','paddlepaddle >= 1.6', 
+    'six >= 1.10.0', 'protobuf >= 3.1.0','paddlepaddle >= 1.6' 
 ]
 
 if max_version < 3:
