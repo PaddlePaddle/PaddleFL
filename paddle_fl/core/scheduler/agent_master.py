@@ -18,25 +18,32 @@ class FLServerAgent(object):
         self.scheduler_ep = scheduler_ep
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect("tcp://127.0.0.1:9091")
+        self.socket.connect("tcp://{}".format(scheduler_ep))
         self.current_ep = current_ep
 
     def connect_scheduler(self):
-        self.socket.send("SERVER_EP\t{}".format(self.current_ep))
-        self.socket.recv()
-
+        while True:
+            self.socket.send("SERVER_EP\t{}".format(self.current_ep))
+            message = self.socket.recv()
+            group = message.split("\t")
+            if group[0] == 'INIT':
+                break
 
 class FLWorkerAgent(object):
     def __init__(self, scheduler_ep, current_ep):
         self.scheduler_ep = scheduler_ep
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect("tcp://127.0.0.1:9091")
+        self.socket.connect("tcp://{}".format(scheduler_ep))
         self.current_ep = current_ep
 
     def connect_scheduler(self):
-        self.socket.send("WORKER_EP\t{}".format(self.current_ep))
-        self.socket.recv()
+        while True:
+            self.socket.send("WORKER_EP\t{}".format(self.current_ep))
+            message = self.socket.recv()
+            group = message.split("\t")
+            if group[0] == 'INIT':
+                break
 
     def finish_training(self):
         self.socket.send("FINISH\t{}".format(self.current_ep))
@@ -59,10 +66,13 @@ class FLWorkerAgent(object):
 
 
 class FLScheduler(object):
-    def __init__(self, worker_num, server_num, port=9091):
+    def __init__(self, worker_num, server_num, port=9091, socket=None):
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-        self.socket.bind("tcp://*:{}".format(port))
+        if socket == None:
+            self.socket = self.context.socket(zmq.REP)
+            self.socket.bind("tcp://*:{}".format(port))
+        else:
+            self.socket = socket
         self.worker_num = worker_num
         self.server_num = server_num
         self.sample_worker_num = 0
