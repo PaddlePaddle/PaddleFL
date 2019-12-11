@@ -59,7 +59,7 @@ class DiffieHellman:
         self.key_length = max(200, key_length)
         self.generator = PRIMES[group]["generator"]
         self.prime = PRIMES[group]["prime"]
-    
+
     def load_private_key(self, priv_key_filepath="priv_key.txt"):
         f = open(priv_key_filepath, "r")
         self.private_key = int(f.read())

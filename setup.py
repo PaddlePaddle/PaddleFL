@@ -71,4 +71,3 @@ setup(
     ],
     license='Apache 2.0',
     keywords=('paddle_fl paddlepaddle multi-task transfer distributed-training'))
-

@@ -176,7 +176,7 @@ class FLRunTimeJob(FLJobBase):
         self._server_main_program = None
         self._feed_names = None
         self._target_names = None
-        self._scheduler_ep = None	
+        self._scheduler_ep = None
 
     def _load_strategy(self, input_file):
         import pickle
@@ -201,7 +201,7 @@ class FLRunTimeJob(FLJobBase):
 
         main_fn = "%s/trainer.main.program" % folder_name
         self._trainer_main_program = self._load_program(main_fn)
-        
+
         try:
             send_fn = "%s/trainer.send.program" % folder_name
             self._trainer_send_program = self._load_program(send_fn)
@@ -228,7 +228,7 @@ class FLRunTimeJob(FLJobBase):
         Load server job given training folder and server_id
         Currently, a server_id is assigned to a server node, and
         corresponding FL Job will be sent to the server node.
-        
+
         Args:
             folder(str): FL Job folder name
             server_id(int): server index for current job

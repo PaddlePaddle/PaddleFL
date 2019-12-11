@@ -31,10 +31,10 @@ while not trainer.stop():
     print("batch %d start train" % (step_i))
     train_step = 0
     for data in reader():
-      	trainer.run(feed=data, fetch=[])
-	train_step += 1	
-	if train_step == trainer._step:
-		break
+        trainer.run(feed=data, fetch=[])
+        train_step += 1
+        if train_step == trainer._step:
+            break
     step_i += 1
     if step_i % 100 == 0:
         trainer.save_inference_program(output_folder)

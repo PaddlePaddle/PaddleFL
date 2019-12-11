@@ -2,7 +2,7 @@ import paddle.fluid as fluid
 import paddle_fl as fl
 from paddle_fl.core.master.job_generator import JobGenerator
 from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
-import math 
+import math
 
 class Model(object):
     def __init__(self):

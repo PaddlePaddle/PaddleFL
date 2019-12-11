@@ -9,10 +9,10 @@ class Model(object):
 
     def linear_regression(self, inputs, label):
         param_attrs = fluid.ParamAttr(
-            name="fc_0.b_0", 
+            name="fc_0.b_0",
             initializer=fluid.initializer.ConstantInitializer(0.0))
         param_attrs = fluid.ParamAttr(
-            name="fc_0.w_0", 
+            name="fc_0.w_0",
             initializer=fluid.initializer.ConstantInitializer(0.0))
         self.predict = fluid.layers.fc(input=inputs, size=10, act='softmax', param_attr=param_attrs)
         self.sum_cost = fluid.layers.cross_entropy(input=self.predict, label=label)
@@ -40,7 +40,7 @@ build_strategy = FLStrategyFactory()
 build_strategy.sec_agg = True
 param_name_list = []
 param_name_list.append("fc_0.w_0.opti.trainer_") # need trainer_id when running
-param_name_list.append("fc_0.b_0.opti.trainer_") 
+param_name_list.append("fc_0.b_0.opti.trainer_")
 build_strategy.param_name_list = param_name_list
 
 build_strategy.inner_step = 10
