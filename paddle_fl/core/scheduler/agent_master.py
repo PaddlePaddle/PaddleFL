@@ -50,8 +50,8 @@ class FLWorkerAgent(object):
         key, value = recv_and_parse_kv(self.socket)
         if key == "WAIT":
             time.sleep(3)
-	    return True
-	return False
+            return True
+        return False
 
     def can_join_training(self):
         self.socket.send("JOIN\t{}".format(self.current_ep))
@@ -104,10 +104,10 @@ class FLScheduler(object):
 
     def start_fl_training(self):
         # loop until training is done
-	loop = 0
+        loop = 0
         while True:
-	    if loop <= 1:
-		print(loop)
+            if loop <= 1:
+                print(loop)
             random.shuffle(self.fl_workers)
             worker_dict = {}
             for worker in self.fl_workers[:self.sample_worker_num]:
@@ -125,8 +125,8 @@ class FLScheduler(object):
                             self.socket.send("ACCEPT\t0")
                             continue
                     else:
-			if value not in ready_workers:
-                    		ready_workers.append(value)
+                        if value not in ready_workers:
+                            ready_workers.append(value)
                 self.socket.send("REJECT\t0")
                 if len(ready_workers) == len(self.fl_workers):
                     all_ready_to_train = True
@@ -135,7 +135,7 @@ class FLScheduler(object):
             finish_training_dict = {}
             while not all_finish_training:
                 key, value = recv_and_parse_kv(self.socket)
-		if key == "FINISH":
+                if key == "FINISH":
                     finish_training_dict[value] = 1
                     self.socket.send("WAIT\t0")
                 else:
@@ -143,4 +143,4 @@ class FLScheduler(object):
                 if len(finish_training_dict) == len(worker_dict):
                     all_finish_training = True
             time.sleep(5)
-	    loop += 1
+            loop += 1

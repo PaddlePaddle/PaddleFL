@@ -1,6 +1,6 @@
 # coding=utf-8
 
-# 
+#
 # (c) Chris von Csefalvay, 2015.
 
 """

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .fl_distribute_transpiler import FLDistributeTranspiler 
+from .fl_distribute_transpiler import FLDistributeTranspiler
 from paddle.fluid.optimizer import SGD
 import paddle.fluid as fluid
 
@@ -258,8 +258,8 @@ class FedAvgStrategy(FLStrategyBase):
 class SecAggStrategy(FedAvgStrategy):
     """
     DPSGDStrategy: this is model averaging optimization proposed in
-    Aaron Segal, Antonio Marcedone, Benjamin Kreuter, et al. 
-    Practical Secure Aggregation  for Privacy-Preserving Machine Learning, 
+    Aaron Segal, Antonio Marcedone, Benjamin Kreuter, et al.
+    Practical Secure Aggregation  for Privacy-Preserving Machine Learning,
     The 24th ACM Conference on Computer and Communications Security ( CCS2017 ).
     """
     def __init__(self):
@@ -273,5 +273,3 @@ class SecAggStrategy(FedAvgStrategy):
     @param_name_list.setter
     def param_name_list(self, s):
         self._param_name_list = s
-
-

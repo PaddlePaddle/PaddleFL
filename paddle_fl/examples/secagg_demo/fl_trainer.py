@@ -20,7 +20,7 @@ train_reader = paddle.batch(
     paddle.reader.shuffle(paddle.dataset.mnist.train(), buf_size=500),
     batch_size=BATCH_SIZE)
 test_reader = paddle.batch(
-	    paddle.dataset.mnist.test(), batch_size=BATCH_SIZE)
+            paddle.dataset.mnist.test(), batch_size=BATCH_SIZE)
 
 trainer_num = 2
 trainer_id = int(sys.argv[1]) # trainer id for each guest
@@ -68,10 +68,10 @@ while not trainer.stop():
     for data in train_reader():
         step_i += 1
         trainer.step_id = step_i
-        accuracy, = trainer.run(feed=feeder.feed(data), 
-            fetch=["accuracy_0.tmp_0"]) 
+        accuracy, = trainer.run(feed=feeder.feed(data),
+            fetch=["accuracy_0.tmp_0"])
         if step_i % 100 == 0:
-            print("Epoch: {0}, step: {1}, accuracy: {2}".format(epoch_id, step_i, accuracy[0])) 
+            print("Epoch: {0}, step: {1}, accuracy: {2}".format(epoch_id, step_i, accuracy[0]))
 
     avg_loss_val, acc_val = train_test(train_test_program=test_program,
                                        train_test_reader=test_reader,

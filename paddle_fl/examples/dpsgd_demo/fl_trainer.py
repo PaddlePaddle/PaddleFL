@@ -31,15 +31,15 @@ label = fluid.layers.data(name='label', shape=[1], dtype='int64')
 feeder = fluid.DataFeeder(feed_list=[img, label], place=fluid.CPUPlace())
 
 def train_test(train_test_program, train_test_feed, train_test_reader):
-        acc_set = []
-        for test_data in train_test_reader():
-            acc_np = trainer.exe.run(
-                program=train_test_program,
-                feed=train_test_feed.feed(test_data),
-                fetch_list=["accuracy_0.tmp_0"])
-            acc_set.append(float(acc_np[0]))
-        acc_val_mean = numpy.array(acc_set).mean()
-        return acc_val_mean
+    acc_set = []
+    for test_data in train_test_reader():
+        acc_np = trainer.exe.run(
+            program=train_test_program,
+            feed=train_test_feed.feed(test_data),
+            fetch_list=["accuracy_0.tmp_0"])
+        acc_set.append(float(acc_np[0]))
+    acc_val_mean = numpy.array(acc_set).mean()
+    return acc_val_mean
 
 def compute_privacy_budget(sample_ratio, epsilon, step, delta):
     E = 2 * epsilon * math.sqrt(step * sample_ratio)
@@ -57,7 +57,7 @@ while not trainer.stop():
         acc = trainer.run(feeder.feed(data), fetch=["accuracy_0.tmp_0"])
         step += 1
     # print("acc:%.3f" % (acc[0]))
-    
+
     acc_val = train_test(
         train_test_program=test_program,
         train_test_reader=test_reader,
@@ -65,8 +65,6 @@ while not trainer.stop():
 
     print("Test with epoch %d, accuracy: %s" % (epoch_id, acc_val))
     compute_privacy_budget(sample_ratio=0.001, epsilon=0.1, step=step, delta=0.00001)
-   
+
     save_dir = (output_folder + "/epoch_%d") % epoch_id
     trainer.save_inference_program(output_folder)
-
-
