@@ -40,7 +40,7 @@ def train_test(train_test_program, train_test_feed, train_test_reader):
 epoch_id = 0
 step = 0
 epoch = 3000
-count_by_step = False
+count_by_step = True
 if count_by_step:
 	output_folder = "model_node%d" % trainer_id
 else: 
