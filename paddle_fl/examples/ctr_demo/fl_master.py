@@ -38,7 +38,7 @@ job_generator.set_infer_feed_and_target_names(
     [x.name for x in inputs], [model.predict.name])
 
 build_strategy = FLStrategyFactory()
-build_strategy.fed_avg = True 
+build_strategy.fed_avg = True
 build_strategy.inner_step = 10
 strategy = build_strategy.create_fl_strategy()
 

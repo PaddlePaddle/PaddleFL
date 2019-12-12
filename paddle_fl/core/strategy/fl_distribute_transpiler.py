@@ -60,7 +60,7 @@ class FLDistributeTranspiler(object):
 
     Convert the fluid program to distributed data-parallelism programs.
 
-    In pserver mode, the trainers' main program do forward, backward and optimizaiton.  
+    In pserver mode, the trainers' main program do forward, backward and optimizaiton.
     pserver's main_program will sum and scale.
 
 

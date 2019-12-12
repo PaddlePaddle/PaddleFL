@@ -115,7 +115,7 @@ class JobGenerator(object):
                                           server_endpoints=server_endpoints,
                                           worker_num=1,
                                           output=output)
-        
+
         """
         local_job = FLCompileTimeJob()
         assert len(self._losses) > 0
@@ -146,4 +146,3 @@ class JobGenerator(object):
         local_job.set_target_names(self._target_names)
         local_job.set_strategy(fl_strategy)
         local_job.save(output)
-

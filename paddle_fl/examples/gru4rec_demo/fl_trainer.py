@@ -33,8 +33,8 @@ while not trainer.stop():
         ret_avg_cost = trainer.run(feed=data,
                     fetch=["mean_0.tmp_0"])
         train_step += 1
-	if train_step == trainer._step:
-		break
+        if train_step == trainer._step:
+            break
         avg_ppl = np.exp(ret_avg_cost[0])
         newest_ppl = np.mean(avg_ppl)
         print("ppl:%.3f" % (newest_ppl))
