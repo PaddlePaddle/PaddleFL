@@ -34,7 +34,7 @@ def train(trainer_id,inner_step,batch_size,count_by_step):
 		rand = random.randrange(0,len(users)) # random choose a user from each trainer
 		cur_user = users[rand]
 		print('training using '+cur_user)
-		train_images = json_train["user_data"][cur_user]['x']
+                train_images = json_train["user_data"][cur_user]['x']
                 train_labels = json_train["user_data"][cur_user]['y']
                 if count_by_step:
                         for i in xrange(inner_step*batch_size):

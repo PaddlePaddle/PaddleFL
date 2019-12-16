@@ -61,7 +61,6 @@ while not trainer.stop():
     test_reader = paddle.batch(
         paddle_fl.dataset.femnist.test(trainer_id,inner_step=trainer._step,batch_size=64,count_by_step=count_by_step), batch_size=64) 
     
-    
     if count_by_step:
     	for step_id, data in enumerate(train_reader()):
             acc = trainer.run(feeder.feed(data), fetch=["accuracy_0.tmp_0"])
