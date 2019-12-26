@@ -122,7 +122,7 @@ ip_role = {}
 for i in range(len(ip_list)):
 	if i < int(default_dict["server_nodes"]):
 		ip_role[ip_list[i]] = 'server%d' % i
-	else:
+        else:
 		ip_role[ip_list[i]] = 'trainer%d' % (i-int(default_dict["server_nodes"]))
 print(ip_role)
 
@@ -190,4 +190,3 @@ while not all_job_sent:
 scheduler.init_env()
 print("init env done.")
 scheduler.start_fl_training()
-
