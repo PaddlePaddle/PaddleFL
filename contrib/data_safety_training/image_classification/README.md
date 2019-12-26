@@ -1,6 +1,6 @@
-##Training process
+## Training process
 
-<img src='images/split_flow.png' width = "1000" height = "320" align="middle"/>
+<img src='../../../images/split_flow.png' width = "1000" height = "320" align="middle"/>
 
 
 - User send a request to server including task type, image size, etc.
@@ -12,7 +12,7 @@
 - Server fetch the uploaded data and start training model.
 
 
-##Start the service on Server side
+## Start the service on Server side
 
 """
 
@@ -20,7 +20,7 @@ python server/receiver.py
 
 """
 
-##Start the request on User side 
+## Start the request on User side 
 
 """
 python submitter.py
