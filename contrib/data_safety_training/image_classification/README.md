@@ -1,6 +1,6 @@
 ## Training process
 
-<img src='../../../images/split_flow.png' width = "1000" height = "320" align="middle"/>
+<img src='../../../images/split_flow.png' width = "1000" height = "440" align="middle"/>
 
 
 - User send a request to server including task type, image size, etc.
