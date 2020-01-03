@@ -23,7 +23,6 @@ job._scheduler_ep = "127.0.0.1:9091"
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
 trainer.start()
-
 print(trainer._scheduler_ep, trainer._current_ep)
 output_folder = "fl_model"
 step_i = 0
@@ -38,3 +37,4 @@ while not trainer.stop():
     step_i += 1
     if step_i % 100 == 0:
         trainer.save_inference_program(output_folder)
+    

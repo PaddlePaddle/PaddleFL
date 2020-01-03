@@ -113,6 +113,14 @@ class FLCompileTimeJob(FLJobBase):
             self._save_readable_program(
                 server_main,
                 "%s/server.main.program.txt" % server_folder)
+	    self._save_str_list(self._feed_names,
+                            "%s/feed_names" % server_folder)
+	    self._save_str_list(self._target_names,
+                            "%s/target_names" % server_folder)
+	    self._save_endpoints(self._server_endpoints,
+                            "%s/endpoints" % server_folder)
+	    self._save_strategy(self._strategy,
+                           "%s/strategy.pkl" % server_folder)
 
         for i in range(trainer_num):
             trainer_folder = "%s/trainer%d" % (folder, i)
@@ -131,6 +139,14 @@ class FLCompileTimeJob(FLJobBase):
             self._save_readable_program(
                 trainer_main,
                 "%s/trainer.main.program.txt" % trainer_folder)
+	    self._save_str_list(self._feed_names,
+                            "%s/feed_names" % trainer_folder)
+            self._save_str_list(self._target_names,
+                            "%s/target_names" % trainer_folder)
+            self._save_endpoints(self._server_endpoints,
+                            "%s/endpoints" % trainer_folder)
+            self._save_strategy(self._strategy,
+                           "%s/strategy.pkl" % trainer_folder)
 
         for i in range(send_prog_num):
             trainer_folder = "%s/trainer%d" % (folder, i)
@@ -149,17 +165,6 @@ class FLCompileTimeJob(FLJobBase):
                 trainer_recv,
                 "%s/trainer.recv.program.txt" % trainer_folder)
 
-        self._save_str_list(self._feed_names,
-                            "%s/feed_names" % folder)
-
-        self._save_str_list(self._target_names,
-                            "%s/target_names" % folder)
-
-        self._save_endpoints(self._server_endpoints,
-                            "%s/endpoints" % folder)
-
-        self._save_strategy(self._strategy,
-                           "%s/strategy.pkl" % folder)
 
 class FLRunTimeJob(FLJobBase):
     """
@@ -211,16 +216,16 @@ class FLRunTimeJob(FLJobBase):
         except:
             pass
 
-        endpoints_fn = "%s/endpoints" % folder
+        endpoints_fn = "%s/endpoints" % folder_name
         self._endpoints = self._load_endpoints(endpoints_fn)
 
-        strategy_fn = "%s/strategy.pkl" % folder
+        strategy_fn = "%s/strategy.pkl" % folder_name
         self._strategy = self._load_strategy(strategy_fn)
 
-        feed_names_fn = "%s/feed_names" % folder
+        feed_names_fn = "%s/feed_names" % folder_name
         self._feed_names = self._load_str_list(feed_names_fn)
 
-        target_names_fn = "%s/target_names" % folder
+        target_names_fn = "%s/target_names" % folder_name
         self._target_names = self._load_str_list(target_names_fn)
 
     def load_server_job(self, folder=None, server_id=0):
@@ -243,9 +248,9 @@ class FLRunTimeJob(FLJobBase):
         main_fn = "%s/server.main.program" % folder_name
         self._server_main_program = self._load_program(main_fn)
 
-        endpoints_fn = "%s/endpoints" % folder
+        endpoints_fn = "%s/endpoints" % folder_name
         self._endpoints = self._load_endpoints(endpoints_fn)
 
         import pickle
-        strategy_fn = "%s/strategy.pkl" % folder
+        strategy_fn = "%s/strategy.pkl" % folder_name
         self._strategy = self._load_strategy(strategy_fn)
