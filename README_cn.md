@@ -29,7 +29,7 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 ## PaddleFL框架设计
 
-<img src='images/FL-training.png' width = "1300" height = "310" align="middle"/>
+<img src='images/FL-training.png' width = "1300" height = "535" align="middle"/>
 
 在PaddeFL中，用于定义联邦学习任务和联邦学习训练工作的组件如下：
 
@@ -48,6 +48,8 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 - **FL-Server**: 在云或第三方集群中运行的联邦参数服务器。
 
 - **FL-Worker**: 参与联合学习的每个组织都将有一个或多个与联合参数服务器通信的Worker。
+
+- **FL-Scheduler**: 训练过程中起到调度Worker的作用，在每个更新周期前，决定哪些Worker可以参与训练。
 
 ## 安装指南和快速入门
 
