@@ -101,6 +101,7 @@ job_generator.generate_fl_job(
 How to work in RunTime
 
 ```
+python -u fl_scheduler.py >scheduler.log &
 python -u fl_server.py >server0.log &
 python -u fl_trainer.py 0 data/ >trainer0.log &
 python -u fl_trainer.py 1 data/ >trainer1.log &

@@ -60,6 +60,20 @@ We can define a secure service to send programs to each node in FLJob. There are
 
 ## Step 3: Start Federated Learning Run-Time
 
+On FL Scheduler Node, number of servers and workers are defined. Besides, the number of workers that participate in each upating cycle is also determined. Finally, the FL Scheduler waits servers and workers to initialize. 
+
+```python 
+from paddle_fl.core.scheduler.agent_master import FLScheduler
+
+worker_num = 2
+server_num = 1
+scheduler = FLScheduler(worker_num,server_num)
+scheduler.set_sample_worker_num(worker_num)
+scheduler.init_env()
+print("init env done.")
+scheduler.start_fl_training()
+```
+
 On FL Trainer Node, a training script is defined as follows:
 
 ``` python

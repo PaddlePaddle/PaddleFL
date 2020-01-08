@@ -26,7 +26,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ## Framework design of PaddleFL
 
-<img src='_static/FL-training.png' width = "1300" height = "310" align="middle"/>
+<img src='_static/FL-training.png' width = "1300" height = "400" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
@@ -45,6 +45,8 @@ In PaddleFL, components for defining a federated learning task and training a fe
 - **FL-Server**: federated parameter server that usually runs in cloud or third-party clusters.
 
 - **FL-Worker**: Each organization participates in federated learning will have one or more federated workers that will communicate with the federated parameter server.
+
+- **FL-scheduler**: Decide which set of trainers can join the training before each updating cycle.
 
 ## On Going and Future Work
 
