@@ -106,7 +106,7 @@ class HPCClient(object):
                            self.wheel))
             fout.write("export PATH=python/bin:$PATH\n")
             if self.monitor_cmd != "":
-	        fout.write("mpirun -npernode 1 -timestamp-output -tag-output -machinefile "
+                fout.write("mpirun -npernode 1 -timestamp-output -tag-output -machinefile "
                            "${{PBS_NODEFILE}} python/bin/{} > monitor.log 2> monitor.elog &\n".format(self.monitor_cmd))
             fout.write("mpirun -npernode 1 -timestamp-output -tag-output -machinefile ${PBS_NODEFILE} python/bin/python train_program.py\n")
             fout.write("if [[ $? -ne 0 ]]; then\n")

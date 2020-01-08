@@ -113,13 +113,13 @@ class FLCompileTimeJob(FLJobBase):
             self._save_readable_program(
                 server_main,
                 "%s/server.main.program.txt" % server_folder)
-	    self._save_str_list(self._feed_names,
+            self._save_str_list(self._feed_names,
                             "%s/feed_names" % server_folder)
-	    self._save_str_list(self._target_names,
+            self._save_str_list(self._target_names,
                             "%s/target_names" % server_folder)
-	    self._save_endpoints(self._server_endpoints,
+            self._save_endpoints(self._server_endpoints,
                             "%s/endpoints" % server_folder)
-	    self._save_strategy(self._strategy,
+            self._save_strategy(self._strategy,
                            "%s/strategy.pkl" % server_folder)
 
         for i in range(trainer_num):
@@ -139,7 +139,7 @@ class FLCompileTimeJob(FLJobBase):
             self._save_readable_program(
                 trainer_main,
                 "%s/trainer.main.program.txt" % trainer_folder)
-	    self._save_str_list(self._feed_names,
+            self._save_str_list(self._feed_names,
                             "%s/feed_names" % trainer_folder)
             self._save_str_list(self._target_names,
                             "%s/target_names" % trainer_folder)
