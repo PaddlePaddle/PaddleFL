@@ -29,7 +29,7 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 ## PaddleFL框架设计
 
-<img src='images/FL-training.png' width = "1300" height = "535" align="middle"/>
+<img src='images/FL-training.png' width = "1300" height = "450" align="middle"/>
 
 在PaddeFL中，用于定义联邦学习任务和联邦学习训练工作的组件如下：
 

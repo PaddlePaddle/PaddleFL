@@ -32,7 +32,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ## Framework design of PaddleFL
 
-<img src='images/FL-training.png' width = "1000" height = "411.5" align="middle"/>
+<img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
