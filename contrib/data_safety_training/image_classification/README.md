@@ -14,16 +14,16 @@
 
 ## Start the service on Server side
 
-```
-#python 
+```sh
+ 
 python server/receiver.py 
 
 ```
 
 ## Start the request on User side 
 
-```
-#python
+```sh
+
 python submitter.py
 
 ```
