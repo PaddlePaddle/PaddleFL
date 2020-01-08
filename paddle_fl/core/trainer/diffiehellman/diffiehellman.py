@@ -42,9 +42,9 @@ try:
     from ssl import RAND_bytes
     rng = RAND_bytes
 except(AttributeError, ImportError):
-    raise RNGError
-#python2
-#rng = os.urandom
+    #python2
+    rng = os.urandom
+    #raise RNGError
 
 class DiffieHellman:
     """

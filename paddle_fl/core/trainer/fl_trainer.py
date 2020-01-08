@@ -16,7 +16,7 @@ import logging
 from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
 import hmac
-#from .diffiehellman.diffiehellman import DiffieHellman
+from .diffiehellman.diffiehellman import DiffieHellman
 
 class FLTrainerFactory(object):
     def __init__(self):
