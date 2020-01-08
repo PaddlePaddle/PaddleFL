@@ -72,7 +72,7 @@ scheduler.set_sample_worker_num(worker_num)
 scheduler.init_env()
 print("init env done.")
 scheduler.start_fl_training()
-
+```
 
 On FL Trainer Node, a training script is defined as follows:
 
