@@ -39,10 +39,10 @@ def train(trainer_id,inner_step,batch_size,count_by_step):
                 train_images = json_train["user_data"][cur_user]['x']
                 train_labels = json_train["user_data"][cur_user]['y']
                 if count_by_step:
-                        for i in xrange(inner_step*batch_size):
+                        for i in range(inner_step*batch_size):
                                 yield train_images[i%(len(train_images))], train_labels[i%(len(train_images))]
                 else:
-                        for i in xrange(len(train_images)):
+                        for i in range(len(train_images)):
                                 yield train_images[i], train_labels[i]
 
                 train_file.close()
@@ -67,7 +67,7 @@ def test(trainer_id,inner_step,batch_size,count_by_step):
                 for user in users:
                         test_images = json_test['user_data'][user]['x']
                         test_labels = json_test['user_data'][user]['y']
-                        for i in xrange(len(test_images)):
+                        for i in range(len(test_images)):
                                 yield test_images[i], test_labels[i]
 
                 test_file.close()
