@@ -123,13 +123,13 @@ class FedAvgTrainer(FLTrainer):
         self.exe.run(self._recv_program)
         epoch = 0
         for i in range(num_epoch):
-	        print(epoch)
-	        for data in reader():
-			    self.exe.run(self._main_program,
-                          feed=feeder.feed(data),
+                print(epoch)
+                for data in reader():
+                    self.exe.run(self._main_program,
+                           feed=feeder.feed(data),
                            fetch_list=fetch)
-	        self.cur_step += 1
-	        epoch += 1
+                self.cur_step += 1
+                epoch += 1
         self._logger.debug("begin to run send program")
         self.exe.run(self._send_program)
     def run(self, feed, fetch):
