@@ -16,7 +16,8 @@ import logging
 from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
 import hmac
-#from .diffiehellman.diffiehellman import DiffieHellman
+import hashlib
+from .diffiehellman.diffiehellman import DiffieHellman
 
 class FLTrainerFactory(object):
     def __init__(self):
@@ -190,6 +191,8 @@ class SecAggTrainer(FLTrainer):
         self._step_id = s
 
     def start(self):
+        self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
+        self.agent.connect_scheduler()
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
         self.cur_step = 0
@@ -219,7 +222,7 @@ class SecAggTrainer(FLTrainer):
             self._logger.debug("begin to run send program")
             noise = 0.0
             scale = pow(10.0, 5)
-            digestmod="SHA256"
+            digestmod=hashlib.sha256
             # 1. load priv key and other's pub key
             dh = DiffieHellman(group=15, key_length=256)
             dh.load_private_key(self._key_dir + str(self._trainer_id) + "_priv_key.txt")
@@ -245,5 +248,3 @@ class SecAggTrainer(FLTrainer):
         self.cur_step += 1
         return loss
 
-    def stop(self):
-        return False

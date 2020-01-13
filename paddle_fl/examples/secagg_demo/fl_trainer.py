@@ -28,8 +28,10 @@ trainer_id = int(sys.argv[1]) # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
+job._scheduler_ep = "127.0.0.1:9091"
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer.trainer_id = trainer_id
+trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
 trainer.trainer_num = trainer_num
 trainer.key_dir = "./keys/"
 trainer.start()

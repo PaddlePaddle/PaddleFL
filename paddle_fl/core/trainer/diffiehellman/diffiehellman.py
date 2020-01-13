@@ -42,9 +42,9 @@ try:
     from ssl import RAND_bytes
     rng = RAND_bytes
 except(AttributeError, ImportError):
-    raise RNGError
+    rng = os.urandom
+    #raise RNGError
 #python2
-#rng = os.urandom
 
 class DiffieHellman:
     """
@@ -115,13 +115,13 @@ class DiffieHellman:
         self.shared_secret = pow(other_public_key,
                                  self.private_key,
                                  self.prime)
-        #python2
-        #length = self.shared_secret.bit_length() // 8 + 1
-        #shared_secret_as_bytes = ('%%0%dx' % (length << 1) % self.shared_secret).decode('hex')[-length:]
-
-        #python3
-        shared_secret_as_bytes = self.shared_secret.to_bytes(self.shared_secret.bit_length() // 8 + 1, byteorder='big')
-
+        try:
+            #python3
+            shared_secret_as_bytes = self.shared_secret.to_bytes(self.shared_secret.bit_length() // 8 + 1, byteorder='big')
+        except:
+            #python2
+            length = self.shared_secret.bit_length() // 8 + 1
+            shared_secret_as_bytes = ('%%0%dx' % (length << 1) % self.shared_secret).decode('hex')[-length:]
         _h = sha256()
         _h.update(bytes(shared_secret_as_bytes))
 
