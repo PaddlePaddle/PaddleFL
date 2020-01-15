@@ -66,7 +66,7 @@ while not trainer.stop():
             acc = trainer.run(feeder.feed(data), fetch=["accuracy_0.tmp_0"])
             step += 1
             count += 1
-	    print(count)
+            print(count)
             if count % trainer._step == 0: 
                 break
     # print("acc:%.3f" % (acc[0]))
@@ -81,5 +81,5 @@ while not trainer.stop():
 
     print("Test with epoch %d, accuracy: %s" % (epoch_id, acc_val))
     if trainer_id == 0:  
-    	save_dir = (output_folder + "/epoch_%d") % epoch_id
-    	trainer.save_inference_program(output_folder)
+        save_dir = (output_folder + "/epoch_%d") % epoch_id
+        trainer.save_inference_program(output_folder)

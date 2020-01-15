@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ PaddleFL version string """
-fl_version = "0.1.5"
-module_proto_version = "0.1.5"
+fl_version = "0.1.6"
+module_proto_version = "0.1.6"
