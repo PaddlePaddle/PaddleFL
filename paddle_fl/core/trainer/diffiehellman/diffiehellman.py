@@ -44,6 +44,7 @@ try:
 except(AttributeError, ImportError):
     rng = os.urandom
 
+
 class DiffieHellman:
     """
     Implements the Diffie-Hellman key exchange protocol.
