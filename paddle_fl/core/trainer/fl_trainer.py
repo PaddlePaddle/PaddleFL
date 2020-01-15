@@ -90,12 +90,12 @@ class FLTrainer(object):
         # TODO(guru4elephant): add connection with master
         if self.cur_step != 0:
             while not self.agent.finish_training():
-                print('wait others finish')
+                self._logger.debug("Wait others finish")
                 continue
         while not self.agent.can_join_training():
-            print("wait permit")
+            self._logger.debug("Wait permit")
             continue
-        print("ready to train")
+        self._logger.debug("Ready to train")
         return False
 
 
@@ -124,7 +124,6 @@ class FedAvgTrainer(FLTrainer):
         self.exe.run(self._recv_program)
         epoch = 0
         for i in range(num_epoch):
-                print(epoch)
                 for data in reader():
                     self.exe.run(self._main_program,
                            feed=feeder.feed(data),

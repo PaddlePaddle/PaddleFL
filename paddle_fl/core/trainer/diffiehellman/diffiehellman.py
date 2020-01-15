@@ -43,8 +43,6 @@ try:
     rng = RAND_bytes
 except(AttributeError, ImportError):
     rng = os.urandom
-    #raise RNGError
-#python2
 
 class DiffieHellman:
     """

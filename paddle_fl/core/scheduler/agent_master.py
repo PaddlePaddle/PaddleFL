@@ -104,10 +104,7 @@ class FLScheduler(object):
 
     def start_fl_training(self):
         # loop until training is done
-        loop = 0
         while True:
-            if loop <= 1:
-                print(loop)
             random.shuffle(self.fl_workers)
             worker_dict = {}
             for worker in self.fl_workers[:self.sample_worker_num]:
