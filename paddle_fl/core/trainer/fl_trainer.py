@@ -17,7 +17,6 @@ from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
 import hmac
 import hashlib
-
 from .diffiehellman.diffiehellman import DiffieHellman
 
 class FLTrainerFactory(object):

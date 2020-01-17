@@ -2,5 +2,5 @@ sphinx==2.1.0
 mistune
 sphinx_rtd_theme
 paddlepaddle>=1.6
-zqm
+zmq
 
