@@ -19,22 +19,22 @@ trainer_id = int(sys.argv[1]) # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
-job._scheduler_ep = "127.0.0.1:9091"
+job._scheduler_ep = "127.0.0.1:9091" # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
 trainer.start()
 print(trainer._scheduler_ep, trainer._current_ep)
 output_folder = "fl_model"
-step_i = 0
+epoch_id = 0
 while not trainer.stop():
-    print("batch %d start train" % (step_i))
+    print("batch %d start train" % (epoch_id))
     train_step = 0
     for data in reader():
         trainer.run(feed=data, fetch=[])
         train_step += 1
         if train_step == trainer._step:
             break
-    step_i += 1
-    if step_i % 100 == 0:
+    epoch_id += 1
+    if epoch_id % 5 == 0:
         trainer.save_inference_program(output_folder)
     

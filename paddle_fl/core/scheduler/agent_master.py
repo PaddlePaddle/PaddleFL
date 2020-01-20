@@ -140,4 +140,3 @@ class FLScheduler(object):
                 if len(finish_training_dict) == len(worker_dict):
                     all_finish_training = True
             time.sleep(5)
-            loop += 1

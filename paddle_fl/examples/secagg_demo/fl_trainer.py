@@ -28,7 +28,7 @@ trainer_id = int(sys.argv[1]) # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
-job._scheduler_ep = "127.0.0.1:9091"
+job._scheduler_ep = "127.0.0.1:9091" # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer.trainer_id = trainer_id
 trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
@@ -75,6 +75,7 @@ while not trainer.stop():
         if step_i % 100 == 0:
             print("Epoch: {0}, step: {1}, accuracy: {2}".format(epoch_id, step_i, accuracy[0]))
 
+    print(step_i)
     avg_loss_val, acc_val = train_test(train_test_program=test_program,
                                        train_test_reader=test_reader,
                                        train_test_feed=feeder)
@@ -82,5 +83,5 @@ while not trainer.stop():
 
     if epoch_id > 40:
         break
-    if step_i % 100 == 0:
+    if epoch_id % 5 == 0:
         trainer.save_inference_program(output_folder)

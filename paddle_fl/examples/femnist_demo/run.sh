@@ -1,3 +1,5 @@
+unset http_proxy
+unset https_proxy
 #killall python
 python fl_master.py
 sleep 2
