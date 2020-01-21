@@ -3,6 +3,7 @@ task_name=test_fl_job_submit_jingqinghe
 hdfs_output=/user/feed/mlarch/sequence_generator/dongdaxiang/job_44
 train_cmd=python dist_trainer.py
 #monitor_cmd=python system_monitor_app.py 10 100
+monitor_cmd=
 #train_cmd=python test_hadoop.py
 
 hdfs_path=afs://xingtian.afs.baidu.com:9902

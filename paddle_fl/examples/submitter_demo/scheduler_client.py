@@ -18,7 +18,8 @@ print(random_port)
 current_ip = socket.gethostbyname(socket.gethostname())
 endpoints = "{}:{}".format(current_ip, random_port)
 #start a web server for remote endpoints to download their config 
-os.system("python -m SimpleHTTPServer 8080 &")
+#os.system("python -m SimpleHTTPServer 8080 &")
+os.system("python -m http.server 8080 &")
 if os.path.exists("job_config"):
     os.system("rm -rf job_config")
 if os.path.exists("package"):
