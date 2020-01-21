@@ -120,10 +120,10 @@ print(ip_list)
 #allocate the role of each endpoint and their ids
 ip_role = {}
 for i in range(len(ip_list)):
-	if i < int(default_dict["server_nodes"]):
-		ip_role[ip_list[i]] = 'server%d' % i
+        if i < int(default_dict["server_nodes"]):
+                ip_role[ip_list[i]] = 'server%d' % i
         else:
-		ip_role[ip_list[i]] = 'trainer%d' % (i-int(default_dict["server_nodes"]))
+                ip_role[ip_list[i]] = 'trainer%d' % (i-int(default_dict["server_nodes"]))
 print(ip_role)
 
 def job_generate():
@@ -179,7 +179,7 @@ while not all_job_sent:
     message = zmq_socket.recv()
     group = message.split("\t")
     if group[0] == "GET_FL_JOB":
-	download_job.append(group[1])
+        download_job.append(group[1])
         zmq_socket.send(ip_role[group[1]])
     else:
         zmq_socket.send("WAIT\t0")
