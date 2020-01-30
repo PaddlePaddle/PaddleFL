@@ -89,15 +89,15 @@ else:
     trainer.start()
     print(trainer._scheduler_ep, trainer._current_ep)
     output_folder = "fl_model"
-    step_i = 0
+    epoch_id = 0
     while not trainer.stop():
         print("batch %d start train" % (step_i))
-        train_step = 0
+        step_i = 0
         for data in reader():
             trainer.run(feed=data, fetch=[])
-            train_step += 1
+            step_i += 1
             if train_step == trainer._step:
                 break
-        step_i += 1
-        if step_i % 100 == 0:
+        epoch_id += 1
+        if epoch_id % 5 == 0:
             trainer.save_inference_program(output_folder)

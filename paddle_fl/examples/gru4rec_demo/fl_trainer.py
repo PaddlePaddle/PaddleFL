@@ -14,7 +14,7 @@ train_file_dir = "mid_data/node4/%d/" % trainer_id
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
-job._scheduler_ep = "127.0.0.1:9091"
+job._scheduler_ep = "127.0.0.1:9091" # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
 trainer.start()

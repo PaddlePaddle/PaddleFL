@@ -16,6 +16,7 @@ import logging
 from paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
 import hmac
+import hashlib
 from .diffiehellman.diffiehellman import DiffieHellman
 
 class FLTrainerFactory(object):
@@ -89,12 +90,12 @@ class FLTrainer(object):
         # TODO(guru4elephant): add connection with master
         if self.cur_step != 0:
             while not self.agent.finish_training():
-                print('wait others finish')
+                self._logger.debug("Wait others finish")
                 continue
         while not self.agent.can_join_training():
-            print("wait permit")
+            self._logger.debug("Wait permit")
             continue
-        print("ready to train")
+        self._logger.debug("Ready to train")
         return False
 
 
@@ -123,7 +124,6 @@ class FedAvgTrainer(FLTrainer):
         self.exe.run(self._recv_program)
         epoch = 0
         for i in range(num_epoch):
-                print(epoch)
                 for data in reader():
                     self.exe.run(self._main_program,
                            feed=feeder.feed(data),
@@ -190,6 +190,8 @@ class SecAggTrainer(FLTrainer):
         self._step_id = s
 
     def start(self):
+        self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
+        self.agent.connect_scheduler()
         self.exe = fluid.Executor(fluid.CPUPlace())
         self.exe.run(self._startup_program)
         self.cur_step = 0
@@ -219,7 +221,7 @@ class SecAggTrainer(FLTrainer):
             self._logger.debug("begin to run send program")
             noise = 0.0
             scale = pow(10.0, 5)
-            digestmod="SHA256"
+            digestmod=hashlib.sha256
             # 1. load priv key and other's pub key
             dh = DiffieHellman(group=15, key_length=256)
             dh.load_private_key(self._key_dir + str(self._trainer_id) + "_priv_key.txt")
@@ -245,5 +247,3 @@ class SecAggTrainer(FLTrainer):
         self.cur_step += 1
         return loss
 
-    def stop(self):
-        return False

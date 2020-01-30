@@ -14,7 +14,7 @@ trainer_id = int(sys.argv[1]) # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
-job._scheduler_ep = "127.0.0.1:9091"
+job._scheduler_ep = "127.0.0.1:9091" # Inform the scheduler IP to trainer
 print(job._target_names)
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
@@ -40,7 +40,7 @@ def train_test(train_test_program, train_test_feed, train_test_reader):
 epoch_id = 0
 step = 0
 epoch = 3000
-count_by_step = True
+count_by_step = False
 if count_by_step:
 	output_folder = "model_node%d" % trainer_id
 else: 

@@ -104,10 +104,7 @@ class FLScheduler(object):
 
     def start_fl_training(self):
         # loop until training is done
-        loop = 0
         while True:
-            if loop <= 1:
-                print(loop)
             random.shuffle(self.fl_workers)
             worker_dict = {}
             for worker in self.fl_workers[:self.sample_worker_num]:
@@ -143,4 +140,3 @@ class FLScheduler(object):
                 if len(finish_training_dict) == len(worker_dict):
                     all_finish_training = True
             time.sleep(5)
-            loop += 1
