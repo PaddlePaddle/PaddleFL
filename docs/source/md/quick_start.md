@@ -67,7 +67,8 @@ from paddle_fl.core.scheduler.agent_master import FLScheduler
 
 worker_num = 2
 server_num = 1
-scheduler = FLScheduler(worker_num,server_num)
+# Define the number of worker/server and the port for scheduler
+scheduler = FLScheduler(worker_num,server_num,port=9091)
 scheduler.set_sample_worker_num(worker_num)
 scheduler.init_env()
 print("init env done.")
@@ -94,6 +95,7 @@ trainer_id = int(sys.argv[1]) # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
+job._scheduler_ep = "127.0.0.1:9091" # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer.start()
 
@@ -122,6 +124,8 @@ server_id = 0
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_server_job(job_path, server_id)
+job._scheduler_ep = "127.0.0.1:9091" # IP address for scheduler
 server.set_server_job(job)
+server._current_ep = "127.0.0.1:8181" # IP address for server
 server.start()
 ```
