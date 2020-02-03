@@ -43,7 +43,7 @@ try:
     rng = RAND_bytes
 except(AttributeError, ImportError):
     rng = os.urandom
-  
+
 class DiffieHellman:
     """
     Implements the Diffie-Hellman key exchange protocol.
