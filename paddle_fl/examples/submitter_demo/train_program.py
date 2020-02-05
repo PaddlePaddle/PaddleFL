@@ -96,7 +96,7 @@ else:
         for data in reader():
             trainer.run(feed=data, fetch=[])
             step_i += 1
-            if train_step == trainer._step:
+            if step_i  == trainer._step:
                 break
         epoch_id += 1
         if epoch_id % 5 == 0:
