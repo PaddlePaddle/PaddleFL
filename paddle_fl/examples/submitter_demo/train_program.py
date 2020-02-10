@@ -91,12 +91,12 @@ else:
     output_folder = "fl_model"
     epoch_id = 0
     while not trainer.stop():
-        print("batch %d start train" % (step_i))
+        print("epoch %d start train" % (epoch_id))
         step_i = 0
         for data in reader():
             trainer.run(feed=data, fetch=[])
             step_i += 1
-            if train_step == trainer._step:
+            if step_i  == trainer._step:
                 break
         epoch_id += 1
         if epoch_id % 5 == 0:
