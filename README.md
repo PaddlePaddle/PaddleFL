@@ -1,5 +1,5 @@
 
-<img src='docs/source/_static/FL-logo.png' width = "400" height = "160">
+<img src='https://github.com/PaddlePaddle/PaddleFL/blob/master/docs/source/_static/FL-logo.png' width = "400" height = "160">
 
 [DOC](https://paddlefl.readthedocs.io/en/latest/) | [Quick Start](https://paddlefl.readthedocs.io/en/latest/instruction.html) | [中文](./README_cn.md)
 
