@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fl-master
+spec:
+  type: LoadBalancer
+  ports:
+    - name: fl-master
+      port: 8000
+      targetPort: 8000
+  selector:
+    app: fl-master
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: fl-scheduler
+spec:
+  type: LoadBalancer
+  ports:
+    - name: fl-scheduler
+      port: 9091
+      targetPort: 9091
+  selector:
+    app: fl-scheduler
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: fl-server
+spec:
+  type: LoadBalancer
+  ports:
+    - name: fl-server
+      port: 8181
+      targetPort: 8181
+  selector:
+    app: fl-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: trainer0
+spec:
+  type: LoadBalancer
+  ports:
+    - name: trainer0
+      port: 9000
+      targetPort: 9000
+  selector:
+    app: trainer0
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: trainer1
+spec:
+  type: LoadBalancer
+  ports:
+    - name: trainer1
+      port: 9001
+      targetPort: 9001
+  selector:
+    app: trainer1
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fl-master
+  labels:
+    app: fl-master
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: fl-master
+      labels:
+        app: fl-master
+    spec:
+      containers:
+      - name: fl-master
+        image: hub.baidubce.com/paddlefl/paddlefl:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        workingDir: /root/k8s_deployment/master
+        command: ['/bin/bash']
+        args: ['run_master.sh']
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fl-scheduler
+  labels:
+    app: fl-scheduler
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: fl-scheduler
+      labels:
+        app: fl-scheduler
+    spec:
+      containers:
+      - name: fl-scheduler
+        image: hub.baidubce.com/paddlefl/paddlefl:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9091
+        workingDir: /root/k8s_deployment/scheduler
+        command: ['/bin/bash']
+        args: ['run_scheduler.sh']
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fl-server
+  labels:
+    app: fl-server
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: fl-server
+      labels:
+        app: fl-server
+    spec:
+      containers:
+      - name: fl-server
+        image: hub.baidubce.com/paddlefl/paddlefl:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8181
+        workingDir: /root/k8s_deployment/server
+        command: ['/bin/bash']
+        args: ['run_server.sh']
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: trainer0
+  labels:
+    app: trainer0
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: trainer0
+      labels:
+        app: trainer0
+    spec:
+      containers:
+      - name: trainer0
+        image: hub.baidubce.com/paddlefl/paddlefl:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9000
+        workingDir: /root/k8s_deployment/trainer0
+        command: ['/bin/bash']
+        args: ['test_trainer.sh']
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: trainer1
+  labels:
+    app: trainer1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: trainer1
+      labels:
+        app: trainer1
+    spec:
+      containers:
+      - name: trainer1
+        image: hub.baidubce.com/paddlefl/paddlefl:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9001
+        workingDir: /root/k8s_deployment/trainer1
+        command: ['/bin/bash']
+        args: ['test_trainer.sh']
+
+---
