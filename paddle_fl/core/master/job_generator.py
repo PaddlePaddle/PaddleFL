@@ -146,3 +146,41 @@ class JobGenerator(object):
         local_job.set_target_names(self._target_names)
         local_job.set_strategy(fl_strategy)
         local_job.save(output)
+
+
+    def generate_fl_job_for_k8s(self,
+                        fl_strategy,
+                        server_pod_endpoints=[],
+                        server_service_endpoints=[],
+                        worker_num=1,
+                        output=None):
+
+        local_job = FLCompileTimeJob()
+        assert len(self._losses) > 0
+        assert self._startup_prog != None
+        assert fl_strategy != None
+        assert output != None
+        fl_strategy.minimize(self._optimizer, self._losses)
+
+        # strategy can generate startup and main program
+        # of a single worker and servers
+        for trainer_id in range(worker_num):
+            startup_program = self._startup_prog.clone()
+            main_program = self._losses[0].block.program.clone()
+            fl_strategy._build_trainer_program_for_job(
+                trainer_id, program=main_program,
+                ps_endpoints=server_service_endpoints, trainers=worker_num,
+                sync_mode=True, startup_program=startup_program,
+                job=local_job)
+
+        startup_program = self._startup_prog.clone()
+        main_program = self._losses[0].block.program.clone()
+        fl_strategy._build_server_programs_for_job(
+            program=main_program, ps_endpoints=server_pod_endpoints,
+            trainers=worker_num, sync_mode=True,
+            startup_program=startup_program, job=local_job)
+
+        local_job.set_feed_names(self._feed_names)
+        local_job.set_target_names(self._target_names)
+        local_job.set_strategy(fl_strategy)
+        local_job.save(output)

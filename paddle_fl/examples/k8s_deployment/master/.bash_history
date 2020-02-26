@@ -1,0 +1,4 @@
+ls
+cd
+ls
+ls
