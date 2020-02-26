@@ -1,4 +1,0 @@
-ls
-cd
-ls
-ls
