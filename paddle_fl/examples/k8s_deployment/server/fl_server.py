@@ -23,10 +23,12 @@ server_id = 0
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_server_job(job_path, server_id)
-job._scheduler_ep = os.environ['FL_SCHEDULER_SERVICE_HOST'] + ":" + os.environ['FL_SCHEDULER_SERVICE_PORT_FL_SCHEDULER']# IP address for scheduler
+job._scheduler_ep = os.environ['FL_SCHEDULER_SERVICE_HOST'] + ":" + os.environ[
+    'FL_SCHEDULER_SERVICE_PORT_FL_SCHEDULER']  # IP address for scheduler
 #job._endpoints = os.environ['POD_IP'] + ":" + os.environ['FL_SERVER_SERVICE_PORT_FL_SERVER']  # IP address for server
 server.set_server_job(job)
-server._current_ep = os.environ['FL_SERVER_SERVICE_HOST'] + ":" + os.environ['FL_SERVER_SERVICE_PORT_FL_SERVER'] # IP address for server
-print(job._scheduler_ep,server._current_ep)
+server._current_ep = os.environ['FL_SERVER_SERVICE_HOST'] + ":" + os.environ[
+    'FL_SERVER_SERVICE_PORT_FL_SERVER']  # IP address for server
+print(job._scheduler_ep, server._current_ep)
 server.start()
 print("connect")

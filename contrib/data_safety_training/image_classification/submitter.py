@@ -2,7 +2,7 @@ import zmq
 import socket
 import msgpack
 import os
-mission_dict = {"mission": "image classification", "image_size": [3,32,32]}
+mission_dict = {"mission": "image classification", "image_size": [3, 32, 32]}
 #send request
 context = zmq.Context()
 zmq_socket = context.socket(zmq.REQ)

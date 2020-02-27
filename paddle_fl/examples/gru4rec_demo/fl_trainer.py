@@ -6,21 +6,26 @@ import numpy as np
 import sys
 import os
 import logging
-logging.basicConfig(filename="test.log", filemode="w", format="%(asctime)s %(name)s:%(levelname)s:%(message)s", datefmt="%d-%M-%Y %H:%M:%S", level=logging.DEBUG)
+logging.basicConfig(
+    filename="test.log",
+    filemode="w",
+    format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
+    datefmt="%d-%M-%Y %H:%M:%S",
+    level=logging.DEBUG)
 
-trainer_id = int(sys.argv[1]) # trainer id for each guest
+trainer_id = int(sys.argv[1])  # trainer id for each guest
 place = fluid.CPUPlace()
 train_file_dir = "mid_data/node4/%d/" % trainer_id
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
-job._scheduler_ep = "127.0.0.1:9091" # Inform the scheduler IP to trainer
+job._scheduler_ep = "127.0.0.1:9091"  # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
-trainer._current_ep = "127.0.0.1:{}".format(9000+trainer_id)
+trainer._current_ep = "127.0.0.1:{}".format(9000 + trainer_id)
 trainer.start()
 
 r = Gru4rec_Reader()
-train_reader = r.reader(train_file_dir, place, batch_size = 125)
+train_reader = r.reader(train_file_dir, place, batch_size=125)
 
 output_folder = "model_node4"
 step_i = 0
@@ -30,8 +35,7 @@ while not trainer.stop():
     train_step = 0
     for data in train_reader():
         #print(np.array(data['src_wordseq']))
-        ret_avg_cost = trainer.run(feed=data,
-                    fetch=["mean_0.tmp_0"])
+        ret_avg_cost = trainer.run(feed=data, fetch=["mean_0.tmp_0"])
         train_step += 1
         if train_step == trainer._step:
             break

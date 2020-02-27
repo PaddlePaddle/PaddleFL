@@ -9,14 +9,31 @@ class Model(object):
         pass
 
     def cnn(self):
-        self.inputs = fluid.layers.data(name='img', shape=[1, 28, 28], dtype="float32")
-        self.label = fluid.layers.data(name='label', shape=[1],dtype='int64')
-        self.conv_pool_1 = fluid.nets.simple_img_conv_pool(input=self.inputs,num_filters=20,filter_size=5,pool_size=2,pool_stride=2,act='relu')
-        self.conv_pool_2 = fluid.nets.simple_img_conv_pool(input=self.conv_pool_1,num_filters=50,filter_size=5,pool_size=2,pool_stride=2,act='relu')
+        self.inputs = fluid.layers.data(
+            name='img', shape=[1, 28, 28], dtype="float32")
+        self.label = fluid.layers.data(name='label', shape=[1], dtype='int64')
+        self.conv_pool_1 = fluid.nets.simple_img_conv_pool(
+            input=self.inputs,
+            num_filters=20,
+            filter_size=5,
+            pool_size=2,
+            pool_stride=2,
+            act='relu')
+        self.conv_pool_2 = fluid.nets.simple_img_conv_pool(
+            input=self.conv_pool_1,
+            num_filters=50,
+            filter_size=5,
+            pool_size=2,
+            pool_stride=2,
+            act='relu')
 
-        self.predict = self.predict = fluid.layers.fc(input=self.conv_pool_2, size=62, act='softmax')
-        self.cost = fluid.layers.cross_entropy(input=self.predict, label=self.label)
-        self.accuracy = fluid.layers.accuracy(input=self.predict, label=self.label)
+        self.predict = self.predict = fluid.layers.fc(input=self.conv_pool_2,
+                                                      size=62,
+                                                      act='softmax')
+        self.cost = fluid.layers.cross_entropy(
+            input=self.predict, label=self.label)
+        self.accuracy = fluid.layers.accuracy(
+            input=self.predict, label=self.label)
         self.loss = fluid.layers.mean(self.cost)
         self.startup_program = fluid.default_startup_program()
 
@@ -30,8 +47,8 @@ job_generator.set_optimizer(optimizer)
 job_generator.set_losses([model.loss])
 job_generator.set_startup_program(model.startup_program)
 job_generator.set_infer_feed_and_target_names(
-    [model.inputs.name, model.label.name], [model.loss.name, model.accuracy.name])
-
+    [model.inputs.name, model.label.name],
+    [model.loss.name, model.accuracy.name])
 
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True

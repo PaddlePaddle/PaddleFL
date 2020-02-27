@@ -5,6 +5,7 @@ import paddle_fl as fl
 from paddle_fl.core.master.job_generator import JobGenerator
 from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="master")
     parser.add_argument(
@@ -12,7 +13,7 @@ def parse_args():
         type=int,
         default=2,
         help='number of trainer(default: 2)')
-	
+
     return parser.parse_args()
 
 
@@ -25,7 +26,8 @@ class Model(object):
         self.fc1 = fluid.layers.fc(input=self.concat, size=256, act='relu')
         self.fc2 = fluid.layers.fc(input=self.fc1, size=128, act='relu')
         self.predict = fluid.layers.fc(input=self.fc2, size=2, act='softmax')
-        self.sum_cost = fluid.layers.cross_entropy(input=self.predict, label=label)
+        self.sum_cost = fluid.layers.cross_entropy(
+            input=self.predict, label=label)
         self.accuracy = fluid.layers.accuracy(input=self.predict, label=label)
         self.loss = fluid.layers.reduce_mean(self.sum_cost)
         self.startup_program = fluid.default_startup_program()
@@ -47,8 +49,8 @@ optimizer = fluid.optimizer.SGD(learning_rate=0.1)
 job_generator.set_optimizer(optimizer)
 job_generator.set_losses([model.loss])
 job_generator.set_startup_program(model.startup_program)
-job_generator.set_infer_feed_and_target_names(
-    [x.name for x in inputs], [model.predict.name])
+job_generator.set_infer_feed_and_target_names([x.name for x in inputs],
+                                              [model.predict.name])
 
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True
@@ -57,7 +59,8 @@ strategy = build_strategy.create_fl_strategy()
 
 # endpoints will be collected through the cluster
 # in this example, we suppose endpoints have been collected
-server_service_ip = os.environ['FL_SERVER_SERVICE_HOST'] + ":" + os.environ['FL_SERVER_SERVICE_PORT_FL_SERVER']
+server_service_ip = os.environ['FL_SERVER_SERVICE_HOST'] + ":" + os.environ[
+    'FL_SERVER_SERVICE_PORT_FL_SERVER']
 service_endpoints = [server_service_ip]
 pod_endpoints = ["0.0.0.0:8181"]
 output = "fl_job_config"
@@ -68,4 +71,8 @@ num_trainer = args.trainer_num
 # fl_job_config will  be dispatched to workers
 
 job_generator.generate_fl_job_for_k8s(
-     strategy, server_pod_endpoints=pod_endpoints,server_service_endpoints=service_endpoints, worker_num=2, output=output)
+    strategy,
+    server_pod_endpoints=pod_endpoints,
+    server_service_endpoints=service_endpoints,
+    worker_num=2,
+    output=output)

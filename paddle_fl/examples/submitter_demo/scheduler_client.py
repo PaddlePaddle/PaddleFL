@@ -49,6 +49,7 @@ default_dict = {
     "wheel": "./paddlepaddle-0.0.0-cp27-cp27mu-linux_x86_64-0.whl"
 }
 
+
 def load_conf(conf_file, local_dict):
     with open(conf_file) as fin:
         for line in fin:
@@ -57,6 +58,7 @@ def load_conf(conf_file, local_dict):
                 continue
             local_dict[group[0]] = group[1]
     return local_dict
+
 
 client = HPCClient()
 default_dict = load_conf(sys.argv[1], default_dict)
@@ -94,9 +96,11 @@ all_ips_ready = False
 
 ip_list = []
 
-scheduler = FLScheduler(int(default_dict["worker_nodes"]),
-                        int(default_dict["server_nodes"]),
-                        port=random_port, socket=zmq_socket)
+scheduler = FLScheduler(
+    int(default_dict["worker_nodes"]),
+    int(default_dict["server_nodes"]),
+    port=random_port,
+    socket=zmq_socket)
 
 scheduler.set_sample_worker_num(int(default_dict["worker_nodes"]))
 
@@ -121,11 +125,13 @@ print(ip_list)
 #allocate the role of each endpoint and their ids
 ip_role = {}
 for i in range(len(ip_list)):
-        if i < int(default_dict["server_nodes"]):
-                ip_role[ip_list[i]] = 'server%d' % i
-        else:
-                ip_role[ip_list[i]] = 'trainer%d' % (i-int(default_dict["server_nodes"]))
+    if i < int(default_dict["server_nodes"]):
+        ip_role[ip_list[i]] = 'server%d' % i
+    else:
+        ip_role[ip_list[i]] = 'trainer%d' % (
+            i - int(default_dict["server_nodes"]))
 print(ip_role)
+
 
 def job_generate():
     #generate a fl job which is the same as fl_master
@@ -146,8 +152,8 @@ def job_generate():
     job_generator.set_optimizer(optimizer)
     job_generator.set_losses([model.loss])
     job_generator.set_startup_program(model.startup_program)
-    job_generator.set_infer_feed_and_target_names(
-        [x.name for x in inputs], [model.predict.name])
+    job_generator.set_infer_feed_and_target_names([x.name for x in inputs],
+                                                  [model.predict.name])
 
     build_strategy = FLStrategyFactory()
     build_strategy.fed_avg = True
@@ -157,19 +163,23 @@ def job_generate():
     # endpoints will be collected through the cluster
     # in this example, we suppose endpoints have been collected
     server_ip = ["{}".format(ip_list[0])]
-    
+
     output = "job_config"
     job_generator.generate_fl_job(
-        strategy, server_endpoints=server_ip, worker_num=int(default_dict["worker_nodes"]), output=output)
-    
+        strategy,
+        server_endpoints=server_ip,
+        worker_num=int(default_dict["worker_nodes"]),
+        output=output)
+
     file_list = os.listdir(output)
     for file in file_list:
-        tar = tarfile.open('{}/{}.tar.gz'.format(output,file),'w:gz')
-        for root,dir,files in os.walk("{}/{}".format(output,file)):
-                for f in files:
-                        fullpath = os.path.join(root,f)
-                        tar.add(fullpath)
+        tar = tarfile.open('{}/{}.tar.gz'.format(output, file), 'w:gz')
+        for root, dir, files in os.walk("{}/{}".format(output, file)):
+            for f in files:
+                fullpath = os.path.join(root, f)
+                tar.add(fullpath)
         tar.close()
+
 
 job_generate()
 
