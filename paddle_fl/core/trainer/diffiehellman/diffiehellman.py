@@ -20,10 +20,6 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-
-
-
-
 """
 diffiehellmann declares the main key exchange class.
 """
@@ -41,8 +37,9 @@ import os
 try:
     from ssl import RAND_bytes
     rng = RAND_bytes
-except(AttributeError, ImportError):
+except (AttributeError, ImportError):
     rng = os.urandom
+
 
 class DiffieHellman:
     """
@@ -50,9 +47,7 @@ class DiffieHellman:
 
     """
 
-    def __init__(self,
-                 group=18,
-                 key_length=640):
+    def __init__(self, group=18, key_length=640):
 
         self.key_length = max(200, key_length)
         self.generator = PRIMES[group]["generator"]
@@ -81,7 +76,8 @@ class DiffieHellman:
         self.private_key = key
 
     def verify_public_key(self, other_public_key):
-        return self.prime - 1 > other_public_key > 2 and pow(other_public_key, (self.prime - 1) // 2, self.prime) == 1
+        return self.prime - 1 > other_public_key > 2 and pow(
+            other_public_key, (self.prime - 1) // 2, self.prime) == 1
 
     @requires_private_key
     def generate_public_key(self):
@@ -91,9 +87,7 @@ class DiffieHellman:
         :return: void
         :rtype: void
         """
-        self.public_key = pow(self.generator,
-                              self.private_key,
-                              self.prime)
+        self.public_key = pow(self.generator, self.private_key, self.prime)
 
     @requires_private_key
     def generate_shared_secret(self, other_public_key, echo_return_key=False):
@@ -110,16 +104,17 @@ class DiffieHellman:
         if self.verify_public_key(other_public_key) is False:
             raise MalformedPublicKey
 
-        self.shared_secret = pow(other_public_key,
-                                 self.private_key,
+        self.shared_secret = pow(other_public_key, self.private_key,
                                  self.prime)
         try:
             #python3
-            shared_secret_as_bytes = self.shared_secret.to_bytes(self.shared_secret.bit_length() // 8 + 1, byteorder='big')
+            shared_secret_as_bytes = self.shared_secret.to_bytes(
+                self.shared_secret.bit_length() // 8 + 1, byteorder='big')
         except:
             #python2
             length = self.shared_secret.bit_length() // 8 + 1
-            shared_secret_as_bytes = ('%%0%dx' % (length << 1) % self.shared_secret).decode('hex')[-length:]
+            shared_secret_as_bytes = ('%%0%dx' % (
+                length << 1) % self.shared_secret).decode('hex')[-length:]
         _h = sha256()
         _h.update(bytes(shared_secret_as_bytes))
 

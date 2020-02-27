@@ -14,11 +14,13 @@
 import os
 import paddle.fluid as fluid
 
+
 class FLJobBase(object):
     """
     FLJobBase is fl job base class, responsible for save and load
     a federated learning job
     """
+
     def __init__(self):
         pass
 
@@ -64,6 +66,7 @@ class FLJobBase(object):
             return fluid.Program.parse_from_string(program_desc_str)
         return None
 
+
 class FLCompileTimeJob(FLJobBase):
     """
     FLCompileTimeJob is a container for compile time job in federated learning.
@@ -71,6 +74,7 @@ class FLCompileTimeJob(FLJobBase):
     are in FLCompileTimeJob. Also, server main programs and server startup programs
     are in this class. FLCompileTimeJob has server endpoints for debugging as well
     """
+
     def __init__(self):
         self._trainer_startup_programs = []
         self._trainer_recv_programs = []
@@ -101,69 +105,59 @@ class FLCompileTimeJob(FLJobBase):
             os.system("mkdir -p %s" % server_folder)
             server_startup = self._server_startup_programs[i]
             server_main = self._server_main_programs[i]
-            self._save_program(
-                server_startup,
-                "%s/server.startup.program" % server_folder)
-            self._save_program(
-                server_main,
-                "%s/server.main.program" % server_folder)
+            self._save_program(server_startup,
+                               "%s/server.startup.program" % server_folder)
+            self._save_program(server_main,
+                               "%s/server.main.program" % server_folder)
+            self._save_readable_program(server_startup,
+                                        "%s/server.startup.program.txt" %
+                                        server_folder)
             self._save_readable_program(
-                server_startup,
-                "%s/server.startup.program.txt" % server_folder)
-            self._save_readable_program(
-                server_main,
-                "%s/server.main.program.txt" % server_folder)
+                server_main, "%s/server.main.program.txt" % server_folder)
             self._save_str_list(self._feed_names,
-                            "%s/feed_names" % server_folder)
+                                "%s/feed_names" % server_folder)
             self._save_str_list(self._target_names,
-                            "%s/target_names" % server_folder)
+                                "%s/target_names" % server_folder)
             self._save_endpoints(self._server_endpoints,
-                            "%s/endpoints" % server_folder)
+                                 "%s/endpoints" % server_folder)
             self._save_strategy(self._strategy,
-                           "%s/strategy.pkl" % server_folder)
+                                "%s/strategy.pkl" % server_folder)
 
         for i in range(trainer_num):
             trainer_folder = "%s/trainer%d" % (folder, i)
             os.system("mkdir -p %s" % trainer_folder)
             trainer_startup = self._trainer_startup_programs[i]
             trainer_main = self._trainer_main_programs[i]
-            self._save_program(
-                trainer_startup,
-                "%s/trainer.startup.program" % trainer_folder)
-            self._save_program(
-                trainer_main,
-                "%s/trainer.main.program" % trainer_folder)
+            self._save_program(trainer_startup,
+                               "%s/trainer.startup.program" % trainer_folder)
+            self._save_program(trainer_main,
+                               "%s/trainer.main.program" % trainer_folder)
+            self._save_readable_program(trainer_startup,
+                                        "%s/trainer.startup.program.txt" %
+                                        trainer_folder)
             self._save_readable_program(
-                trainer_startup,
-                "%s/trainer.startup.program.txt" % trainer_folder)
-            self._save_readable_program(
-                trainer_main,
-                "%s/trainer.main.program.txt" % trainer_folder)
+                trainer_main, "%s/trainer.main.program.txt" % trainer_folder)
             self._save_str_list(self._feed_names,
-                            "%s/feed_names" % trainer_folder)
+                                "%s/feed_names" % trainer_folder)
             self._save_str_list(self._target_names,
-                            "%s/target_names" % trainer_folder)
+                                "%s/target_names" % trainer_folder)
             self._save_endpoints(self._server_endpoints,
-                            "%s/endpoints" % trainer_folder)
+                                 "%s/endpoints" % trainer_folder)
             self._save_strategy(self._strategy,
-                           "%s/strategy.pkl" % trainer_folder)
+                                "%s/strategy.pkl" % trainer_folder)
 
         for i in range(send_prog_num):
             trainer_folder = "%s/trainer%d" % (folder, i)
             trainer_send = self._trainer_send_programs[i]
             trainer_recv = self._trainer_recv_programs[i]
-            self._save_program(
-                trainer_send,
-                "%s/trainer.send.program" % trainer_folder)
-            self._save_program(
-                trainer_recv,
-                "%s/trainer.recv.program" % trainer_folder)
+            self._save_program(trainer_send,
+                               "%s/trainer.send.program" % trainer_folder)
+            self._save_program(trainer_recv,
+                               "%s/trainer.recv.program" % trainer_folder)
             self._save_readable_program(
-                trainer_send,
-                "%s/trainer.send.program.txt" % trainer_folder)
+                trainer_send, "%s/trainer.send.program.txt" % trainer_folder)
             self._save_readable_program(
-                trainer_recv,
-                "%s/trainer.recv.program.txt" % trainer_folder)
+                trainer_recv, "%s/trainer.recv.program.txt" % trainer_folder)
 
 
 class FLRunTimeJob(FLJobBase):
@@ -172,6 +166,7 @@ class FLRunTimeJob(FLJobBase):
     A trainer or a server can load FLRunTimeJob. Only necessary programs
      can be loaded in FLRunTimeJob
     """
+
     def __init__(self):
         self._trainer_startup_program = None
         self._trainer_recv_program = None

@@ -2,7 +2,6 @@
 
 #
 # (c) Chris von Csefalvay, 2015.
-
 """
 exceptions is responsible for exception handling etc.
 """

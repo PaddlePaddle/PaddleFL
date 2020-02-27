@@ -2,6 +2,7 @@ import zmq
 import time
 import random
 
+
 def recv_and_parse_kv(socket):
     message = socket.recv()
     group = message.decode().split("\t")
@@ -10,8 +11,10 @@ def recv_and_parse_kv(socket):
     else:
         return group[0], group[1]
 
+
 WORKER_EP = "WORKER_EP"
 SERVER_EP = "SERVER_EP"
+
 
 class FLServerAgent(object):
     def __init__(self, scheduler_ep, current_ep):
@@ -28,6 +31,7 @@ class FLServerAgent(object):
             group = message.decode().split("\t")
             if group[0] == 'INIT':
                 break
+
 
 class FLWorkerAgent(object):
     def __init__(self, scheduler_ep, current_ep):
@@ -62,7 +66,6 @@ class FLWorkerAgent(object):
         elif key == "REJECT":
             return False
         return False
-
 
 
 class FLScheduler(object):

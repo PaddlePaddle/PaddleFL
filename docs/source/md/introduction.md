@@ -55,4 +55,3 @@ In PaddleFL, components for defining a federated learning task and training a fe
 - Federated Learning Systems deployment methods in Kubernetes.
 
 - Vertical Federated Learning Strategies and more horizontal federated learning strategies will be open sourced.
-

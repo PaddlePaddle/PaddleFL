@@ -1,10 +1,11 @@
 import sys
 import os
 
+
 class CloudClient(object):
     def __init__(self):
         pass
-    
+
     def generate_submit_sh(self, job_dir):
         with open() as fout:
             pass
@@ -15,6 +16,7 @@ class CloudClient(object):
 
     def submit(self, **kwargs):
         pass
+
 
 class HPCClient(object):
     def __init__(self):
@@ -70,27 +72,20 @@ class HPCClient(object):
             fout.write("#!/bin/bash\n")
             fout.write("unset http_proxy\n")
             fout.write("unset https_proxy\n")
-            fout.write("export HADOOP_HOME={}\n".format(
-                self.hadoop_home))
+            fout.write("export HADOOP_HOME={}\n".format(self.hadoop_home))
             fout.write("$HADOOP_HOME/bin/hadoop fs -Dhadoop.job.ugi={}"
                        " -Dfs.default.name={} -rmr {}\n".format(
-                           self.ugi,
-                           self.hdfs_path,
-                           self.hdfs_output))
+                           self.ugi, self.hdfs_path, self.hdfs_output))
             fout.write("MPI_NODE_MEM={}\n".format(self.mpi_node_mem))
             fout.write("{}/bin/qsub_f -N {} --conf qsub.conf "
                        "--hdfs {} --ugi {} --hout {} --files ./package "
                        "-l nodes={},walltime=1000:00:00,pmem-hard={},"
                        "pcpu-soft={},pnetin-soft=1000,"
                        "pnetout-soft=1000 job.sh\n".format(
-                           self.hpc_home,
-                           self.task_name,
-                           self.hdfs_path,
-                           self.ugi,
-                           self.hdfs_output,
+                           self.hpc_home, self.task_name, self.hdfs_path,
+                           self.ugi, self.hdfs_output,
                            int(self.worker_nodes) + int(self.server_nodes),
-                           self.mpi_node_mem,
-                           self.pcpu))
+                           self.mpi_node_mem, self.pcpu))
 
     def generate_job_sh(self, job_dir):
         with open("{}/job.sh".format(job_dir), "w") as fout:
@@ -98,17 +93,23 @@ class HPCClient(object):
             fout.write("WORKDIR=`pwd`\n")
             fout.write("mpirun -npernode 1 mv package/* ./\n")
             fout.write("echo 'current dir: '$WORKDIR\n")
-            fout.write("mpirun -npernode 1 tar -zxvf python.tar.gz > /dev/null\n")
-            fout.write("export LIBRARY_PATH=$WORKDIR/python/lib:$LIBRARY_PATH\n")
+            fout.write(
+                "mpirun -npernode 1 tar -zxvf python.tar.gz > /dev/null\n")
+            fout.write(
+                "export LIBRARY_PATH=$WORKDIR/python/lib:$LIBRARY_PATH\n")
             fout.write("mpirun -npernode 1 python/bin/python -m pip install "
                        "{} --index-url=http://pip.baidu.com/pypi/simple "
                        "--trusted-host pip.baidu.com > /dev/null\n".format(
                            self.wheel))
             fout.write("export PATH=python/bin:$PATH\n")
             if self.monitor_cmd != "":
-                fout.write("mpirun -npernode 1 -timestamp-output -tag-output -machinefile "
-                           "${{PBS_NODEFILE}} python/bin/{} > monitor.log 2> monitor.elog &\n".format(self.monitor_cmd))
-            fout.write("mpirun -npernode 1 -timestamp-output -tag-output -machinefile ${PBS_NODEFILE} python/bin/python train_program.py\n")
+                fout.write(
+                    "mpirun -npernode 1 -timestamp-output -tag-output -machinefile "
+                    "${{PBS_NODEFILE}} python/bin/{} > monitor.log 2> monitor.elog &\n".
+                    format(self.monitor_cmd))
+            fout.write(
+                "mpirun -npernode 1 -timestamp-output -tag-output -machinefile ${PBS_NODEFILE} python/bin/python train_program.py\n"
+            )
             fout.write("if [[ $? -ne 0 ]]; then\n")
             fout.write("    echo 'Failed to run mpi!' 1>&2\n")
             fout.write("    exit 1\n")
@@ -150,4 +151,5 @@ class HPCClient(object):
         # generate job.sh
         self.generate_qsub_conf(jobdir)
         # run submit
-        os.system("cd {};sh submit.sh > submit.log 2> submit.elog &".format(jobdir))
+        os.system("cd {};sh submit.sh > submit.log 2> submit.elog &".format(
+            jobdir))

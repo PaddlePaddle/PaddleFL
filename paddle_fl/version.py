@@ -14,4 +14,3 @@
 """ PaddleFL version string """
 fl_version = "0.1.11"
 module_proto_version = "0.1.11"
-
