@@ -55,14 +55,14 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 请参考[快速开始](https://paddlefl.readthedocs.io/en/latest/instruction.html)。
 
-## K8S 一键部署
+## Kubernetes简单部署
 
 ```sh
  
 kubectl apply -f ./paddle_fl/examples/k8s_deployment/master.yaml
 
 ```
-
+请参考[K8S 部署实例](./paddle_fl/examples/k8s_deployment/README.md)
 ## 性能测试
 
 Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 一个基于联邦学习训练Gru4Rec模型的示例请参考[Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
