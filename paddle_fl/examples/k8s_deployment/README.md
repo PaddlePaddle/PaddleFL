@@ -45,6 +45,6 @@ wget ${FL_MASTER_SERVICE_HOST}:${FL_MASTER_SERVICE_PORT_FL_MASTER}/fl_job_config
 tar -xf fl_job_config.tar.gz
 
 #Start the ith trainer
-python -u fl_trainer.py 0
+python -u fl_trainer.py i
 
 ``` 
