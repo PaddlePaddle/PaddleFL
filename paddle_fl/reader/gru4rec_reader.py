@@ -1,6 +1,21 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import paddle.fluid as fluid
 import numpy as np
 import os
+
 
 class Gru4rec_Reader:
     def __init__(self):
@@ -21,7 +36,6 @@ class Gru4rec_Reader:
         res.set_lod([lod])
         return res
 
-
     def lod_reader(self, reader, place):
         def feed_reader():
             for data in reader():
@@ -33,12 +47,14 @@ class Gru4rec_Reader:
                 fe_data["src_wordseq"] = lod_src_wordseq
                 fe_data["dst_wordseq"] = lod_dst_wordseq
                 yield fe_data
+
         return feed_reader
 
     def sort_batch(self, reader, batch_size, sort_group_size, drop_last=False):
         """
         Create a batched reader.
         """
+
         def batch_reader():
             r = reader()
             b = []
@@ -66,10 +82,10 @@ class Gru4rec_Reader:
         # Batch size check
         batch_size = int(batch_size)
         if batch_size <= 0:
-            raise ValueError("batch_size should be a positive integeral value, "
-                         "but got batch_size={}".format(batch_size))
+            raise ValueError(
+                "batch_size should be a positive integeral value, "
+                "but got batch_size={}".format(batch_size))
         return batch_reader
-
 
     def reader_creator(self, file_dir):
         def reader():
@@ -82,10 +98,12 @@ class Gru4rec_Reader:
                         src_seq = l[:len(l) - 1]
                         trg_seq = l[1:]
                         yield src_seq, trg_seq
+
         return reader
 
     def reader(self, file_dir, place, batch_size=5):
         """ prepare the English Pann Treebank (PTB) data """
         print("start constuct word dict")
-        reader = self.sort_batch(self.reader_creator(file_dir), batch_size, batch_size * 20)
+        reader = self.sort_batch(
+            self.reader_creator(file_dir), batch_size, batch_size * 20)
         return self.lod_reader(reader, place)

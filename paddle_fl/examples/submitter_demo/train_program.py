@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import socket
 import random
 import zmq
@@ -12,7 +26,6 @@ import numpy as np
 import sys
 import logging
 import time
-
 
 random_port = 60001
 scheduler_conf = {}
@@ -31,8 +44,7 @@ download_url = "{}:8080".format(scheduler_ip[0])
 print(download_url)
 context = zmq.Context()
 zmq_socket = context.socket(zmq.REQ)
-zmq_socket.connect(
-    "tcp://{}".format(scheduler_conf["ENDPOINT"]))
+zmq_socket.connect("tcp://{}".format(scheduler_conf["ENDPOINT"]))
 zmq_socket.send("ENDPOINT\t{}".format(endpoint))
 message = zmq_socket.recv()
 print(message)
@@ -47,7 +59,7 @@ while True:
     if group[0] == "WAIT":
         continue
     else:
-        os.system("wget {}/job_config/{}.tar.gz".format(download_url,message))
+        os.system("wget {}/job_config/{}.tar.gz".format(download_url, message))
         print(message)
         break
 
@@ -71,6 +83,7 @@ if 'server' in message:
     server._current_ep = endpoint
     server.start()
 else:
+
     def reader():
         for i in range(1000):
             data_dict = {}
@@ -96,7 +109,7 @@ else:
         for data in reader():
             trainer.run(feed=data, fetch=[])
             step_i += 1
-            if step_i  == trainer._step:
+            if step_i == trainer._step:
                 break
         epoch_id += 1
         if epoch_id % 5 == 0:

@@ -21,4 +21,3 @@ server=yq01-hpc-lvliang01-smart-master.dmop.baidu.com
 
 python_tar=./python.tar.gz
 wheel=./paddlepaddle-0.0.0-cp27-cp27mu-linux_x86_64.whl
-

@@ -22,4 +22,3 @@ from .scheduler.agent_master import FLWorkerAgent
 from .scheduler.agent_master import FLScheduler
 from .submitter.client_base import HPCClient
 from .submitter.client_base import CloudClient
-

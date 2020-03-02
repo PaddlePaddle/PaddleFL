@@ -14,6 +14,7 @@
 import paddle.fluid as fluid
 from .fl_job import FLCompileTimeJob
 
+
 class JobGenerator(object):
     """
     A JobGenerator is responsible for generating distributed federated
@@ -21,6 +22,7 @@ class JobGenerator(object):
     need to define a deep learning model together to do horizontal federated
     learning.
     """
+
     def __init__(self):
         # worker num for federated learning
         self._worker_num = 0
@@ -31,7 +33,6 @@ class JobGenerator(object):
             fluid.optimizer.SGD(learning_rate=0.001)
         self._feed_names = []
         self._target_names = []
-
 
     def set_optimizer(self, optimizer):
         """
@@ -56,8 +57,10 @@ class JobGenerator(object):
         self._startup_prog = startup
 
     def set_infer_feed_and_target_names(self, feed_names, target_names):
-        if not isinstance(feed_names, list) or not isinstance(target_names, list):
-            raise ValueError("input should be list in set_infer_feed_and_target_names")
+        if not isinstance(feed_names, list) or not isinstance(target_names,
+                                                              list):
+            raise ValueError(
+                "input should be list in set_infer_feed_and_target_names")
         '''
         print(feed_names)
         print(target_names)
@@ -76,7 +79,6 @@ class JobGenerator(object):
                         server_endpoints=[],
                         worker_num=1,
                         output=None):
-
         """
         Generate Federated Learning Job, based on user defined configs
 
@@ -130,17 +132,66 @@ class JobGenerator(object):
             startup_program = self._startup_prog.clone()
             main_program = self._losses[0].block.program.clone()
             fl_strategy._build_trainer_program_for_job(
-                trainer_id, program=main_program,
-                ps_endpoints=server_endpoints, trainers=worker_num,
-                sync_mode=True, startup_program=startup_program,
+                trainer_id,
+                program=main_program,
+                ps_endpoints=server_endpoints,
+                trainers=worker_num,
+                sync_mode=True,
+                startup_program=startup_program,
                 job=local_job)
 
         startup_program = self._startup_prog.clone()
         main_program = self._losses[0].block.program.clone()
         fl_strategy._build_server_programs_for_job(
-            program=main_program, ps_endpoints=server_endpoints,
-            trainers=worker_num, sync_mode=True,
-            startup_program=startup_program, job=local_job)
+            program=main_program,
+            ps_endpoints=server_endpoints,
+            trainers=worker_num,
+            sync_mode=True,
+            startup_program=startup_program,
+            job=local_job)
+
+        local_job.set_feed_names(self._feed_names)
+        local_job.set_target_names(self._target_names)
+        local_job.set_strategy(fl_strategy)
+        local_job.save(output)
+
+    def generate_fl_job_for_k8s(self,
+                                fl_strategy,
+                                server_pod_endpoints=[],
+                                server_service_endpoints=[],
+                                worker_num=1,
+                                output=None):
+
+        local_job = FLCompileTimeJob()
+        assert len(self._losses) > 0
+        assert self._startup_prog != None
+        assert fl_strategy != None
+        assert output != None
+        fl_strategy.minimize(self._optimizer, self._losses)
+
+        # strategy can generate startup and main program
+        # of a single worker and servers
+        for trainer_id in range(worker_num):
+            startup_program = self._startup_prog.clone()
+            main_program = self._losses[0].block.program.clone()
+            fl_strategy._build_trainer_program_for_job(
+                trainer_id,
+                program=main_program,
+                ps_endpoints=server_service_endpoints,
+                trainers=worker_num,
+                sync_mode=True,
+                startup_program=startup_program,
+                job=local_job)
+
+        startup_program = self._startup_prog.clone()
+        main_program = self._losses[0].block.program.clone()
+        fl_strategy._build_server_programs_for_job(
+            program=main_program,
+            ps_endpoints=server_pod_endpoints,
+            trainers=worker_num,
+            sync_mode=True,
+            startup_program=startup_program,
+            job=local_job)
 
         local_job.set_feed_names(self._feed_names)
         local_job.set_target_names(self._target_names)

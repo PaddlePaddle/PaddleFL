@@ -181,4 +181,3 @@ while not trainer.stop():
 To show the effectiveness of DPSGD-based federated learning with PaddleFL, a simulated experiment is conducted on an open source dataset MNIST. From the figure given below, model evaluation results are similar between DPSGD-based federated learning and traditional parameter server training when the overall privacy budget *epsilon* is 1.3 or 0.13. 
 
 <img src="fl_dpsgd_benchmark.png" height=400 width=600 hspace='10'/> <br />
-

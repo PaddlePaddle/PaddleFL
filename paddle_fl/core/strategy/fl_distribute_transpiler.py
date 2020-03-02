@@ -50,6 +50,7 @@ def log(*args):
     if PRINT_LOG:
         print(args)
 
+
 def same_or_split_var(p_name, var_name):
     return p_name == var_name or p_name.startswith(var_name + ".block")
 
@@ -113,7 +114,9 @@ class FLDistributeTranspiler(object):
 
     def _get_all_remote_sparse_update_op(self, main_program):
         sparse_update_ops = []
-        sparse_update_op_types = ["lookup_table", "nce", "hierarchical_sigmoid"]
+        sparse_update_op_types = [
+            "lookup_table", "nce", "hierarchical_sigmoid"
+        ]
         for op in main_program.global_block().ops:
             if op.type in sparse_update_op_types and op.attr(
                     'remote_prefetch') is True:
@@ -406,12 +409,13 @@ class FLDistributeTranspiler(object):
             # NOTE: single_trainer_var must be created for multi-trainer
             # case to merge grads from multiple trainers
             single_trainer_var = pserver_program.global_block().var(
-                    orig_var_name)
+                orig_var_name)
 
             if self.sync_mode and self.trainer_num > 1:
                 for trainer_id in range(self.trainer_num):
                     var = pserver_program.global_block().create_var(
-                        name="%s.opti.trainer_%d" % (orig_var_name, trainer_id),
+                        name="%s.opti.trainer_%d" %
+                        (orig_var_name, trainer_id),
                         persistable=False,
                         type=v.type,
                         dtype=v.dtype,
@@ -815,7 +819,6 @@ class FLDistributeTranspiler(object):
         """Returns a dict from op input name to the vars in varmap."""
         iomap = collections.OrderedDict()
         return iomap
-
 
     def _get_lr_ops(self):
         lr_ops = []

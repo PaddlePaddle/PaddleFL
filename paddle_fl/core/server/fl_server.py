@@ -14,8 +14,8 @@
 import paddle.fluid as fluid
 from paddle_fl.core.scheduler.agent_master import FLServerAgent
 
-class FLServer(object):
 
+class FLServer(object):
     def __init__(self):
         self._startup_program = None
         self._main_program = None

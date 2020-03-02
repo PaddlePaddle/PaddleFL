@@ -16,11 +16,13 @@ from .fl_distribute_transpiler import FLDistributeTranspiler
 from paddle.fluid.optimizer import SGD
 import paddle.fluid as fluid
 
+
 class FLStrategyFactory(object):
     """
     FLStrategyFactory is a FLStrategy builder
     Users can define strategy config to create different FLStrategy
     """
+
     def __init__(self):
         self._fed_avg = False
         self._dpsgd = False
@@ -86,6 +88,7 @@ class FLStrategyBase(object):
     """
     FLStrategyBase is federated learning algorithm container
     """
+
     def __init__(self):
         self._fed_avg = False
         self._dpsgd = False
@@ -105,17 +108,23 @@ class FLStrategyBase(object):
         for loss in losses:
             optimizer.minimize(loss)
 
-    def _build_trainer_program_for_job(
-            self, trainer_id=0, program=None,
-            ps_endpoints=[], trainers=0,
-            sync_mode=True, startup_program=None,
-            job=None):
+    def _build_trainer_program_for_job(self,
+                                       trainer_id=0,
+                                       program=None,
+                                       ps_endpoints=[],
+                                       trainers=0,
+                                       sync_mode=True,
+                                       startup_program=None,
+                                       job=None):
         pass
 
-    def _build_server_programs_for_job(
-            self, program=None, ps_endpoints=[],
-            trainers=0, sync_mode=True,
-            startup_program=None, job=None):
+    def _build_server_programs_for_job(self,
+                                       program=None,
+                                       ps_endpoints=[],
+                                       trainers=0,
+                                       sync_mode=True,
+                                       startup_program=None,
+                                       job=None):
         pass
 
 
@@ -123,6 +132,7 @@ class DPSGDStrategy(FLStrategyBase):
     """
     DPSGDStrategy: Deep Learning with Differential Privacy. 2016
     """
+
     def __init__(self):
         super(DPSGDStrategy, self).__init__()
 
@@ -162,29 +172,40 @@ class DPSGDStrategy(FLStrategyBase):
         """
         Define Dpsgd optimizer
         """
-        optimizer = fluid.optimizer.Dpsgd(self._learning_rate, clip=self._clip, batch_size=self._batch_size, sigma=self._sigma)
+        optimizer = fluid.optimizer.Dpsgd(
+            self._learning_rate,
+            clip=self._clip,
+            batch_size=self._batch_size,
+            sigma=self._sigma)
         optimizer.minimize(losses[0])
 
-    def _build_trainer_program_for_job(
-            self, trainer_id=0, program=None,
-            ps_endpoints=[], trainers=0,
-            sync_mode=True, startup_program=None,
-            job=None):
+    def _build_trainer_program_for_job(self,
+                                       trainer_id=0,
+                                       program=None,
+                                       ps_endpoints=[],
+                                       trainers=0,
+                                       sync_mode=True,
+                                       startup_program=None,
+                                       job=None):
         transpiler = fluid.DistributeTranspiler()
-        transpiler.transpile(trainer_id,
-                             program=program,
-                             pservers=",".join(ps_endpoints),
-                             trainers=trainers,
-                             sync_mode=sync_mode,
-                             startup_program=startup_program)
+        transpiler.transpile(
+            trainer_id,
+            program=program,
+            pservers=",".join(ps_endpoints),
+            trainers=trainers,
+            sync_mode=sync_mode,
+            startup_program=startup_program)
         main = transpiler.get_trainer_program(wait_port=False)
         job._trainer_startup_programs.append(startup_program)
         job._trainer_main_programs.append(main)
 
-    def _build_server_programs_for_job(
-            self, program=None, ps_endpoints=[],
-            trainers=0, sync_mode=True,
-            startup_program=None, job=None):
+    def _build_server_programs_for_job(self,
+                                       program=None,
+                                       ps_endpoints=[],
+                                       trainers=0,
+                                       sync_mode=True,
+                                       startup_program=None,
+                                       job=None):
         transpiler = fluid.DistributeTranspiler()
         trainer_id = 0
         transpiler.transpile(
@@ -207,6 +228,7 @@ class FedAvgStrategy(FLStrategyBase):
     FedAvgStrategy: this is model averaging optimization proposed in
     H. Brendan McMahan, Eider Moore, Daniel Ramage, Blaise Aguera y Arcas. Federated Learning of Deep Networks using Model Averaging. 2017
     """
+
     def __init__(self):
         super(FedAvgStrategy, self).__init__()
 
@@ -216,28 +238,35 @@ class FedAvgStrategy(FLStrategyBase):
         """
         optimizer.minimize(losses[0])
 
-    def _build_trainer_program_for_job(
-            self, trainer_id=0, program=None,
-            ps_endpoints=[], trainers=0,
-            sync_mode=True, startup_program=None,
-            job=None):
+    def _build_trainer_program_for_job(self,
+                                       trainer_id=0,
+                                       program=None,
+                                       ps_endpoints=[],
+                                       trainers=0,
+                                       sync_mode=True,
+                                       startup_program=None,
+                                       job=None):
         transpiler = FLDistributeTranspiler()
-        transpiler.transpile(trainer_id,
-                             program=program,
-                             pservers=",".join(ps_endpoints),
-                             trainers=trainers,
-                             sync_mode=sync_mode,
-                             startup_program=startup_program)
+        transpiler.transpile(
+            trainer_id,
+            program=program,
+            pservers=",".join(ps_endpoints),
+            trainers=trainers,
+            sync_mode=sync_mode,
+            startup_program=startup_program)
         recv, main, send = transpiler.get_trainer_program()
         job._trainer_startup_programs.append(startup_program)
         job._trainer_main_programs.append(main)
         job._trainer_send_programs.append(send)
         job._trainer_recv_programs.append(recv)
 
-    def _build_server_programs_for_job(
-            self, program=None, ps_endpoints=[],
-            trainers=0, sync_mode=True,
-            startup_program=None, job=None):
+    def _build_server_programs_for_job(self,
+                                       program=None,
+                                       ps_endpoints=[],
+                                       trainers=0,
+                                       sync_mode=True,
+                                       startup_program=None,
+                                       job=None):
         transpiler = FLDistributeTranspiler()
         trainer_id = 0
         transpiler.transpile(
@@ -262,6 +291,7 @@ class SecAggStrategy(FedAvgStrategy):
     Practical Secure Aggregation  for Privacy-Preserving Machine Learning,
     The 24th ACM Conference on Computer and Communications Security ( CCS2017 ).
     """
+
     def __init__(self):
         super(SecAggStrategy, self).__init__()
         self._param_name_list = []

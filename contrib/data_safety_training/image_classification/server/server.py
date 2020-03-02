@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import print_function
 import os
 import paddle
@@ -12,14 +26,14 @@ import math
 import msgpack
 
 
-def data_generater(samples,r):
-        # data generater
+def data_generater(samples, r):
+    # data generater
     def train_data():
         for item in samples:
             sample = msgpack.loads(r.get(str(item)))
             conv = sample[0]
             label = sample[1]
-            yield conv,label
+            yield conv, label
         return train_data
 
 
@@ -67,7 +81,7 @@ class ResNet():
                 size=class_dim,
                 param_attr=fluid.param_attr.ParamAttr(
                     initializer=fluid.initializer.Uniform(-stdv, stdv)),
-                    act = "softmax")
+                act="softmax")
         else:
             for block in range(len(depth)):
                 for i in range(depth[block]):
@@ -87,7 +101,7 @@ class ResNet():
                 size=class_dim,
                 param_attr=fluid.param_attr.ParamAttr(
                     initializer=fluid.initializer.Uniform(-stdv, stdv)),
-                    act = "softmax")
+                act="softmax")
         return out
 
     def conv_bn_layer(self,
@@ -122,8 +136,6 @@ class ResNet():
             bias_attr=ParamAttr(bn_name + '_offset'),
             moving_mean_name=bn_name + '_mean',
             moving_variance_name=bn_name + '_variance', )
-
-
 
     def shortcut(self, input, ch_out, stride, is_first, name):
         ch_in = input.shape[1]
@@ -181,31 +193,33 @@ class ResNet():
             input, num_filters, stride, is_first, name=name + "_branch1")
         return fluid.layers.elementwise_add(x=short, y=conv1, act='relu')
 
+
 # local redis config
 redis_host = "127.0.0.1"
 redis_port = 6379
 redis_password = ""
-r = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_password)
+r = redis.StrictRedis(
+    host=redis_host, port=redis_port, password=redis_password)
 
 # reader generation
-reader = fluid.layers.py_reader(capacity=64,
-                                shapes=[(-1,64, 8, 8), (-1,1)],
-                                dtypes=['float32', 'int64'])
+reader = fluid.layers.py_reader(
+    capacity=64, shapes=[(-1, 64, 8, 8), (-1, 1)],
+    dtypes=['float32', 'int64'])
 
 samples = r.keys()
-train_data = data_generater(samples,r)
+train_data = data_generater(samples, r)
 
-reader.decorate_paddle_reader(paddle.batch(
-                      paddle.reader.shuffle(
-                      train_data, buf_size=5000),
-                      batch_size=64))
+reader.decorate_paddle_reader(
+    paddle.batch(
+        paddle.reader.shuffle(
+            train_data, buf_size=5000), batch_size=64))
 
-conv1,label = fluid.layers.read_file(reader)
+conv1, label = fluid.layers.read_file(reader)
 
 # train program
 place = fluid.CUDAPlace(0)
 model = ResNet(layers=50)
-predicts = model.net(conv1,10)
+predicts = model.net(conv1, 10)
 cost = fluid.layers.cross_entropy(input=predicts, label=label)
 accuracy = fluid.layers.accuracy(input=predicts, label=label)
 loss = fluid.layers.mean(cost)
@@ -222,18 +236,20 @@ step = 0
 train_start = time.time()
 # start training 
 for pass_id in range(EPOCH_NUM):
-     reader.start()
-     try:
-         while True:
-             start_time = time.time()
-             loss_value,acc_value = exe.run(fetch_list=[loss.name,accuracy.name])
-             step += 1
-             if step % 10 == 0:
-                 print("epoch: "+ str(pass_id)+"step: "+str(step)+"loss: "+ str(loss_value)+"acc: "+str(acc_value))
-             end_time = time.time()
-             total_time += (end_time - start_time)
-     except fluid.core.EOFException:
-         reader.reset()
+    reader.start()
+    try:
+        while True:
+            start_time = time.time()
+            loss_value, acc_value = exe.run(
+                fetch_list=[loss.name, accuracy.name])
+            step += 1
+            if step % 10 == 0:
+                print("epoch: " + str(pass_id) + "step: " + str(step) +
+                      "loss: " + str(loss_value) + "acc: " + str(acc_value))
+            end_time = time.time()
+            total_time += (end_time - start_time)
+    except fluid.core.EOFException:
+        reader.reset()
 train_end = time.time()
 print("total time: %d" % (train_end - train_start))
 print("computation time: %d" % total_time)

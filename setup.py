@@ -26,10 +26,12 @@ from paddle_fl.version import fl_version
 def python_version():
     return [int(v) for v in platform.python_version().split(".")]
 
+
 max_version, mid_version, min_version = python_version()
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0','paddlepaddle >= 1.6', 'zmq', 'paddlepaddle-gpu >= 1.6' 
+    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle >= 1.6', 'zmq',
+    'paddlepaddle-gpu >= 1.6'
 ]
 
 if max_version < 3:
@@ -42,8 +44,7 @@ REQUIRED_PACKAGES += ["unittest2"]
 setup(
     name='paddle_fl',
     version=fl_version.replace('-', ''),
-    description=
-    ('Federated Deep Learning Package Based on PaddlePaddle.'),
+    description=('Federated Deep Learning Package Based on PaddlePaddle.'),
     long_description='',
     url='https://github.com/PaddlePaddle/PaddleFL',
     author='PaddlePaddle Author',
@@ -70,4 +71,5 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     license='Apache 2.0',
-    keywords=('paddle_fl paddlepaddle multi-task transfer distributed-training'))
+    keywords=(
+        'paddle_fl paddlepaddle multi-task transfer distributed-training'))

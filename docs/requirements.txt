@@ -3,4 +3,3 @@ mistune
 sphinx_rtd_theme
 paddlepaddle>=1.6
 zmq
-

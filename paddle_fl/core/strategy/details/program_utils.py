@@ -163,7 +163,8 @@ def block_to_code(block, block_idx, fout=None, skip_op_callstack=False):
     indent = 0
 
     print(
-        "{0}{1} // block {2}".format(get_indent_space(indent), '{', block_idx),
+        "{0}{1} // block {2}".format(
+            get_indent_space(indent), '{', block_idx),
         file=fout)
 
     indent += 1

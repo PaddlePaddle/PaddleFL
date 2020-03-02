@@ -1,19 +1,39 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import paddle.fluid as fluid
 import paddle_fl as fl
 from paddle_fl.core.master.job_generator import JobGenerator
 from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 import math
 
+
 class Model(object):
     def __init__(self):
         pass
 
     def lr_network(self):
-        self.inputs = fluid.layers.data(name='img', shape=[1, 28, 28], dtype="float32")
-        self.label = fluid.layers.data(name='label', shape=[1],dtype='int64')
-        self.predict = fluid.layers.fc(input=self.inputs, size=10, act='softmax')
-        self.sum_cost = fluid.layers.cross_entropy(input=self.predict, label=self.label)
-        self.accuracy = fluid.layers.accuracy(input=self.predict, label=self.label)
+        self.inputs = fluid.layers.data(
+            name='img', shape=[1, 28, 28], dtype="float32")
+        self.label = fluid.layers.data(name='label', shape=[1], dtype='int64')
+        self.predict = fluid.layers.fc(input=self.inputs,
+                                       size=10,
+                                       act='softmax')
+        self.sum_cost = fluid.layers.cross_entropy(
+            input=self.predict, label=self.label)
+        self.accuracy = fluid.layers.accuracy(
+            input=self.predict, label=self.label)
         self.loss = fluid.layers.mean(self.sum_cost)
         self.startup_program = fluid.default_startup_program()
 
@@ -23,7 +43,7 @@ model.lr_network()
 
 STEP_EPSILON = 0.1
 DELTA = 0.00001
-SIGMA = math.sqrt(2.0 * math.log(1.25/DELTA)) / STEP_EPSILON
+SIGMA = math.sqrt(2.0 * math.log(1.25 / DELTA)) / STEP_EPSILON
 CLIP = 4.0
 batch_size = 64
 
@@ -33,7 +53,8 @@ job_generator.set_optimizer(optimizer)
 job_generator.set_losses([model.loss])
 job_generator.set_startup_program(model.startup_program)
 job_generator.set_infer_feed_and_target_names(
-    [model.inputs.name, model.label.name], [model.loss.name, model.accuracy.name])
+    [model.inputs.name, model.label.name],
+    [model.loss.name, model.accuracy.name])
 
 build_strategy = FLStrategyFactory()
 build_strategy.dpsgd = True
