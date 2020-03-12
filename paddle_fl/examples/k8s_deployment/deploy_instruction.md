@@ -1,6 +1,8 @@
-#K8S cluster application
+# K8S cluster application
 Here is a guide for you to apply your K8S cluster on [Baidu Cloud](https://cloud.baidu.com/doc/CCE/s/zjxpoqohb)
+
 The number of CPU cores should be larger than 8
+
 <img src='fl_node.png' width = "400" height = "160">
 
 # kubectl installation 
