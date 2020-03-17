@@ -70,12 +70,18 @@ You can also refer [K8S cluster application and kubectl installation](./paddle_f
 ## Benchmark task
 
 Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
+## Release note
+
+- v0.2.0 released 
+    - Support Kubernetes easy deployment 
+    - Add api for [LEAF](https://arxiv.org/abs/1812.01097) dataset which is in federated settings, supporting benchmark experiments. 
+    - Add FL-scheduler, acting as a central controller during the training phase. 
+    - Add FL-Submitter to support cluster task submission
+    - Add secure aggregation algorithm
+    - Support more optimizers in PaddleFL such as Adam
+    - More examples available
 
 ## On Going and Future Work
-
-- Experimental benchmark with public datasets in federated learning settings.
-
-- Federated Learning Systems deployment methods in Kubernetes.
 
 - Vertical Federated Learning Strategies and more horizontal federated learning strategies will be open sourced.
 

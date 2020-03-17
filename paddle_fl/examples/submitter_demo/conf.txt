@@ -7,7 +7,7 @@ monitor_cmd=
 #train_cmd=python test_hadoop.py
 
 hdfs_path=afs://xingtian.afs.baidu.com:9902
-ugi=mlarch,Fv1M87
+ugi=your_fs_name, your_ugi
 hdfs_output=/user/feed/mlarch/sequence_generator/dongdaxiang/job_44
 worker_nodes=2
 server_nodes=1

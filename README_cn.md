@@ -69,12 +69,16 @@ kubectl apply -f ./paddle_fl/examples/k8s_deployment/master.yaml
 
 Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 一个基于联邦学习训练Gru4Rec模型的示例请参考[Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
-
+## 版本更新
+- v0.2.0 发布
+    - 支持 Kubernetes 简易部署
+    - 添加在联邦学习设定下的[LEAF](https://arxiv.org/abs/1812.01097) 公开数据集接口，支持基准的设定 
+    - 添加 FL-scheduler, 在训练过程中充当中心控制器的角色 
+    - 添加 FL-Submitter 功能，支持集群任务部署
+    - 添加 secure aggregation 算法
+    - 支持更多的机器学习优化器，例如：Adam
+    - 增加更多的实际应用例子
 ## 正在进行的工作
-
-- 联邦学习在公共数据集上的实验基准。
-
-- kubernetes中联邦学习系统的部署方法。
 
 - 垂直联合学习策略和更多的水平联合学习策略将是开源的。
 
