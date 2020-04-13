@@ -35,7 +35,7 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 #### 编译时
 
-- **FL-Strategy**: 用户可以使用FL-Strategy定义联邦学习策略，例如Fed-Avg[1]。
+- **FL-Strategy**: 用户可以使用FL-Strategy定义联邦学习策略，例如Fed-Avg[2]。
 
 - **User-Defined-Program**: PaddlePaddle的程序定义了机器学习模型结构和训练策略，如多任务学习。
 
