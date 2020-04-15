@@ -19,7 +19,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 - **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
 
-- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6]
+- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
 
 #### Training Strategy
 
