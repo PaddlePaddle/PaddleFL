@@ -197,3 +197,68 @@ class JobGenerator(object):
         local_job.set_target_names(self._target_names)
         local_job.set_strategy(fl_strategy)
         local_job.save(output)
+
+    def generate_fl_job_from_program(self, strategy, endpoints, worker_num,
+                                     program_input, output):
+        local_job = FLCompileTimeJob()
+        with open(program_input + '/startup_program', "rb") as fin:
+            program_desc_str = fin.read()
+            new_startup = fluid.Program.parse_from_string(program_desc_str)
+
+        with open(program_input + '/main_program', "rb") as fin:
+            program_desc_str = fin.read()
+            new_main = fluid.Program.parse_from_string(program_desc_str)
+        para_list = []
+        with open(program_input + '/para_info', 'rb') as fin:
+            for line in fin:
+                current_para = line[:-1]
+                para_list.append(current_para)
+
+        for item in para_list:
+            para = new_main.global_block().var(item)
+            para.regularizer = None
+            para.optimize_attr = {'learning_rate': 1.0}
+            para.trainable = True
+        exe = fluid.Executor(fluid.CPUPlace())
+        loss = None
+        input = None
+        label = None
+        for var in new_main.list_vars():
+            if var.name == "loss.tmp_0":
+                loss = var
+            if var.name == 'input':
+                input = var
+            if var.name == 'label':
+                label = var
+        with fluid.program_guard(new_main, new_startup):
+            optimizer = fluid.optimizer.SGD(learning_rate=0.1,
+                                            parameter_list=para_list)
+            exe.run(new_startup)
+            strategy.minimize(optimizer, loss)
+
+        for trainer_id in range(worker_num):
+            startup_program = new_startup.clone()
+            main_program = loss.block.program.clone()
+            strategy._build_trainer_program_for_job(
+                trainer_id,
+                program=main_program,
+                ps_endpoints=endpoints,
+                trainers=worker_num,
+                sync_mode=True,
+                startup_program=startup_program,
+                job=local_job)
+
+        startup_program = new_startup.clone()
+        main_program = loss.block.program.clone()
+        strategy._build_server_programs_for_job(
+            program=main_program,
+            ps_endpoints=endpoints,
+            trainers=worker_num,
+            sync_mode=True,
+            startup_program=startup_program,
+            job=local_job)
+
+        local_job.set_feed_names([input.name, label.name])
+        local_job.set_target_names([loss.name])
+        local_job.set_strategy(strategy)
+        local_job.save(output)
