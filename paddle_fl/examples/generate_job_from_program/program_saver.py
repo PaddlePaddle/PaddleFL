@@ -15,7 +15,6 @@
 import os
 import json
 import paddle.fluid as fluid
-#from paddle.fluid.framework import Parameter, Variable
 
 input = fluid.layers.data(name='input', shape=[1, 28, 28], dtype="float32")
 label = fluid.layers.data(name='label', shape=[1], dtype='int64')

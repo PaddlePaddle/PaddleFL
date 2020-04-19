@@ -16,7 +16,6 @@ import paddle_fl as fl
 import paddle.fluid as fluid
 from paddle_fl.core.master.job_generator import JobGenerator
 from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
-#import math
 
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True
