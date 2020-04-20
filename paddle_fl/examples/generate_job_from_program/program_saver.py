@@ -24,7 +24,6 @@ sum_cost = fluid.layers.cross_entropy(input=predict, label=label)
 accuracy = fluid.layers.accuracy(input=predict, label=label)
 avg_cost = fluid.layers.mean(sum_cost, name="loss")
 startup_program = fluid.default_startup_program()
-
 place = fluid.CPUPlace()
 exe = fluid.Executor(place)
 exe.run(startup_program)
@@ -47,6 +46,8 @@ def save_program(program_path):
         fout.write(startup_program_str)
     with open(program_path + '/main_program', "wb") as fout:
         fout.write(main_program_str)
+    with open(program_path + '/loss_name', 'wb') as fout:
+        fout.write(avg_cost.name)
 
 
 program_path = './load_file'

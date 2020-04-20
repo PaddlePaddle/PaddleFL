@@ -214,6 +214,9 @@ class JobGenerator(object):
                 current_para = line[:-1]
                 para_list.append(current_para)
 
+        with open(program_input + '/loss_name', 'rb') as fin:
+            loss_name = fin.read()
+
         for item in para_list:
             para = new_main.global_block().var(item)
             para.regularizer = None
@@ -224,7 +227,7 @@ class JobGenerator(object):
         input = None
         label = None
         for var in new_main.list_vars():
-            if var.name == "loss.tmp_0":
+            if var.name == loss_name:
                 loss = var
             if var.name == 'input':
                 input = var
