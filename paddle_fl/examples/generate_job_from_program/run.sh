@@ -1,6 +1,7 @@
 unset http_proxy
 unset https_proxy
 python program_saver.py
+
 python fl_master.py
 sleep 2
 python -u fl_scheduler.py >scheduler.log &
