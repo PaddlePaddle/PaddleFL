@@ -209,12 +209,12 @@ class JobGenerator(object):
             program_desc_str = fin.read()
             new_main = fluid.Program.parse_from_string(program_desc_str)
         para_list = []
-        with open(program_input + '/para_info', 'rb') as fin:
+        with open(program_input + '/para_info', 'r') as fin:
             for line in fin:
                 current_para = line[:-1]
                 para_list.append(current_para)
 
-        with open(program_input + '/loss_name', 'rb') as fin:
+        with open(program_input + '/loss_name', 'r') as fin:
             loss_name = fin.read()
 
         for item in para_list:

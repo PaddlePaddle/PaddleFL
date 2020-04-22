@@ -39,14 +39,14 @@ def save_program(program_path):
     para_info = []
     for pa in params:
         para_info.append(pa.name)
-    with open(program_path + '/para_info', 'wb') as fout:
+    with open(program_path + '/para_info', 'w') as fout:
         for item in para_info:
             fout.write("%s\n" % item)
     with open(program_path + '/startup_program', "wb") as fout:
         fout.write(startup_program_str)
     with open(program_path + '/main_program', "wb") as fout:
         fout.write(main_program_str)
-    with open(program_path + '/loss_name', 'wb') as fout:
+    with open(program_path + '/loss_name', 'w') as fout:
         fout.write(avg_cost.name)
 
 
