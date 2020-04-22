@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import paddle.fluid as fluid
 from .fl_job import FLCompileTimeJob
 
@@ -197,6 +198,27 @@ class JobGenerator(object):
         local_job.set_target_names(self._target_names)
         local_job.set_strategy(fl_strategy)
         local_job.save(output)
+
+    def save_program(self, program_path, loss):
+        if not os.path.exists(program_path):
+            os.makedirs(program_path)
+        main_program_str = fluid.default_main_program(
+        ).desc.serialize_to_string()
+        startup_program_str = fluid.default_startup_program(
+        ).desc.serialize_to_string()
+        params = fluid.default_main_program().global_block().all_parameters()
+        para_info = []
+        for pa in params:
+            para_info.append(pa.name)
+        with open(program_path + '/para_info', 'w') as fout:
+            for item in para_info:
+                fout.write("%s\n" % item)
+        with open(program_path + '/startup_program', "wb") as fout:
+            fout.write(startup_program_str)
+        with open(program_path + '/main_program', "wb") as fout:
+            fout.write(main_program_str)
+        with open(program_path + '/loss_name', 'w') as fout:
+            fout.write(loss.name)
 
     def generate_fl_job_from_program(self, strategy, endpoints, worker_num,
                                      program_input, output):

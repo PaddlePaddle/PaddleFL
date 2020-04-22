@@ -15,6 +15,7 @@
 import os
 import json
 import paddle.fluid as fluid
+from paddle_fl.core.master.job_generator import JobGenerator
 
 input = fluid.layers.data(name='input', shape=[1, 28, 28], dtype="float32")
 label = fluid.layers.data(name='label', shape=[1], dtype='int64')
@@ -28,27 +29,7 @@ place = fluid.CPUPlace()
 exe = fluid.Executor(place)
 exe.run(startup_program)
 
-
-def save_program(program_path):
-    if not os.path.exists(program_path):
-        os.makedirs(program_path)
-    main_program_str = fluid.default_main_program().desc.serialize_to_string()
-    startup_program_str = fluid.default_startup_program(
-    ).desc.serialize_to_string()
-    params = fluid.default_main_program().global_block().all_parameters()
-    para_info = []
-    for pa in params:
-        para_info.append(pa.name)
-    with open(program_path + '/para_info', 'w') as fout:
-        for item in para_info:
-            fout.write("%s\n" % item)
-    with open(program_path + '/startup_program', "wb") as fout:
-        fout.write(startup_program_str)
-    with open(program_path + '/main_program', "wb") as fout:
-        fout.write(main_program_str)
-    with open(program_path + '/loss_name', 'w') as fout:
-        fout.write(avg_cost.name)
-
-
+job_generator = JobGenerator()
 program_path = './load_file'
-save_program(program_path)
+
+job_generator.save_program(program_path, avg_cost)
