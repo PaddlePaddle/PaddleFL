@@ -256,8 +256,6 @@ class JobGenerator(object):
             para.trainable = True
         exe = fluid.Executor(fluid.CPUPlace())
         loss = None
-        input = None
-        label = None
         for var in new_main.list_vars():
             if var.name == loss_name:
                 loss = var
