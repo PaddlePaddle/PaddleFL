@@ -199,7 +199,7 @@ class JobGenerator(object):
         local_job.set_strategy(fl_strategy)
         local_job.save(output)
 
-    def save_program(self, program_path, input_list, loss):
+    def save_program(self, program_path, input_list, hidden_vars, loss):
         if not os.path.exists(program_path):
             os.makedirs(program_path)
         main_program_str = fluid.default_main_program(
@@ -213,6 +213,9 @@ class JobGenerator(object):
         with open(program_path + '/input_names', 'w') as fout:
             for input in input_list:
                 fout.write("%s\n" % input.name)
+        with open(program_path + '/hidden_vars', 'w') as fout:
+            for var in hidden_vars:
+                fout.write("%s:%s\n" % (var[0], var[1].name))
         with open(program_path + '/para_info', 'w') as fout:
             for item in para_info:
                 fout.write("%s\n" % item)
