@@ -32,4 +32,4 @@ exe.run(startup_program)
 job_generator = JobGenerator()
 program_path = './load_file'
 
-job_generator.save_program(program_path, avg_cost)
+job_generator.save_program(program_path, [input, label], avg_cost)
