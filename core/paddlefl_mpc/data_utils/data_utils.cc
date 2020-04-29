@@ -21,9 +21,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "paddlefl_mpc/mpc_protocol/aby3_operators.h"
-#include "privc3/fixedpoint_util.h"
-#include "psi/psi_api.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators.h"
+#include "core/privc3/fixedpoint_util.h"
+#include "core/psi/psi_api.h"
 
 namespace py = pybind11;
 
