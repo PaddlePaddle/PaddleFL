@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import paddle.fluid as fluid
 from paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
 from paddle_fl.core.master.fl_job import FLRunTimeJob
 import numpy as np
@@ -42,7 +42,8 @@ job.load_trainer_job(job_path, trainer_id)
 job._scheduler_ep = "127.0.0.1:9091"  # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000 + trainer_id)
-trainer.start()
+place = fluid.CPUPlace()
+trainer.start(place)
 print(trainer._scheduler_ep, trainer._current_ep)
 output_folder = "fl_model"
 epoch_id = 0

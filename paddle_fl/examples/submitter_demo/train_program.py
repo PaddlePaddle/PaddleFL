@@ -99,7 +99,8 @@ else:
     job._scheduler_ep = scheduler_conf["ENDPOINT"]
     trainer = FLTrainerFactory().create_fl_trainer(job)
     trainer._current_ep = endpoint
-    trainer.start()
+    place = fluid.CPUPlace()
+    trainer.start(place)
     print(trainer._scheduler_ep, trainer._current_ep)
     output_folder = "fl_model"
     epoch_id = 0

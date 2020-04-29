@@ -57,11 +57,11 @@ class FLTrainer(object):
         self._current_ep = None
         self.cur_step = 0
 
-    def start(self):
+    def start(self, place):
         #current_ep = "to be added"
         self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
         self.agent.connect_scheduler()
-        self.exe = fluid.Executor(fluid.CPUPlace())
+        self.exe = fluid.Executor(place)
         self.exe.run(self._startup_program)
 
     def run(self, feed, fetch):
@@ -103,11 +103,11 @@ class FedAvgTrainer(FLTrainer):
         super(FedAvgTrainer, self).__init__()
         pass
 
-    def start(self):
+    def start(self, place):
         #current_ep = "to be added"
         self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
         self.agent.connect_scheduler()
-        self.exe = fluid.Executor(fluid.CPUPlace())
+        self.exe = fluid.Executor(place)
         self.exe.run(self._startup_program)
 
     def set_trainer_job(self, job):
@@ -185,10 +185,10 @@ class SecAggTrainer(FLTrainer):
     def step_id(self, s):
         self._step_id = s
 
-    def start(self):
+    def start(self, place):
         self.agent = FLWorkerAgent(self._scheduler_ep, self._current_ep)
         self.agent.connect_scheduler()
-        self.exe = fluid.Executor(fluid.CPUPlace())
+        self.exe = fluid.Executor(place)
         self.exe.run(self._startup_program)
         self.cur_step = 0
 

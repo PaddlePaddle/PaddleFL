@@ -53,7 +53,8 @@ trainer.trainer_id = trainer_id
 trainer._current_ep = "127.0.0.1:{}".format(9000 + trainer_id)
 trainer.trainer_num = trainer_num
 trainer.key_dir = "./keys/"
-trainer.start()
+place = fluid.CPUPlace()
+trainer.start(place)
 
 output_folder = "fl_model"
 epoch_id = 0

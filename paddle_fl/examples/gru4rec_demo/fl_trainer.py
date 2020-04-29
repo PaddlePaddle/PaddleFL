@@ -36,7 +36,8 @@ job.load_trainer_job(job_path, trainer_id)
 job._scheduler_ep = "127.0.0.1:9091"  # Inform the scheduler IP to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000 + trainer_id)
-trainer.start()
+place = fluid.CPUPlace()
+trainer.start(place)
 
 r = Gru4rec_Reader()
 train_reader = r.reader(train_file_dir, place, batch_size=125)
