@@ -20,8 +20,7 @@ sys.path.append('../../../')
 
 import unittest
 
-import paddle_encrypted as paddle_enc
-
+import paddle_fl.mpc as pfl_mpc
 
 class TestDataUtilsLoadFilter(unittest.TestCase):
     def __init__(self, methodName='runTest'):
@@ -46,7 +45,7 @@ class TestDataUtilsLoadFilter(unittest.TestCase):
 
     def test_load_data(self):
         expected_values = ['111', '222', '333']
-        du = fluid_enc.data_utils.DataUtils()
+        du = pfl_mpc.data_utils.DataUtils()
         for data, value in zip(
                 du.load_data(self.test_tmp_file), expected_values):
             self.assertEqual(data, value)
@@ -57,7 +56,7 @@ class TestDataUtilsLoadFilter(unittest.TestCase):
         ]
         id_list = [0, 2]
         expected_results = ["0, 0.1, 0.1, 0.1, 1", "2, 0.3, 0.3, 0.3, 1"]
-        du = fluid_enc.data_utils.DataUtils()
+        du = pfl_mpc.data_utils.DataUtils()
         filter_results = du.data_filter_by_id(
             input_list=to_filter, id_list=id_list)
         for result, expect in zip(filter_results, expected_results):

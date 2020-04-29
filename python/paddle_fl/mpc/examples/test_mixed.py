@@ -22,22 +22,22 @@ import time
 import sys
 import numpy as np
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 
 role, server, port = env_set.TestOptions().values()
 
 # call mpc add
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 
-data_1 = paddle_enc.data(name='data_1', shape=[2, 2], dtype='int64')
-data_2 = paddle_enc.data(name='data_2', shape=[2, 2], dtype='int64')
+data_1 = pfl_mpc.data(name='data_1', shape=[2, 2], dtype='int64')
+data_2 = pfl_mpc.data(name='data_2', shape=[2, 2], dtype='int64')
 data_3 = fluid.data(name='data_3', shape=[1, 2, 2], dtype='int64')
 
 out_sub = data_1 - data_2
-out_mul = paddle_enc.layers.mul(x=data_1, y=data_2)
-out_mean = paddle_enc.layers.mean(x=data_1)
-out_square = paddle_enc.layers.square(x=data_1)
-out_sum = paddle_enc.layers.sum([data_1, data_2])
+out_mul = pfl_mpc.layers.mul(x=data_1, y=data_2)
+out_mean = pfl_mpc.layers.mean(x=data_1)
+out_square = pfl_mpc.layers.square(x=data_1)
+out_sum = pfl_mpc.layers.sum([data_1, data_2])
 
 d_1 = np.array([[[10, 10], [10, 10]], [[10, 10], [10, 10]]]).astype('int64')
 d_2 = np.array([[[5, 5], [5, 5]], [[5, 5], [5, 5]]]).astype('int64')

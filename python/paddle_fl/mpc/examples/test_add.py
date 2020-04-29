@@ -21,15 +21,15 @@ import env_set
 import sys
 import numpy as np
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 
 role, server, port = env_set.TestOptions().values()
 
 # call mpc add
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 
-data_1 = paddle_enc.data(name='data_1', shape=[8], dtype='int64')
-data_2 = paddle_enc.data(name='data_2', shape=[8], dtype='int64')
+data_1 = pfl_mpc.data(name='data_1', shape=[8], dtype='int64')
+data_2 = pfl_mpc.data(name='data_2', shape=[8], dtype='int64')
 
 d_1 = np.array(
     [[0, 1, 2, 3, 4, 5, 6, 7], [0, 1, 2, 3, 4, 5, 6, 7]]).astype('int64')

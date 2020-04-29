@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import paddle.fluid as fluid
-from paddle_fl.core.scheduler.agent_master import FLServerAgent
+from paddle_fl..jingqinghe_newname.core.scheduler.agent_master import FLServerAgent
 
 
 class FLServer(object):

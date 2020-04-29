@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
-from paddle_fl.core.master.fl_job import FLRunTimeJob
-from paddle_fl.reader.gru4rec_reader import Gru4rec_Reader
+from paddle_fl.jingqinghe_newname.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.jingqinghe_newname.core.master.fl_job import FLRunTimeJob
+from paddle_fl.jingqinghe_newname.reader.gru4rec_reader import Gru4rec_Reader
 import paddle.fluid as fluid
 import numpy as np
 import sys

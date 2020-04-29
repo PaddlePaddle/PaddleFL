@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle_fl as fl
+import paddle_fl.jingqinghe_newname as fl
 import paddle.fluid as fluid
 from paddle_fl.core.server.fl_server import FLServer
 from paddle_fl.core.master.fl_job import FLRunTimeJob

@@ -21,8 +21,8 @@ import numpy as np
 import os
 import shutil
 import unittest
-import paddle_encrypted as paddle_enc
-import paddle_encrypted.data_utils.aby3 as aby3
+import paddle_fl.mpc as pfl_mpc
+import paddle_fl.mpc.data_utils.aby3 as aby3
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 

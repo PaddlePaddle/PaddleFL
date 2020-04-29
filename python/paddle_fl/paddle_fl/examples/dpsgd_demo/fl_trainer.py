@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
-from paddle_fl.core.master.fl_job import FLRunTimeJob
+from paddle_fl.jingqinghe_newname.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.jingqinghe_newname.core.master.fl_job import FLRunTimeJob
 import numpy
 import sys
 import paddle

@@ -15,25 +15,25 @@
 import env_set
 import numpy as np
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 
 role, server, port = env_set.TestOptions().values()
 
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 
 batch_size = 3
 
 # x is in cypher text type
-x = paddle_enc.data(name='x', shape=[batch_size, 8], dtype='int64')
+x = pfl_mpc.data(name='x', shape=[batch_size, 8], dtype='int64')
 # y is in cypher text type
-y = paddle_enc.data(name='y', shape=[batch_size, 1], dtype='int64')
+y = pfl_mpc.data(name='y', shape=[batch_size, 1], dtype='int64')
 
-y_pre = paddle_enc.layers.fc(input=x, size=1, act=None)
-y_relu = paddle_enc.layers.relu(input=y_pre)
-cost = paddle_enc.layers.square_error_cost(input=y_relu, label=y)
-avg_loss = paddle_enc.layers.mean(cost)
+y_pre = pfl_mpc.layers.fc(input=x, size=1, act=None)
+y_relu = pfl_mpc.layers.relu(input=y_pre)
+cost = pfl_mpc.layers.square_error_cost(input=y_relu, label=y)
+avg_loss = pfl_mpc.layers.mean(cost)
 
-optimizer = paddle_enc.optimizer.SGD(learning_rate=0.001)
+optimizer = pfl_mpc.optimizer.SGD(learning_rate=0.001)
 optimizer.minimize(avg_loss)
 
 exe = fluid.Executor(place=fluid.CPUPlace())

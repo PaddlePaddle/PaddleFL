@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import argparse
-from paddle_fl.core.scheduler.agent_master import FLScheduler
+from paddle_fl.jingqinghe_newname.core.scheduler.agent_master import FLScheduler
 
 
 def parse_args():

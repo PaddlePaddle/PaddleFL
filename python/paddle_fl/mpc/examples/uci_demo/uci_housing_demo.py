@@ -20,11 +20,11 @@ import time
 
 import paddle
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
-import paddle_encrypted.data_utils.aby3 as aby3
+import paddle_fl.mpc as pfl_mpc
+import paddle_fl.mpc.data_utils.aby3 as aby3
 
 role, server, port = env_set.TestOptions().values()
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 role = int(role)
 
 # data preprocessing
@@ -36,8 +36,8 @@ label_reader = aby3.load_aby3_shares("/tmp/house_label", id=role, shape=(1, ))
 batch_feature = aby3.batch(feature_reader, BATCH_SIZE, drop_last=True)
 batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
 
-x = paddle_enc.data(name='x', shape=[BATCH_SIZE, 13], dtype='int64')
-y = paddle_enc.data(name='y', shape=[BATCH_SIZE, 1], dtype='int64')
+x = pfl_mpc.data(name='x', shape=[BATCH_SIZE, 13], dtype='int64')
+y = pfl_mpc.data(name='y', shape=[BATCH_SIZE, 1], dtype='int64')
 
 # async data loader
 loader = fluid.io.DataLoader.from_generator(
@@ -47,13 +47,13 @@ place = fluid.CPUPlace()
 loader.set_batch_generator(batch_sample, places=place)
 
 # network
-y_pre = paddle_enc.layers.fc(input=x, size=1)
+y_pre = pfl_mpc.layers.fc(input=x, size=1)
 
 infer_program = fluid.default_main_program().clone(for_test=False)
 
-cost = paddle_enc.layers.square_error_cost(input=y_pre, label=y)
-avg_loss = paddle_enc.layers.mean(cost)
-optimizer = paddle_enc.optimizer.SGD(learning_rate=0.001)
+cost = pfl_mpc.layers.square_error_cost(input=y_pre, label=y)
+avg_loss = pfl_mpc.layers.mean(cost)
+optimizer = pfl_mpc.optimizer.SGD(learning_rate=0.001)
 optimizer.minimize(avg_loss)
 
 # loss file

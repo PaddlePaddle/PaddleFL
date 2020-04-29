@@ -20,12 +20,12 @@ import env_set
 
 import sys
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 
 role, server, port = env_set.TestOptions().values()
 
 # call mpc init
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 exe = fluid.Executor(place=fluid.CPUPlace())
 exe.run()
 

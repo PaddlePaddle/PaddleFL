@@ -22,13 +22,13 @@ import time
 import sys
 import numpy as np
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 
 role, server, port = env_set.TestOptions().values()
 
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 
-data_1 = paddle_enc.data(name='data_1', shape=[2, 2], dtype='int64')
+data_1 = pfl_mpc.data(name='data_1', shape=[2, 2], dtype='int64')
 data_2 = fluid.data(name='data_2', shape=[1, 2, 2], dtype='float32')
 
 out_gt = data_1 > data_2

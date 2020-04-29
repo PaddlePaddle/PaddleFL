@@ -18,11 +18,11 @@ import random
 import zmq
 import time
 import sys
-from paddle_fl.core.submitter.client_base import HPCClient
-from paddle_fl.core.scheduler.agent_master import FLScheduler
+from paddle_fl.jingqinghe_newname.core.submitter.client_base import HPCClient
+from paddle_fl.jingqinghe_newname.core.scheduler.agent_master import FLScheduler
 import paddle.fluid as fluid
-from paddle_fl.core.master.job_generator import JobGenerator
-from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+from paddle_fl.jingqinghe_newname.core.master.job_generator import JobGenerator
+from paddle_fl.jingqinghe_newname.core.strategy.fl_strategy_base import FLStrategyFactory
 from model import Model
 import tarfile
 

@@ -20,7 +20,7 @@ import sys
 import sysconfig
 import paddle.fluid as fluid
 
-_paddle_enc_root = sysconfig.get_paths()["purelib"] + "/paddle_encrypted"
+_paddle_enc_root = sysconfig.get_paths()["purelib"] + "/paddle_fl/mpc"
 _paddle_enc_lib_path = _paddle_enc_root + '/libs'
 _paddle_enc_lib = _paddle_enc_lib_path + '/libpaddle_enc.so'
 

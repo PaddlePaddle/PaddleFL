@@ -17,7 +17,7 @@ Prepare of UCI housing data for MPC usage
 import numpy as np
 import paddle
 import six
-from paddle_encrypted.data_utils import aby3
+from paddle_fl.mpc.data_utils import aby3
 
 sample_reader = paddle.dataset.uci_housing.train()
 

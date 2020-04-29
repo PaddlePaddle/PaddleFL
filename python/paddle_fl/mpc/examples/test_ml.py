@@ -22,18 +22,18 @@ import time
 import sys
 import numpy as np
 import paddle.fluid as fluid
-import paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 
 role, server, port = env_set.TestOptions().values()
 
-paddle_enc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 
-data_1 = paddle_enc.data(name='data_1', shape=[2, 2], dtype='int64')
-data_2 = paddle_enc.data(name='data_2', shape=[2, 2], dtype='int64')
+data_1 = pfl_mpc.data(name='data_1', shape=[2, 2], dtype='int64')
+data_2 = pfl_mpc.data(name='data_2', shape=[2, 2], dtype='int64')
 
-out_sec = paddle_enc.layers.square_error_cost(input=data_1, label=data_2)
-out_fc = paddle_enc.layers.fc(input=data_1, size=1, act=None)
-out_relu = paddle_enc.layers.relu(data_1)
+out_sec = pfl_mpc.layers.square_error_cost(input=data_1, label=data_2)
+out_fc = pfl_mpc.layers.fc(input=data_1, size=1, act=None)
+out_relu = pfl_mpc.layers.relu(data_1)
 
 d_1 = np.array([[[10, 10], [10, 10]], [[10, 10], [10, 10]]]).astype('int64')
 d_2 = np.array([[[5, 5], [5, 5]], [[5, 5], [5, 5]]]).astype('int64')
