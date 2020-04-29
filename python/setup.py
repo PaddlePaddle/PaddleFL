@@ -43,24 +43,48 @@ else:
     REQUIRED_PACKAGES += ["numpy"]
 
 REQUIRED_PACKAGES += ["unittest2"]
-packages = [
-    'paddle_encrypted', 'paddle_encrypted.layers',
-    'paddle_encrypted.data_utils'
-]
+packages = ['paddle_fl.paddle_fl', 'paddle_fl.paddle_fl.common', 'paddle_fl.paddle_fl.core',
+            'paddle_fl.paddle_fl.dataset', 'paddle_fl.paddle_fl.reader', 'paddle_fl.mpc',
+            'paddle_fl.mpc.layers', 'paddle_fl.mpc.data_utils','paddle_fl', 'paddle_fl.paddle_fl.common',
+            'paddle_fl.paddle_fl.dataset', 'paddle_fl.paddle_fl.reader', 'paddle_fl.paddle_fl.core',
+             'paddle_fl.paddle_fl.core.master', 'paddle_fl.paddle_fl.core.scheduler',
+             'paddle_fl.paddle_fl.core.server', 'paddle_fl.paddle_fl.core.submitter',
+             'paddle_fl.paddle_fl.core.trainer', 'paddle_fl.paddle_fl.core.trainer.diffiehellman',
+              'paddle_fl.paddle_fl.core.strategy', 'paddle_fl.paddle_fl.core.strategy.details']
 package_data = {
-    'paddle_encrypted': [
+    'paddle_fl.mpc': [
         'libs/*', 'libs/third_party/*', 'libs/third_party/openssl/*',
         'libs/third_party/openssl/engines/*'
     ]
 }
 package_dir = {
-    'paddle_encrypted': './paddle_encrypted',
-    'paddle_encrypted.layers': './paddle_encrypted/layers',
-    'paddle_encrypted.data_utils': './paddle_encrypted/data_utils'
+    'paddle_fl.paddle_fl': './paddle_fl/paddle_fl',
+    'paddle_fl.paddle_fl.common': './paddle_fl/paddle_fl/common',
+    'paddle_fl.paddle_fl.core': './paddle_fl/paddle_fl/core',
+    'paddle_fl.paddle_fl.dataset': './paddle_fl/paddle_fl/dataset',
+    'paddle_fl.paddle_fl.reader': './paddle_fl/paddle_fl/reader',
+    'paddle_fl.mpc': './paddle_fl/mpc',
+    'paddle_fl.mpc.layers': './paddle_fl/mpc/layers',
+    'paddle_fl.mpc.data_utils': './paddle_fl/mpc/data_utils',
+    'paddle_fl': './paddle_fl',
+    'paddle_fl.paddle_fl.common': './paddle_fl/paddle_fl/common',
+    'paddle_fl.paddle_fl.dataset': './paddle_fl/paddle_fl/dataset',
+    'paddle_fl.paddle_fl.reader': './paddle_fl/paddle_fl/reader',
+    'paddle_fl.paddle_fl.core': './paddle_fl/paddle_fl/core',
+    'paddle_fl.paddle_fl.core.master': './paddle_fl/paddle_fl/core/master',
+    'paddle_fl.paddle_fl.core.scheduler': './paddle_fl/paddle_fl/core/scheduler',
+    'paddle_fl.paddle_fl.core.server': './paddle_fl/paddle_fl/core/server',
+    'paddle_fl.paddle_fl.core.submitter': './paddle_fl/paddle_fl/core/submitter',
+    'paddle_fl.paddle_fl.core.trainer': './paddle_fl/paddle_fl/core/trainer',
+    'paddle_fl.paddle_fl.core.trainer.diffiehellman': './paddle_fl/paddle_fl/core/trainer/diffiehellman',
+    'paddle_fl.paddle_fl.core.strategy': './paddle_fl/paddle_fl/core/strategy',
+    'paddle_fl.paddle_fl.core.strategy.details': './paddle_fl/paddle_fl/core/strategy/details',
 }
+
+
 setup(
-    name='paddle_mpc',
-    #    version=fl_version.replace('-', ''),
+    name='paddle_fl',
+    version=fl_version.replace('-', ''),
     description=(
         'Privacy-Preserving Deep Learning Package Based on PaddlePaddle.'),
     long_description='',
