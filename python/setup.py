@@ -1,6 +1,6 @@
-#   Copyright (c) 2019  PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Setup for pip package."""
+"""
+Setup file for python code install
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,18 +22,19 @@ import platform
 
 from setuptools import find_packages
 from setuptools import setup
-from paddle_fl.version import fl_version
 
 
 def python_version():
+    """
+    get python version
+    """
     return [int(v) for v in platform.python_version().split(".")]
 
 
 max_version, mid_version, min_version = python_version()
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle >= 1.6', 'zmq',
-    'paddlepaddle-gpu >= 1.6'
+    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle == 1.6.3'
 ]
 
 if max_version < 3:
@@ -40,17 +43,34 @@ else:
     REQUIRED_PACKAGES += ["numpy"]
 
 REQUIRED_PACKAGES += ["unittest2"]
-
+packages = [
+    'paddle_encrypted', 'paddle_encrypted.layers',
+    'paddle_encrypted.data_utils'
+]
+package_data = {
+    'paddle_encrypted': [
+        'libs/*', 'libs/third_party/*', 'libs/third_party/openssl/*',
+        'libs/third_party/openssl/engines/*'
+    ]
+}
+package_dir = {
+    'paddle_encrypted': './paddle_encrypted',
+    'paddle_encrypted.layers': './paddle_encrypted/layers',
+    'paddle_encrypted.data_utils': './paddle_encrypted/data_utils'
+}
 setup(
-    name='paddle_fl',
-    version=fl_version.replace('-', ''),
-    description=('Federated Deep Learning Package Based on PaddlePaddle.'),
+    name='paddle_mpc',
+    #    version=fl_version.replace('-', ''),
+    description=(
+        'Privacy-Preserving Deep Learning Package Based on PaddlePaddle.'),
     long_description='',
     url='https://github.com/PaddlePaddle/PaddleFL',
     author='PaddlePaddle Author',
     author_email='paddle-dev@baidu.com',
     install_requires=REQUIRED_PACKAGES,
-    packages=find_packages(),
+    packages=packages,
+    package_data=package_data,
+    package_dir=package_dir,
     # PyPI package information.
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -72,4 +92,5 @@ setup(
     ],
     license='Apache 2.0',
     keywords=(
-        'paddle_fl paddlepaddle multi-task transfer distributed-training'))
+        'paddle_fl paddlepaddle multi-task transfer distributed-training multiparty-computation privacy-preserving'
+    ))
