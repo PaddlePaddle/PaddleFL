@@ -17,9 +17,9 @@
 #pragma once
 
 #include "paddle/fluid/framework/operator.h"
-#include "paddle_encrypted/mpc_protocol/context_holder.h"
-#include "paddle_encrypted/mpc_protocol/mpc_instance.h"
-#include "privc3/circuit_context.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_instance.h"
+#include "core/privc3/circuit_context.h"
 
 namespace paddle {
 namespace operators {

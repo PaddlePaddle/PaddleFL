@@ -21,10 +21,10 @@
 #include "context_holder.h"
 #include "mpc_operators.h"
 #include "paddle/fluid/framework/tensor.h"
-#include "privc3/boolean_tensor.h"
-#include "privc3/circuit_context.h"
-#include "privc3/fixedpoint_tensor.h"
-#include "privc3/paddle_tensor.h"
+#include "core/privc3/boolean_tensor.h"
+#include "core/privc3/circuit_context.h"
+#include "core/privc3/fixedpoint_tensor.h"
+#include "core/privc3/paddle_tensor.h"
 
 namespace paddle {
 namespace mpc {

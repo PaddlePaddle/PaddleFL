@@ -27,7 +27,7 @@
 #include "boolean_tensor.h"
 #include "circuit_context.h"
 #include "fixedpoint_tensor.h"
-#include "paddle_encrypted/mpc_protocol/mesh_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
 #include "paddle_tensor.h"
 
 namespace aby3 {

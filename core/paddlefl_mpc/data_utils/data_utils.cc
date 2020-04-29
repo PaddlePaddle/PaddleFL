@@ -21,7 +21,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "paddle_encrypted/mpc_protocol/aby3_operators.h"
+#include "paddlefl_mpc/mpc_protocol/aby3_operators.h"
 #include "privc3/fixedpoint_util.h"
 #include "psi/psi_api.h"
 

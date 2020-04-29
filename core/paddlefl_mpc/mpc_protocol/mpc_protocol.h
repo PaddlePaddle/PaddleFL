@@ -21,7 +21,7 @@
 #include "gloo/rendezvous/hash_store.h"
 #include "mpc_config.h"
 #include "mpc_operators.h"
-#include "privc3/circuit_context.h"
+#include "core/privc3/circuit_context.h"
 
 namespace paddle {
 namespace mpc {

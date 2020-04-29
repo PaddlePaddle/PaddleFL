@@ -71,17 +71,17 @@ include_directories(${PADDLE_INCLUDE})
 include_directories(${PADDLE_INCLUDE}/third_party)
 
 
-add_subdirectory(privc3)
-add_subdirectory(paddle_encrypted/mpc_protocol)
-add_subdirectory(paddle_encrypted/operators)
-add_subdirectory(paddle_encrypted/data_utils)
+add_subdirectory(core/privc3)
+add_subdirectory(core/paddlefl_mpc/mpc_protocol)
+add_subdirectory(core/paddlefl_mpc/operators)
+add_subdirectory(core/paddlefl_mpc/data_utils)
 
 if (WITH_TESTING)
-    add_subdirectory(testing)
+    add_subdirectory(core/testing)
 endif()
 
 if (WITH_PSI)
-    add_subdirectory(psi)
+    add_subdirectory(core/psi)
 endif()
 
 add_library(fluid_framework SHARED IMPORTED GLOBAL)
@@ -99,7 +99,7 @@ target_link_libraries(paddle_enc hiredis)
 
 set(CMAKE_SKIP_INSTALL_RPATH TRUE)
 
-set(PADDLE_ENCRYPTED_LIB_PATH "${CMAKE_SOURCE_DIR}/python/paddle_encrypted/libs")
+set(PADDLE_ENCRYPTED_LIB_PATH "${CMAKE_SOURCE_DIR}/python/paddle_fl/mpc/libs")
 
 install(DIRECTORY "${THIRD_PARTY_PATH}/install/gloo/lib/"
     DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}/third_party)

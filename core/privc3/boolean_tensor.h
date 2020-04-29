@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "paddle_encrypted/mpc_protocol/context_holder.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "tensor_adapter.h"
 
 namespace aby3 {

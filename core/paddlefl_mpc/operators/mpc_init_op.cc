@@ -15,8 +15,8 @@
 // Description:
 
 #include "paddle/fluid/framework/op_registry.h"
-#include "paddle_encrypted/mpc_protocol/mpc_config.h"
-#include "paddle_encrypted/mpc_protocol/mpc_instance.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_instance.h"
 
 namespace paddle {
 namespace operators {

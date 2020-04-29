@@ -22,8 +22,8 @@
 #pragma once
 
 #include "paddle/fluid/framework/operator.h"
-#include "privc3/circuit_context.h"
-#include "privc3/paddle_tensor.h"
+#include "core/privc3/circuit_context.h"
+#include "core/privc3/paddle_tensor.h"
 
 namespace paddle {
 namespace mpc {

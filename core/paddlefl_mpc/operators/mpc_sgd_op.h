@@ -15,7 +15,7 @@
 #pragma once
 #include "mpc_op.h"
 #include "paddle/fluid/framework/eigen.h"
-#include "paddle_encrypted/mpc_protocol/mpc_instance.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_instance.h"
 
 namespace paddle {
 namespace operators {

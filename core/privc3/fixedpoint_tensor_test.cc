@@ -20,8 +20,8 @@
 #include "gtest/gtest.h"
 
 #include "fixedpoint_tensor.h"
-#include "paddle_encrypted/mpc_protocol/context_holder.h"
-#include "paddle_encrypted/mpc_protocol/mesh_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
+#include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
 
 namespace aby3 {
 

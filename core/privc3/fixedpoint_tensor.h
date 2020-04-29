@@ -18,7 +18,7 @@
 
 #include "boolean_tensor.h"
 #include "circuit_context.h"
-#include "paddle_encrypted/mpc_protocol/context_holder.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "paddle_tensor.h"
 
 namespace aby3 {

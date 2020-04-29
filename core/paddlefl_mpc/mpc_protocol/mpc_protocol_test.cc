@@ -17,7 +17,7 @@
 #include "aby3_protocol.h"
 #include "mpc_config.h"
 #include "mpc_protocol_factory.h"
-#include "privc3/circuit_context.h"
+#include "core/privc3/circuit_context.h"
 #include "gtest/gtest.h"
 
 namespace paddle {

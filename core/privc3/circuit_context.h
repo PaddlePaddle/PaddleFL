@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "paddle_encrypted/mpc_protocol/abstract_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 #include "prng_utils.h"
 
 namespace aby3 {

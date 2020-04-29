@@ -16,9 +16,9 @@
 
 #pragma once
 #include "gloo/rendezvous/hash_store.h"
-#include "paddle_encrypted/mpc_protocol/mpc_config.h"
-#include "paddle_encrypted/mpc_protocol/mpc_protocol.h"
-#include "paddle_encrypted/mpc_protocol/mpc_protocol_factory.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_protocol.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_protocol_factory.h"
 #include <memory>
 #include <mutex>
 
