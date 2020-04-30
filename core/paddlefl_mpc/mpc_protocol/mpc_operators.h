@@ -42,6 +42,8 @@ public:
 
   virtual void relu(const Tensor *op, Tensor *out) = 0;
 
+  virtual void sigmoid(const Tensor *op, Tensor *out) = 0;
+
   virtual void softmax(const Tensor *op, Tensor *out) = 0;
 
   virtual void gt(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;

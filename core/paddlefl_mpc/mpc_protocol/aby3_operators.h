@@ -138,6 +138,16 @@ public:
     op_->relu(out_);
   }
 
+  void sigmoid(const Tensor *op, Tensor *out) override {
+    auto op_tuple = from_tensor(op);
+    auto out_tuple = from_tensor(out);
+
+    auto op_ = std::get<0>(op_tuple).get();
+    auto out_ = std::get<0>(out_tuple).get();
+
+    op_->sigmoid(out_);
+  }
+
   void softmax(const Tensor *op, Tensor *out) override {
     auto op_tuple = from_tensor(op);
     auto out_tuple = from_tensor(out);
