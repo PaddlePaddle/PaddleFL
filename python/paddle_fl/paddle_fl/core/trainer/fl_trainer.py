@@ -13,7 +13,7 @@
 # limitations under the License.
 import paddle.fluid as fluid
 import logging
-from paddle_fl.jingqinghe_newname.core.scheduler.agent_master import FLWorkerAgent
+from paddle_fl.paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
 import hmac
 import hashlib

@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import paddle.fluid as fluid
-import paddle_fl.jingqinghe_newname as fl
-from paddle_fl.jingqinghe_newname.core.master.job_generator import JobGenerator
-from paddle_fl.jingqinghe_newname.core.strategy.fl_strategy_base import FLStrategyFactory
+import paddle_fl.paddle_fl as fl
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 
 
 class Model(object):

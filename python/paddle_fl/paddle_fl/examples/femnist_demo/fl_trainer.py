@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from paddle_fl.jingqinghe_newname.core.trainer.fl_trainer import FLTrainerFactory
-from paddle_fl.jingqinghe_newname.core.master.fl_job import FLRunTimeJob
-import paddle_fl.jingqinghe_newname.dataset.femnist
+from paddle_fl.paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+import paddle_fl.paddle_fl.dataset.femnist
 import numpy
 import sys
 import paddle
