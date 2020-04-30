@@ -106,9 +106,9 @@ template <typename DeviceContext, typename T>
 class MpcElementwiseAddKernel : public MpcOpKernel<T> {
 public:
   void ComputeImpl(const framework::ExecutionContext &ctx) const override {
-    auto *in_x_t = ctx.Input<framework::LoDTensor>("X");
-    auto *in_y_t = ctx.Input<framework::LoDTensor>("Y");
-    auto *out_t = ctx.Output<framework::LoDTensor>("Out");
+    auto *in_x_t = ctx.Input<LoDTensor>("X");
+    auto *in_y_t = ctx.Input<LoDTensor>("Y");
+    auto *out_t = ctx.Output<LoDTensor>("Out");
 
     int axis = ctx.Attr<int>("axis");
 

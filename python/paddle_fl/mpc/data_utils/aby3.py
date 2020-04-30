@@ -90,7 +90,7 @@ def make_shares(num_array):
           [c2, d2]]]
     """
     old_size = num_array.size
-    flat_num_array = num_array.reshape(old_size, )
+    flat_num_array = num_array.reshape(old_size,)
     new_shape = (SHARE_NUM, ) + num_array.shape
     result = np.empty((old_size, SHARE_NUM), dtype=np.int64)
     for idx in six.moves.range(0, old_size):
@@ -151,7 +151,7 @@ def save_aby3_shares(share_reader, part_name):
 
         files = [file0, file1, file2]
         for shares in share_reader():
-            for idx in six.moves.range(0, 3):  # 3 parts
+            for idx in six.moves.range(0, 3): # 3 parts
                 share = get_aby3_shares(shares, idx)
                 files[idx].write(share.tostring())
 
@@ -211,12 +211,12 @@ def reconstruct(aby3_shares, type=np.float):
         output:
             [a, b], where a = decrypt(a0, a1, a2), b = decrypt(b0, b1, b2)
     """
-    if len(aby3_shares) != 3:  # should collect shares from 3 parts
+    if len(aby3_shares) != 3: # should collect shares from 3 parts
         raise ValueError("Number of aby3 shares should be 3 but was: {}".
                          format(len(aby3_shares)))
 
     raw_shares = aby3_shares[:, 0]
-    data_shape = raw_shares.shape[1:]  # get rid of the first dim of [3, xxx]
+    data_shape = raw_shares.shape[1:] # get rid of the first dim of [3, xxx]
     data_size = np.prod(data_shape)
     row_first_raw_shares = raw_shares.reshape(3, data_size).transpose(1, 0)
 
