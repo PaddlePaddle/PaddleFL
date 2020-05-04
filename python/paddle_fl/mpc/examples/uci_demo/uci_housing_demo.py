@@ -100,4 +100,4 @@ import prepare_data
 print("uci_loss:")
 prepare_data.load_decrypt_data("/tmp/uci_loss", (1, ))
 print("prediction:")
-prepare_data.load_decrypt_data("/tmp/uci_prediction", (1, ))
+prepare_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ))

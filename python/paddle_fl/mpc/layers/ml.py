@@ -22,7 +22,13 @@ import numpy
 from ..framework import MpcVariable
 from ..mpc_layer_helper import MpcLayerHelper
 
-__all__ = ['fc', 'relu', 'softmax']
+__all__ = [
+    'fc', 
+    'relu', 
+    'softmax',
+    'sigmoid_cross_entropy_with_logits',
+]
+
 
 # add softmax, relu
 
@@ -124,10 +130,10 @@ def fc(input,
             num_flatten_dims = len(input_shape) - 1
             param_num_flatten_dims = num_flatten_dims
         else:
-            param_num_flatten_dims = num_flatten_dims + 1  # The first dimension '2' of input is share number.
+            param_num_flatten_dims = num_flatten_dims + 1 # The first dimension '2' of input is share number.
         param_shape = [
-            reduce(lambda a, b: a * b, input_shape[param_num_flatten_dims:], 1)
-        ] + [size]
+                          reduce(lambda a, b: a * b, input_shape[param_num_flatten_dims:], 1)
+                      ] + [size]
         w = helper.create_mpc_parameter(
             attr=param_attr, shape=param_shape, dtype=dtype, is_bias=False)
         tmp = helper.create_mpc_variable_for_type_inference(dtype)
@@ -150,8 +156,7 @@ def fc(input,
             outputs={"Out": pre_bias},
             attrs={"use_mkldnn": False})
     # add bias
-    pre_activation = helper.append_mpc_bias_op(
-        pre_bias, dim_start=num_flatten_dims)
+    pre_activation = helper.append_mpc_bias_op(pre_bias, dim_start=num_flatten_dims)
     # add activation
     return helper.append_mpc_activation(pre_activation)
 
@@ -220,5 +225,39 @@ def relu(input, name=None):
     helper = MpcLayerHelper('relu', **locals())
     dtype = helper.input_dtype(input_param_name='input')
     out = helper.create_mpc_variable_for_type_inference(dtype)
-    helper.append_op(type="mpc_relu", inputs={"X": input}, outputs={"Y": out})
+    helper.append_op(
+        type="mpc_relu", inputs={"X": input}, outputs={"Y": out})
     return out
+
+
+def sigmoid_cross_entropy_with_logits(x,
+                                      label,
+                                      name=None):
+    """
+    sigmoid_cross_entropy_with_logits
+        forward: out = sigmoid(x). todo: add cross_entropy
+        backward: dx = sigmoid(x) - label
+    Args:
+        x(MpcVariable): input
+        label(MpcVariable): labels
+        name(str|None): The default value is None.  Normally there is
+            no need for user to set this property.  For more information,
+            please refer to :ref:`api_guide_Name`
+    Returns:
+        out(MpcVariable): out = sigmoid(x)
+    """
+
+    helper = MpcLayerHelper("sigmoid_cross_entropy_with_logits", **locals())
+
+    if name is None:
+        out = helper.create_mpc_variable_for_type_inference(dtype=x.dtype)
+    else:
+        out = helper.create_mpc_variable(
+            name=name, dtype=x.dtype, persistable=False)
+
+    helper.append_op(
+        type="mpc_sigmoid_cross_entropy_with_logits",
+        inputs={"X": x,
+                "Label": label},
+        outputs={"Out": out})
+    return out 
