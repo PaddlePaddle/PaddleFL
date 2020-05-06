@@ -19,7 +19,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 - **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
 
-- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6]
+- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
 
 #### Training Strategy
 
@@ -38,7 +38,7 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 #### Compile Time
 
-- **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[1]
+- **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[2]
 
 - **User-Defined-Program**: PaddlePaddle's program that defines the machine learning model structure and training strategies such as multi-task learning.
 
