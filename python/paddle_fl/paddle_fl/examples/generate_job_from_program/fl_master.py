@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle_fl as fl
+import paddle_fl.paddle_fl as fl
 import paddle.fluid as fluid
-from paddle_fl.core.master.job_generator import JobGenerator
-from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True

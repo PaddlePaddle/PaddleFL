@@ -15,7 +15,7 @@
 import os
 import json
 import paddle.fluid as fluid
-from paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
 
 input = fluid.layers.data(name='input', shape=[1, 28, 28], dtype="float32")
 label = fluid.layers.data(name='label', shape=[1], dtype='int64')
