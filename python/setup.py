@@ -22,7 +22,7 @@ import platform
 
 from setuptools import find_packages
 from setuptools import setup
-
+from paddle_fl.version import fl_version
 
 def python_version():
     """
