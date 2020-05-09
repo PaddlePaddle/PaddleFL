@@ -20,11 +20,11 @@ A full training or inference process in Paddle Encrypted consists of mainly thre
 
 #### Data preparation
 
-#####Private data alignment
+##### Private data alignment
 
 Paddle Encrypted enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm[], PE can perform private alignment at a speed of up to 60k records per second.
 
-#####Encryption and distribution
+##### Encryption and distribution
 
 In Paddle Encrypted, data and models from IPs will be encrypted using Secret-Sharing[], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model[].
 
@@ -46,7 +46,7 @@ A PE program is exactly a PaddlePaddle program, and will be executed as normal P
 * **Computing nodes**: a computing node is an entity corresponding to a Computing Party. In real deployment, it can be a bare-metal machine, a cloud VM, a docker or even a process. PE requires exactly three computing nodes in each run, which is determined by the underlying ABY3 protocol. A PE program will be deployed and run in parallel on all three computing nodes. 
 * **Operators using MPC**: PE provides typical machine learning operators in `paddle.fluid_encrypted` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PE operators are created and run in order by Executor (see [] for details).
 
-####Result reconstruction
+#### Result reconstruction
 
 Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PE, and deliver the plaintext results to users.
 
@@ -103,7 +103,7 @@ In Paddle Encrypted, you can build models as it is in PaddlePaddle, but using th
 ```python
 # An example to build an LR model, named train.py (USE THE HOUSE PRICE CASE)
 import sys
-import paddle.paddle_encrypted as paddle_enc
+import paddle_fl.mpc as pfl_mpc
 import paddle.fluid as fluid
 import numpy
 
@@ -111,19 +111,19 @@ import numpy
 role, addr, port = sys.argv[1], sys.argv[2], sys.argv[3]
 
 # init the MPC environment
-paddle_enc.init("aby3", (int)role, net_server_addr=addr, net_server_port=(int)port)
+pfl_mpc.init("aby3", (int)role, net_server_addr=addr, net_server_port=(int)port)
 
 # define encrypted variables
-image = paddle_enc.data(name='image', shape=[None, 784], dtype='int64')
-label = paddle_enc.data(name='label', shape=[None, 1], dtype='int64')
+image = pfl_mpc.data(name='image', shape=[None, 784], dtype='int64')
+label = pfl_mpc.data(name='label', shape=[None, 1], dtype='int64')
 
 # define a secure training network
-hidden = paddle_enc.layers.fc(input=image, size=100, act='relu')
-prediction = paddle_enc.layers.fc(input=hidden, size=10, act='softmax')
-cost = paddle_enc.layers.square_error_cost(input=prediction, label=label)
-loss = paddle_enc.layers.mean(cost)
+hidden = pfl_mpc.layers.fc(input=image, size=100, act='relu')
+prediction = pfl_mpc.layers.fc(input=hidden, size=10, act='softmax')
+cost = pfl_mpc.layers.square_error_cost(input=prediction, label=label)
+loss = pfl_mpc.layers.mean(cost)
 
-sgd = paddle_enc.optimizer.SGD(learning_rate=0.001)
+sgd = pfl_mpc.optimizer.SGD(learning_rate=0.001)
 sgd.minimize(loss)
 
 # Place the training on CPU
