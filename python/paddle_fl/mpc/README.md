@@ -192,6 +192,7 @@ Then the training process will start and the underlying MPC-based operators will
 - Loss of Step 0 in each Epoch
 
 | Epoch/Step | paddle_fl.mpc | Paddle |
+| ---------- | ------------- | ------ |
 | Epoch=0, Step=0  | 738.39491 | 738.46204 |
 | Epoch=1, Step=0  | 630.68834 | 629.9071 |
 | Epoch=2, Step=0  | 539.54683 | 538.1757 |
