@@ -186,10 +186,12 @@ Then the training process will start and the underlying MPC-based operators will
 
 #### Convergence of paddle_fl.mpc vs paddle 
 
+##### Training Parameters
 - Dataset: Boston house price dataset
 - Number of Epoch: 20
 - Batch Size: 10
-- Loss of Step 0 in each Epoch
+
+##### Experiment Results
 
 | Epoch/Step | paddle_fl.mpc | Paddle |
 | ---------- | ------------- | ------ |
