@@ -93,7 +93,7 @@ ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_inc;print(ge
 ```
 Then you can put the directory in the following command and make:
 ```sh
-cmake ../ -DPYTHON_EXECUTABLE=${python} -DPYTHON_INCLUDE_DIRS=${python_include_dir}
+cmake ../ -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DPYTHON_INCLUDE_DIRS=${python_include_dir}
 make -j$(nproc)
 ```
 
