@@ -52,6 +52,19 @@ Upon completion of the secure training (or inference) job, the models (or predic
 
 ## Compilation and Installation
 
+### Docker Installation 
+
+```sh
+#Pull and run the docker
+docker pull hub.baidubce.com/paddlefl/paddle_mpc:latest
+docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bash
+
+#Install paddle_fl
+pip install paddle_fl
+```
+
+### Compile From Source Code
+
 #### Environment preparation
 
 * CentOS 6 or CentOS 7 (64 bit)
