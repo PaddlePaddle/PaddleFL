@@ -103,7 +103,6 @@ Install the package:
 make install
 cd /path/to/PaddleFL/python
 ${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
-# install the 
 pip or pip3 install dist/***.whl -U
 ```
 
