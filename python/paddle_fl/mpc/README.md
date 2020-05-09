@@ -79,11 +79,10 @@ pip install paddle_fl
 
 Fetch the source code and checkout stable release
 ```sh
-git clone https://repo/site
-cd /path/to/paddle_mpc
+git clone https://github.com/PaddlePaddle/PaddleFL
+cd /path/to/PaddleFL
 
 # Checkout stable release
-git checkout [stable-release]
 mkdir build && cd build
 ```
 
@@ -102,7 +101,10 @@ Install the package:
 
 ```sh
 make install
-cd /path/to/paddle_mpc/python && ${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel && pip or pip3 install dist/***.whl -U
+cd /path/to/PaddleFL/python
+${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
+# install the 
+pip or pip3 install dist/***.whl -U
 ```
 
 Validate the installation by running the `python` or `python3`, then runs `import paddle_encrypted as pe` and `pe.version()`. The installation succeeds if you see `Paddle Encrypted Version: 1.0.0`.
