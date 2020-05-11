@@ -127,27 +127,76 @@ role, addr, port = sys.argv[1], sys.argv[2], sys.argv[3]
 # init the MPC environment
 pfl_mpc.init("aby3", (int)role, net_server_addr=addr, net_server_port=(int)port)
 
+#data processing
+BATCH_SIZE = 10
+
+feature_reader = aby3.load_aby3_shares("/tmp/house_feature", id=role, shape=(13, ))
+label_reader = aby3.load_aby3_shares("/tmp/house_label", id=role, shape=(1, ))
+batch_feature = aby3.batch(feature_reader, BATCH_SIZE, drop_last=True)
+batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
+
 # define encrypted variables
-image = pfl_mpc.data(name='image', shape=[None, 784], dtype='int64')
-label = pfl_mpc.data(name='label', shape=[None, 1], dtype='int64')
+x = pfl_mpc.data(name='x', shape=[BATCH_SIZE, 13], dtype='int64')
+y = pfl_mpc.data(name='y', shape=[BATCH_SIZE, 1], dtype='int64')
+
+# async data loader
+loader = fluid.io.DataLoader.from_generator(feed_list=[x, y], capacity=BATCH_SIZE)
+batch_sample = paddle.reader.compose(batch_feature, batch_label)
+place = fluid.CPUPlace()
+loader.set_batch_generator(batch_sample, places=place)
+
 
 # define a secure training network
-hidden = pfl_mpc.layers.fc(input=image, size=100, act='relu')
-prediction = pfl_mpc.layers.fc(input=hidden, size=10, act='softmax')
-cost = pfl_mpc.layers.square_error_cost(input=prediction, label=label)
-loss = pfl_mpc.layers.mean(cost)
+y_pre = pfl_mpc.layers.fc(input=x, size=1)
+cost = pfl_mpc.layers.square_error_cost(input=y_pre, label=y)
+avg_loss = pfl_mpc.layers.mean(cost)
+optimizer = pfl_mpc.optimizer.SGD(learning_rate=0.001)
+optimizer.minimize(avg_loss)
 
-sgd = pfl_mpc.optimizer.SGD(learning_rate=0.001)
-sgd.minimize(loss)
+# loss file that store encrypted loss
+loss_file = "/tmp/uci_loss.part{}".format(role)
 
-# Place the training on CPU
-exe = fluid.Executor(place=fluid.CPUPlace())
+# start training
+exe = fluid.Executor(place)
+exe.run(fluid.default_startup_program())
+epoch_num = 20
 
-# use random numbers to simulate encrypted data, and start training
-x = numpy.random.random(size=(128, 2, 784)).astype('int64')
-y = numpy.random.random(size=(128, 2, 1)).astype('int64')
-loss_data, = exe.run(feed={'image':x, 'lable':y},
-                     fetch_list=[loss.name])
+start_time = time.time()
+for epoch_id in range(epoch_num):
+    step = 0
+
+    # feed data via loader
+    for sample in loader():
+        mpc_loss = exe.run(feed=sample, fetch_list=[avg_loss])
+
+        if step % 50 == 0:
+            print('Epoch={}, Step={}, Loss={}'.format(epoch_id, step, mpc_loss))
+            with open(loss_file, 'ab') as f:
+                f.write(np.array(mpc_loss).tostring())
+            step += 1
+
+end_time = time.time()
+
+# training time
+print('Mpc Training of Epoch={} Batch_size={}, cost time in seconds:{}'
+      .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
+
+# do prediction
+prediction_file = "/tmp/uci_prediction.part{}".format(role)
+for sample in loader():
+    prediction = exe.run(program=infer_program,
+                         feed=sample,
+                         fetch_list=[y_pre])
+    with open(prediction_file, 'ab') as f:
+        f.write(np.array(prediction).tostring())
+    break
+
+# reveal the loss and prediction 
+import prepare_data
+print("uci_loss:")
+prepare_data.load_decrypt_data("/tmp/uci_loss", (1, ))
+print("prediction:")
+prepare_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ))
 ```
 
 #### Execution and results
