@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import paddle.fluid as fluid
 from .fl_job import FLCompileTimeJob
 
@@ -196,4 +197,100 @@ class JobGenerator(object):
         local_job.set_feed_names(self._feed_names)
         local_job.set_target_names(self._target_names)
         local_job.set_strategy(fl_strategy)
+        local_job.save(output)
+
+    def save_program(self, program_path, input_list, hidden_vars, loss):
+        if not os.path.exists(program_path):
+            os.makedirs(program_path)
+        main_program_str = fluid.default_main_program(
+        ).desc.serialize_to_string()
+        startup_program_str = fluid.default_startup_program(
+        ).desc.serialize_to_string()
+        params = fluid.default_main_program().global_block().all_parameters()
+        para_info = []
+        for pa in params:
+            para_info.append(pa.name)
+        with open(program_path + '/input_names', 'w') as fout:
+            for input in input_list:
+                fout.write("%s\n" % input.name)
+        with open(program_path + '/hidden_vars', 'w') as fout:
+            for var in hidden_vars:
+                fout.write("%s:%s\n" % (var[0], var[1].name))
+        with open(program_path + '/para_info', 'w') as fout:
+            for item in para_info:
+                fout.write("%s\n" % item)
+        with open(program_path + '/startup_program', "wb") as fout:
+            fout.write(startup_program_str)
+        with open(program_path + '/main_program', "wb") as fout:
+            fout.write(main_program_str)
+        with open(program_path + '/loss_name', 'w') as fout:
+            fout.write(loss.name)
+
+    def generate_fl_job_from_program(self, strategy, endpoints, worker_num,
+                                     program_input, output):
+        local_job = FLCompileTimeJob()
+        with open(program_input + '/startup_program', "rb") as fin:
+            program_desc_str = fin.read()
+            new_startup = fluid.Program.parse_from_string(program_desc_str)
+
+        with open(program_input + '/main_program', "rb") as fin:
+            program_desc_str = fin.read()
+            new_main = fluid.Program.parse_from_string(program_desc_str)
+
+        para_list = []
+        with open(program_input + '/para_info', 'r') as fin:
+            for line in fin:
+                current_para = line[:-1]
+                para_list.append(current_para)
+
+        input_list = []
+        with open(program_input + '/input_names', 'r') as fin:
+            for line in fin:
+                current_input = line[:-1]
+                input_list.append(current_input)
+
+        with open(program_input + '/loss_name', 'r') as fin:
+            loss_name = fin.read()
+
+        for item in para_list:
+            para = new_main.global_block().var(item)
+            para.regularizer = None
+            para.optimize_attr = {'learning_rate': 1.0}
+            para.trainable = True
+        exe = fluid.Executor(fluid.CPUPlace())
+        loss = None
+        for var in new_main.list_vars():
+            if var.name == loss_name:
+                loss = var
+        with fluid.program_guard(new_main, new_startup):
+            optimizer = fluid.optimizer.SGD(learning_rate=0.1,
+                                            parameter_list=para_list)
+            exe.run(new_startup)
+            strategy.minimize(optimizer, loss)
+
+        for trainer_id in range(worker_num):
+            startup_program = new_startup.clone()
+            main_program = loss.block.program.clone()
+            strategy._build_trainer_program_for_job(
+                trainer_id,
+                program=main_program,
+                ps_endpoints=endpoints,
+                trainers=worker_num,
+                sync_mode=True,
+                startup_program=startup_program,
+                job=local_job)
+
+        startup_program = new_startup.clone()
+        main_program = loss.block.program.clone()
+        strategy._build_server_programs_for_job(
+            program=main_program,
+            ps_endpoints=endpoints,
+            trainers=worker_num,
+            sync_mode=True,
+            startup_program=startup_program,
+            job=local_job)
+
+        local_job.set_feed_names(input_list)
+        local_job.set_target_names([loss.name])
+        local_job.set_strategy(strategy)
         local_job.save(output)
