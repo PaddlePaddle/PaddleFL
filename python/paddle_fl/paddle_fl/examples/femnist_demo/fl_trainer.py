@@ -14,7 +14,7 @@
 
 from paddle_fl.paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
 from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
-import paddle_fl.paddle_fl.dataset.femnist
+import paddle_fl.paddle_fl.dataset.femnist as femnist
 import numpy
 import sys
 import paddle
@@ -76,7 +76,7 @@ while not trainer.stop():
     #train_data,test_data= data_generater(trainer_id,inner_step=trainer._step,batch_size=64,count_by_step=count_by_step)
     train_reader = paddle.batch(
         paddle.reader.shuffle(
-            paddle_fl.dataset.femnist.train(
+            femnist.train(
                 trainer_id,
                 inner_step=trainer._step,
                 batch_size=64,
@@ -85,7 +85,7 @@ while not trainer.stop():
         batch_size=64)
 
     test_reader = paddle.batch(
-        paddle_fl.dataset.femnist.test(
+        femnist.test(
             trainer_id,
             inner_step=trainer._step,
             batch_size=64,

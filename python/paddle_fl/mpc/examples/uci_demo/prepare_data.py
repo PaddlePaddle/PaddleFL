@@ -60,3 +60,6 @@ def load_decrypt_data(filepath, shape):
     for instance in aby3_share_reader():
         p = aby3.reconstruct(np.array(instance))
         print(p)
+
+
+generate_encrypted_data()

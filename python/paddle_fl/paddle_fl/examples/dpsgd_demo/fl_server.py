@@ -14,8 +14,8 @@
 
 import paddle_fl.paddle_fl as fl
 import paddle.fluid as fluid
-from paddle_fl.core.server.fl_server import FLServer
-from paddle_fl.core.master.fl_job import FLRunTimeJob
+from paddle_fl.paddle_fl.core.server.fl_server import FLServer
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"

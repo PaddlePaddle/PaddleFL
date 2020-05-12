@@ -22,7 +22,7 @@ elseif (LINUX)
 endif()
 
 if (NOT PYTHON_EXECUTABLE)
-  set(PYTHON_EXECUTABLE python3)
+  set(PYTHON_EXECUTABLE python)
 endif()
 
 find_program(PYTHON ${PYTHON_EXECUTABLE})

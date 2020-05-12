@@ -22,7 +22,7 @@ import platform
 
 from setuptools import find_packages
 from setuptools import setup
-from paddle_fl.version import fl_version
+from version import fl_version
 
 def python_version():
     """
@@ -34,7 +34,7 @@ def python_version():
 max_version, mid_version, min_version = python_version()
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle == 1.6.3'
+    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle == 1.6.3', 'paddlepaddle-gpu >= 1.8'
 ]
 
 if max_version < 3:

@@ -86,9 +86,9 @@ step = 0
 for epoch_id in range(epoch_num):
     # feed data via loader
     for sample in loader():
-        exe.run(feed=sample)
+        loss = exe.run(feed=sample, fetch_list=[cost.name])
         if step % 50 == 0:
-            print('Epoch={}, Step={}'.format(epoch_id, step))
+            print('Epoch={}, Step={}, loss={}'.format(epoch_id, step, loss))
         step += 1
 
 end_time = time.time()

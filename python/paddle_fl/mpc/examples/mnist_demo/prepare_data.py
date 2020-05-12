@@ -94,6 +94,6 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
             for i in p:
                 f.write(str(i) + '\n')
 
-# generate_encrypted_data()
-# generate_encrypted_test_data()
+generate_encrypted_data()
+generate_encrypted_test_data()
 
