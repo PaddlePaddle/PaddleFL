@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+#!/bin/bash
+#
 # A tools to faciliate the parallel running of fluid_encrypted test scrips.
 # A test script is EXPECTED to accepted arguments in the following format:
 #
