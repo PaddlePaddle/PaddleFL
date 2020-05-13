@@ -1,17 +1,3 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 #!/bin/bash
 #
 # A tools to faciliate the parallel running of fluid_encrypted test scrips.
@@ -61,10 +47,23 @@ fi
 # clear the redis cache
 $REDIS_BIN -h $SERVER -p $PORT flushall
 
+# remove temp data generated in last time
+LOSS_FILE="/tmp/uci_loss.*"
+PRED_FILE="/tmp/uci_prediction.*"
+if [ "$LOSS_FILE" ]; then
+        rm -rf $LOSS_FILE
+fi
 
+if [ "$PRED_FILE" ]; then
+        rm -rf $PRED_FILE
+fi
+
+
+# kick off script with roles of 1 and 2, and redirect output to /dev/null
 for role in {1..2}; do
     $PYTHON $SCRIPT $role $SERVER $PORT 2>&1 >/dev/null &
 done
 
 # for party of role 0, run in a foreground mode and show the output
 $PYTHON $SCRIPT 0 $SERVER $PORT
+
