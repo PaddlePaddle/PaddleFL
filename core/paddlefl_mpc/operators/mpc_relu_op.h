@@ -14,43 +14,37 @@
 
 #pragma once
 #include "mpc_op.h"
-#include "core/paddlefl_mpc/mpc_protocol/mpc_instance.h"
 
 namespace paddle {
 namespace operators {
 
 using Tensor = framework::Tensor;
-// Define forward computation
+//Define forward computation
 template <typename DeviceContext, typename T>
 class MpcReluKernel : public MpcOpKernel<T> {
 public:
-  void ComputeImpl(const framework::ExecutionContext &ctx) const override {
-    const Tensor *in_t = ctx.Input<Tensor>("X");
-    Tensor *out_t = ctx.Output<Tensor>("Y");
-    auto x = in_t->data<T>();
-    auto y = out_t->mutable_data<T>(ctx.GetPlace());
-    PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_protocol,
-                            "Protocol %s is not yet created in MPC Protocol.");
-    mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->relu(
-        in_t, out_t);
+    void ComputeImpl(const framework::ExecutionContext& ctx) const override {
+        const Tensor* in_t = ctx.Input<Tensor>("X");
+        Tensor* out_t = ctx.Output<Tensor>("Y");
+        auto x = in_t->data<T>();
+        auto y = out_t->mutable_data<T>(ctx.GetPlace());
+        PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_protocol, "Protocol %s is not yet created in MPC Protocol.");
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->relu(in_t,out_t);
   }
 };
 
-// Define backward computation
+//Define backward computation
 template <typename DeviceContext, typename T>
 class MpcReluGradKernel : public MpcOpKernel<T> {
 public:
-  void ComputeImpl(const framework::ExecutionContext &ctx) const override {
-    auto *dy_t = ctx.Input<Tensor>(framework::GradVarName("Y"));
-    auto *y_t = ctx.Input<Tensor>("Y");
-    auto *dx_t = ctx.Output<Tensor>(framework::GradVarName("X"));
-    auto dx = dx_t->mutable_data<T>(ctx.GetPlace());
-    mpc::MpcInstance::mpc_instance()
-        ->mpc_protocol()
-        ->mpc_operators()
-        ->relu_grad(y_t, dy_t, dx_t, 0.0);
-  }
+    void ComputeImpl(const framework::ExecutionContext& ctx) const override {
+        auto* dy_t = ctx.Input<Tensor>(framework::GradVarName("Y"));
+        auto* y_t = ctx.Input<Tensor>("Y");
+        auto* dx_t = ctx.Output<Tensor>(framework::GradVarName("X"));
+        auto dx = dx_t->mutable_data<T>(ctx.GetPlace());
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->relu_grad(y_t, dy_t, dx_t, 0.0);
+    }
 };
 
-} // namespace operaters
-} // namespace paddle
+}// namespace operaters
+}// namespace paddle

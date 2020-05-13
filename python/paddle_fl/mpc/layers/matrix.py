@@ -1,4 +1,4 @@
-# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
 """
 mpc matrix op layers.
 """
-from paddle.fluid.data_feeder import check_type_and_dtype
 
 from ..framework import MpcVariable
+from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
 
-__all__ = ['mul', ]
+__all__ = [
+    'mul',
+]
 
 
 def mul(x, y, x_num_col_dims=1, y_num_col_dims=1, name=None):
@@ -61,13 +63,13 @@ def mul(x, y, x_num_col_dims=1, y_num_col_dims=1, name=None):
 
     inputs = {"X": [x], "Y": [y]}
     attrs = {
-        "x_num_col_dims": x_num_col_dims,
+        "x_num_col_dims": x_num_col_dims, 
         "y_num_col_dims": y_num_col_dims
     }
 
     helper = MpcLayerHelper("mul", **locals())
-    check_type_and_dtype(x, 'x', MpcVariable, ['int64'], 'mul')
-    check_type_and_dtype(y, 'y', MpcVariable, ['int64'], 'mul')
+    check_mpc_variable_and_dtype(x, 'x', ['int64'], 'mul')
+    check_mpc_variable_and_dtype(y, 'y', ['int64'], 'mul')
     if name is None:
         out = helper.create_mpc_variable_for_type_inference(dtype=x.dtype)
     else:
@@ -75,9 +77,9 @@ def mul(x, y, x_num_col_dims=1, y_num_col_dims=1, name=None):
             name=name, dtype=x.dtype, persistable=False)
 
     helper.append_op(
-        type="mpc_mul",
-        inputs={"X": x,
-                "Y": y},
-        attrs=attrs,
+        type="mpc_mul", 
+        inputs={"X": x, 
+                "Y": y}, 
+        attrs=attrs, 
         outputs={"Out": out})
     return out

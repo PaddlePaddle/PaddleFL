@@ -1,4 +1,4 @@
-# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@ mpc ml op layers.
 from functools import reduce
 
 from paddle.fluid.data_feeder import check_type, check_dtype
-from paddle.fluid.data_feeder import check_type_and_dtype
 import numpy
 from ..framework import MpcVariable
+from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
 
 __all__ = [
@@ -28,9 +28,6 @@ __all__ = [
     'softmax',
     'sigmoid_cross_entropy_with_logits',
 ]
-
-
-# add softmax, relu
 
 
 def fc(input,
@@ -186,8 +183,7 @@ def softmax(input, use_cudnn=False, name=None, axis=-1):
     """
     attrs = {"axis": axis, "use_cudnn": use_cudnn}
     helper = MpcLayerHelper('softmax', **locals())
-    check_type_and_dtype(input, 'input', MpcVariable,
-                         ['float16', 'float32', 'float64'], 'softmax')
+    check_mpc_variable_and_dtype(input, 'input', ['int64'], 'softmax')
 
     dtype = helper.input_dtype()
     mpc_softmax_out = helper.create_mpc_variable_for_type_inference(dtype)
@@ -226,7 +222,9 @@ def relu(input, name=None):
     dtype = helper.input_dtype(input_param_name='input')
     out = helper.create_mpc_variable_for_type_inference(dtype)
     helper.append_op(
-        type="mpc_relu", inputs={"X": input}, outputs={"Y": out})
+        type="mpc_relu", 
+        inputs={"X": input}, 
+        outputs={"Y": out})
     return out
 
 

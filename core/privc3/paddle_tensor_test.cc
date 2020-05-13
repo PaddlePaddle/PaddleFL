@@ -18,8 +18,8 @@
 
 #include "gtest/gtest.h"
 
-#include "paddle/fluid/framework/tensor.h"
 #include "paddle/fluid/platform/device_context.h"
+#include "paddle/fluid/framework/tensor.h"
 
 namespace aby3 {
 
@@ -28,271 +28,274 @@ using paddle::framework::Tensor;
 
 class PaddleTensorTest : public ::testing::Test {
 public:
-  std::shared_ptr<TensorAdapterFactory> _tensor_factory;
 
-  CPUDeviceContext _cpu_ctx;
+    std::shared_ptr<TensorAdapterFactory> _tensor_factory;
 
-  void SetUp() {
-    _tensor_factory = std::make_shared<PaddleTensorFactory>(&_cpu_ctx);
-  }
+    CPUDeviceContext _cpu_ctx;
+
+    virtual ~PaddleTensorTest() noexcept {}
+
+    void SetUp() {
+        _tensor_factory = std::make_shared<PaddleTensorFactory>(&_cpu_ctx);
+    }
 };
 
 TEST_F(PaddleTensorTest, factory_test) {
-  EXPECT_NO_THROW(_tensor_factory->template create<int64_t>());
-  std::vector<size_t> shape = {2, 3};
-  EXPECT_NO_THROW(_tensor_factory->template create<int64_t>(shape));
+    EXPECT_NO_THROW(_tensor_factory->template create<int64_t>());
+    std::vector<size_t> shape = { 2, 3 };
+    EXPECT_NO_THROW(_tensor_factory->template create<int64_t>(shape));
 }
 
 TEST_F(PaddleTensorTest, ctor_test) {
-  Tensor t;
-  // t holds no memory
-  EXPECT_THROW({ PaddleTensor<int64_t> pt(&_cpu_ctx, t); },
-               ::paddle::platform::EnforceNotMet);
-  t.template mutable_data<int64_t>(_cpu_ctx.GetPlace());
-  EXPECT_NO_THROW({ PaddleTensor<int64_t> pt(&_cpu_ctx, t); });
+    Tensor t;
+    // t holds no memory
+    EXPECT_THROW({ PaddleTensor<int64_t> pt(&_cpu_ctx, t); }, ::paddle::platform::EnforceNotMet);
+    t.template mutable_data<int64_t>(_cpu_ctx.GetPlace());
+    EXPECT_NO_THROW({ PaddleTensor<int64_t> pt(&_cpu_ctx, t); });
 }
 
 TEST_F(PaddleTensorTest, shape_test) {
-  std::vector<size_t> shape = {2, 3};
-  auto pt = _tensor_factory->template create<int64_t>(shape);
+    std::vector<size_t> shape = { 2, 3 };
+    auto pt = _tensor_factory->template create<int64_t>(shape);
 
-  EXPECT_EQ(shape.size(), pt->shape().size());
+    EXPECT_EQ(shape.size(), pt->shape().size());
 
-  bool eq = std::equal(shape.begin(), shape.end(), pt->shape().begin());
-  EXPECT_TRUE(eq);
+    bool eq = std::equal(shape.begin(), shape.end(), pt->shape().begin());
+    EXPECT_TRUE(eq);
 
-  EXPECT_EQ(6u, pt->numel());
+    EXPECT_EQ(6u, pt->numel());
 }
 
 TEST_F(PaddleTensorTest, reshape_test) {
-  std::vector<size_t> shape = {2, 3};
-  auto pt = _tensor_factory->template create<int64_t>();
+    std::vector<size_t> shape = { 2, 3 };
+    auto pt = _tensor_factory->template create<int64_t>();
 
-  pt->reshape(shape);
+    pt->reshape(shape);
 
-  EXPECT_EQ(shape.size(), pt->shape().size());
+    EXPECT_EQ(shape.size(), pt->shape().size());
 
-  bool eq = std::equal(shape.begin(), shape.end(), pt->shape().begin());
-  EXPECT_TRUE(eq);
+    bool eq = std::equal(shape.begin(), shape.end(), pt->shape().begin());
+    EXPECT_TRUE(eq);
 }
 
 TEST_F(PaddleTensorTest, add_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 1;
-  pt1->data()[0] = 2;
-  pt0->add(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 1;
+    pt1->data()[0] = 2;
+    pt0->add(pt1.get(), pt2.get());
 
-  EXPECT_EQ(3, pt2->data()[0]);
+    EXPECT_EQ(3, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, sub_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 2;
-  pt1->data()[0] = 1;
-  pt0->sub(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 2;
+    pt1->data()[0] = 1;
+    pt0->sub(pt1.get(), pt2.get());
 
-  EXPECT_EQ(1, pt2->data()[0]);
+    EXPECT_EQ(1, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, negative_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 2;
-  pt0->negative(pt1.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 2;
+    pt0->negative(pt1.get());
 
-  EXPECT_EQ(-2, pt1->data()[0]);
+    EXPECT_EQ(-2, pt1->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, mul_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 7;
-  pt1->data()[0] = 3;
-  pt0->mul(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 7;
+    pt1->data()[0] = 3;
+    pt0->mul(pt1.get(), pt2.get());
 
-  EXPECT_EQ(21, pt2->data()[0]);
+    EXPECT_EQ(21, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, div_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 7;
-  pt1->data()[0] = 3;
-  pt0->div(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 7;
+    pt1->data()[0] = 3;
+    pt0->div(pt1.get(), pt2.get());
 
-  EXPECT_EQ(2, pt2->data()[0]);
+    EXPECT_EQ(2, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, matmul_test) {
-  std::vector<size_t> shape0 = {2, 3};
-  std::vector<size_t> shape1 = {3, 2};
-  std::vector<size_t> shape2 = {2, 2};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape0);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape1);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape2);
-  for (size_t i = 0; i < 6; ++i) {
-    pt0->data()[i] = i;
-    pt1->data()[i] = i;
-  }
-  pt0->mat_mul(pt1.get(), pt2.get());
+    std::vector<size_t> shape0 = { 2, 3 };
+    std::vector<size_t> shape1 = { 3, 2 };
+    std::vector<size_t> shape2 = { 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 6; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get());
 
-  // | 0 1 2 |   | 0 1 |   | 10 13 |
-  // | 3 4 5 | x | 2 3 | = | 28 40 |
-  //             | 4 5 |
+    // | 0 1 2 |   | 0 1 |   | 10 13 |
+    // | 3 4 5 | x | 2 3 | = | 28 40 |
+    //             | 4 5 |
 
-  std::vector<int64_t> res = {10, 13, 28, 40};
+    std::vector<int64_t> res = { 10, 13, 28, 40 };
 
-  bool eq = std::equal(res.begin(), res.end(), pt2->data());
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
 
-  EXPECT_TRUE(eq);
+    EXPECT_TRUE(eq);
 }
 
 TEST_F(PaddleTensorTest, xor_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 3;
-  pt1->data()[0] = 7;
-  pt0->bitwise_xor(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 3;
+    pt1->data()[0] = 7;
+    pt0->bitwise_xor(pt1.get(), pt2.get());
 
-  EXPECT_EQ(4, pt2->data()[0]);
+    EXPECT_EQ(4, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, and_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 3;
-  pt1->data()[0] = 7;
-  pt0->bitwise_and(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 3;
+    pt1->data()[0] = 7;
+    pt0->bitwise_and(pt1.get(), pt2.get());
 
-  EXPECT_EQ(3, pt2->data()[0]);
+    EXPECT_EQ(3, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, or_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  auto pt2 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 3;
-  pt1->data()[0] = 7;
-  pt0->bitwise_or(pt1.get(), pt2.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 3;
+    pt1->data()[0] = 7;
+    pt0->bitwise_or(pt1.get(), pt2.get());
 
-  EXPECT_EQ(7, pt2->data()[0]);
+    EXPECT_EQ(7, pt2->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, not_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 0;
-  pt0->bitwise_not(pt1.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 0;
+    pt0->bitwise_not(pt1.get());
 
-  EXPECT_EQ(-1, pt1->data()[0]);
+    EXPECT_EQ(-1, pt1->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, lshift_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 2;
-  pt0->lshift(1, pt1.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 2;
+    pt0->lshift(1, pt1.get());
 
-  EXPECT_EQ(4, pt1->data()[0]);
+    EXPECT_EQ(4, pt1->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, rshift_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = 2;
-  pt0->rshift(1, pt1.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = 2;
+    pt0->rshift(1, pt1.get());
 
-  EXPECT_EQ(1, pt1->data()[0]);
+    EXPECT_EQ(1, pt1->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, logical_rshift_test) {
-  std::vector<size_t> shape = {1};
-  auto pt0 = _tensor_factory->template create<int64_t>(shape);
-  auto pt1 = _tensor_factory->template create<int64_t>(shape);
-  pt0->data()[0] = -1;
-  pt0->logical_rshift(1, pt1.get());
+    std::vector<size_t> shape = { 1 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape);
+    pt0->data()[0] = -1;
+    pt0->logical_rshift(1, pt1.get());
 
-  EXPECT_EQ(-1ull >> 1, pt1->data()[0]);
+    EXPECT_EQ(-1ull >> 1, pt1->data()[0]);
 }
 
+
 TEST_F(PaddleTensorTest, scale_test) {
-  auto pt = _tensor_factory->template create<int64_t>();
+    auto pt = _tensor_factory->template create<int64_t>();
 
-  auto pt_ = dynamic_cast<PaddleTensor<int64_t> *>(pt.get());
+    auto pt_ = dynamic_cast<PaddleTensor<int64_t>*>(pt.get());
 
-  pt_->scaling_factor() = 1;
+    pt_->scaling_factor() = 1;
 
-  Tensor t;
+    Tensor t;
 
-  int dim[1] = {1};
-  paddle::framework::DDim ddim(dim, 1);
-  t.template mutable_data<float>(ddim, _cpu_ctx.GetPlace());
+    int dim[1] = { 1 };
+    paddle::framework::DDim ddim(dim, 1);
+    t.template mutable_data<float>(ddim, _cpu_ctx.GetPlace());
 
-  t.template data<float>()[0] = 0.25f;
+    t.template data<float>()[0] = 0.25f;
 
-  pt_->template from_float_point_type<float>(t, 2);
+    pt_->template from_float_point_type<float>(t, 2);
 
-  EXPECT_EQ(2, pt_->scaling_factor());
-  EXPECT_EQ(1, pt->data()[0]);
+    EXPECT_EQ(2, pt_->scaling_factor());
+    EXPECT_EQ(1, pt->data()[0]);
 }
 
 TEST_F(PaddleTensorTest, scalar_test) {
-  auto pt = _tensor_factory->template create<int64_t>();
+    auto pt = _tensor_factory->template create<int64_t>();
 
-  auto pt_ = dynamic_cast<PaddleTensor<int64_t> *>(pt.get());
+    auto pt_ = dynamic_cast<PaddleTensor<int64_t>*>(pt.get());
 
-  pt_->scaling_factor() = 1;
+    pt_->scaling_factor() = 1;
 
-  std::vector<size_t> shape = {2};
-  pt_->template from_float_point_scalar(0.25f, shape, 2);
+    std::vector<size_t> shape = { 2 };
+    pt_->template from_float_point_scalar(0.25f, shape, 2);
 
-  EXPECT_EQ(2, pt_->scaling_factor());
-  EXPECT_EQ(1, pt->data()[0]);
-  EXPECT_EQ(1, pt->data()[1]);
+    EXPECT_EQ(2, pt_->scaling_factor());
+    EXPECT_EQ(1, pt->data()[0]);
+    EXPECT_EQ(1, pt->data()[1]);
 }
 
 TEST_F(PaddleTensorTest, slice_test) {
-  std::vector<size_t> shape = {2, 2};
-  auto pt = _tensor_factory->template create<int64_t>(shape);
-  auto ret = _tensor_factory->template create<int64_t>();
+    std::vector<size_t> shape = { 2, 2 };
+    auto pt = _tensor_factory->template create<int64_t>(shape);
+    auto ret = _tensor_factory->template create<int64_t>();
 
-  auto pt_ = dynamic_cast<PaddleTensor<int64_t> *>(pt.get());
-  pt_->scaling_factor() = 1;
+    auto pt_ = dynamic_cast<PaddleTensor<int64_t>*>(pt.get());
+    pt_->scaling_factor() = 1;
 
-  for (size_t i = 0; i < 4; ++i) {
-    pt->data()[0] = i;
-  }
+    for (size_t i = 0; i < 4; ++i) {
+        pt->data()[0] = i;
+    }
 
-  pt_->slice(1, 2, ret.get());
+    pt_->slice(1, 2, ret.get());
 
-  auto shape_ = ret->shape();
+    auto shape_ = ret->shape();
 
-  EXPECT_EQ(2, shape_.size());
-  EXPECT_EQ(1, shape_[0]);
-  EXPECT_EQ(2, shape_[1]);
+    EXPECT_EQ(2, shape_.size());
+    EXPECT_EQ(1, shape_[0]);
+    EXPECT_EQ(2, shape_[1]);
 
-  EXPECT_EQ(1, ret->scaling_factor());
+    EXPECT_EQ(1, ret->scaling_factor());
 
-  EXPECT_EQ(2, ret->data()[0]);
-  EXPECT_EQ(3, ret->data()[1]);
+    EXPECT_EQ(2, ret->data()[0]);
+    EXPECT_EQ(3, ret->data()[1]);
 }
 } // namespace aby3

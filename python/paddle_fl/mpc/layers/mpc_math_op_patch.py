@@ -1,4 +1,4 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ def monkey_patch_mpc_variable():
     Monkey patch for operator overloading.
     :return:
     """
-
     def unique_tmp_name():
         """
         Generate temp name for variable.
@@ -80,7 +79,9 @@ def monkey_patch_mpc_variable():
         tmp_name = unique_tmp_name()
         return block.create_var(name=tmp_name, dtype=dtype)
 
-    def _elemwise_method_creator_(method_name, op_type, reverse=False):
+    def _elemwise_method_creator_(method_name,
+                                  op_type,
+                                  reverse=False):
         """
         Operator overloading for different method.
         :param method_name: the name of operator which is overloaded.
@@ -88,19 +89,16 @@ def monkey_patch_mpc_variable():
         :param reverse:
         :return:
         """
-
         def __impl__(self, other_var):
             lhs_dtype = safe_get_dtype(self)
 
             if method_name in compare_ops:
                 if not isinstance(other_var, Variable):
-                    raise NotImplementedError(
-                        "Unsupported data type of {} for compare operations."
-                        .format(other_var.name))
+                    raise NotImplementedError("Unsupported data type of {} for compare operations."
+                                              .format(other_var.name))
             else:
                 if not isinstance(other_var, MpcVariable):
-                    raise NotImplementedError(
-                        "Unsupported data type of {}.".format(other_var.name))
+                    raise NotImplementedError("Unsupported data type of {}.".format(other_var.name))
 
             rhs_dtype = safe_get_dtype(other_var)
             if reverse:
@@ -111,8 +109,7 @@ def monkey_patch_mpc_variable():
             if method_name in compare_ops:
                 out = create_new_tmp_var(current_block(self), dtype=rhs_dtype)
             else:
-                out = create_new_tmp_mpc_var(
-                    current_block(self), dtype=lhs_dtype)
+                out = create_new_tmp_mpc_var(current_block(self), dtype=lhs_dtype)
 
             # out = create_new_tmp_mpc_var(current_block(self), dtype=lhs_dtype)
 
@@ -120,9 +117,9 @@ def monkey_patch_mpc_variable():
             if other_var.shape[0] == -1:
                 axis = 0
             assert len(self.shape) >= len(other_var.shape), (
-                "The rank of the first argument of an binary operator cannot "
-                "be smaller than the rank of its second argument: %s vs %s" %
-                (len(self.shape), len(other_var.shape)))
+                    "The rank of the first argument of an binary operator cannot "
+                    "be smaller than the rank of its second argument: %s vs %s" %
+                    (len(self.shape), len(other_var.shape)))
 
             current_block(self).append_op(
                 type=op_type,
@@ -157,32 +154,33 @@ def monkey_patch_mpc_variable():
 
     # inject methods
     for method_name, op_type, reverse in (
-        ("__add__", "mpc_elementwise_add", False),
+            ("__add__", "mpc_elementwise_add", False),
             # a+b == b+a. Do not need to reverse explicitly
-        ("__radd__", "mpc_elementwise_add", False),
-        ("__sub__", "mpc_elementwise_sub", False),
-        ("__rsub__", "mpc_elementwise_sub", True),
-        ("__mul__", "mpc_elementwise_mul", False),
+            ("__radd__", "mpc_elementwise_add", False),
+            ("__sub__", "mpc_elementwise_sub", False),
+            ("__rsub__", "mpc_elementwise_sub", True),
+            ("__mul__", "mpc_elementwise_mul", False),
             # a*b == b*a. Do not need to reverse explicitly
-        ("__rmul__", "mpc_elementwise_mul", False),
-        ("__div__", "mpc_elementwise_div", False),
-        ("__truediv__", "mpc_elementwise_div", False),
-        ("__rdiv__", "mpc_elementwise_div", True),
-        ("__rtruediv__", "mpc_elementwise_div", True),
-        ("__pow__", "mpc_elementwise_pow", False),
-        ("__rpow__", "mpc_elementwise_pow", True),
-        ("__floordiv__", "mpc_elementwise_floordiv", False),
-        ("__mod__", "mpc_elementwise_mod", False),
+            ("__rmul__", "mpc_elementwise_mul", False),
+            ("__div__", "mpc_elementwise_div", False),
+            ("__truediv__", "mpc_elementwise_div", False),
+            ("__rdiv__", "mpc_elementwise_div", True),
+            ("__rtruediv__", "mpc_elementwise_div", True),
+            ("__pow__", "mpc_elementwise_pow", False),
+            ("__rpow__", "mpc_elementwise_pow", True),
+            ("__floordiv__", "mpc_elementwise_floordiv", False),
+            ("__mod__", "mpc_elementwise_mod", False),
             # for logical compare
-        ("__eq__", "mpc_equal", False),
-        ("__ne__", "mpc_not_equal", False),
-        ("__lt__", "mpc_less_than", False),
-        ("__le__", "mpc_less_equal", False),
-        ("__gt__", "mpc_greater_than", False),
-        ("__ge__", "mpc_greater_equal", False)):
+            ("__eq__", "mpc_equal", False),
+            ("__ne__", "mpc_not_equal", False),
+            ("__lt__", "mpc_less_than", False),
+            ("__le__", "mpc_less_equal", False),
+            ("__gt__", "mpc_greater_than", False),
+            ("__ge__", "mpc_greater_equal", False)
+    ):
         # Not support computation between MpcVariable and scalar.
-        setattr(MpcVariable, method_name,
+        setattr(MpcVariable,
+                method_name,
                 _elemwise_method_creator_(method_name, op_type, reverse)
                 if method_name in supported_mpc_ops else announce_not_impl)
 
-    # MpcVariable.astype = astype
