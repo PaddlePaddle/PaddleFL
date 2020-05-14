@@ -18,7 +18,7 @@ PSI (Private Set Intersection) algorithm.
 import os
 import sys
 import mpc_data_utils as mdu
-
+from multiprocessing.connection import Client, Listener
 __all__ = ['align', ]
 
 
@@ -90,7 +90,6 @@ def _send_align_result(result, send_list):
     Each party is represented as "id:ip:port".
     :return:
     """
-    from multiprocessing.connection import Client
     for host in send_list:
         ip_addr = host.split(":")[1]
         port = int(host.split(":")[2])
@@ -112,4 +111,7 @@ def _recv_align_result(host):
     port = int(host.split(":")[2])
     server = Listener((ip_addr, port))
     conn = server.accept()
-    return conn.recv()
+    result = conn.recv()
+    conn.close()
+    server.close()
+    return result
