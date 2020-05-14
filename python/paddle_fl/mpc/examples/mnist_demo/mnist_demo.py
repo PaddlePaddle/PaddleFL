@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +16,7 @@ MNIST Demo
 """
 
 import sys
-sys.path.append('../')
 
-import env_set
 import numpy as np
 import time
 
@@ -29,7 +26,7 @@ import paddle_fl.mpc as pfl_mpc
 import paddle_fl.mpc.data_utils.aby3 as aby3
 import prepare_data
 
-role, server, port = env_set.TestOptions().values()
+role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 # modify host(localhost).
 pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 role = int(role)

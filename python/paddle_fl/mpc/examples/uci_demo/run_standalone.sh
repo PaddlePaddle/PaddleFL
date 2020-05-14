@@ -61,10 +61,23 @@ fi
 # clear the redis cache
 $REDIS_BIN -h $SERVER -p $PORT flushall
 
+# remove temp data generated in last time
+LOSS_FILE="/tmp/uci_loss.*"
+PRED_FILE="/tmp/uci_prediction.*"
+if [ "$LOSS_FILE" ]; then
+        rm -rf $LOSS_FILE
+fi
 
+if [ "$PRED_FILE" ]; then
+        rm -rf $PRED_FILE
+fi
+
+
+# kick off script with roles of 1 and 2, and redirect output to /dev/null
 for role in {1..2}; do
     $PYTHON $SCRIPT $role $SERVER $PORT 2>&1 >/dev/null &
 done
 
 # for party of role 0, run in a foreground mode and show the output
 $PYTHON $SCRIPT 0 $SERVER $PORT
+
