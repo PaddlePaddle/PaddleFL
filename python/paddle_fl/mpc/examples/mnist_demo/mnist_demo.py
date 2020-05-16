@@ -24,7 +24,7 @@ import paddle
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 import paddle_fl.mpc.data_utils.aby3 as aby3
-import prepare_data
+
 
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 # modify host(localhost).
@@ -72,7 +72,7 @@ test_batch_sample = paddle.reader.compose(test_batch_feature, test_batch_label)
 test_loader.set_batch_generator(test_batch_sample, places=place)
 
 # loss file
-loss_file = "/tmp/mnist_output_loss.part{}".format(role)
+# loss_file = "/tmp/mnist_output_loss.part{}".format(role)
 
 # train
 exe = fluid.Executor(place)
@@ -83,9 +83,9 @@ step = 0
 for epoch_id in range(epoch_num):
     # feed data via loader
     for sample in loader():
-        loss = exe.run(feed=sample, fetch_list=[cost.name])
+        exe.run(feed=sample, fetch_list=[cost.name])
         if step % 50 == 0:
-            print('Epoch={}, Step={}, loss={}'.format(epoch_id, step, loss))
+            print('Epoch={}, Step={}'.format(epoch_id, step))
         step += 1
 
 end_time = time.time()
@@ -98,9 +98,3 @@ for sample in test_loader():
     prediction = exe.run(program=infer_program, feed=sample, fetch_list=[cost])
     with open(prediction_file, 'ab') as f:
         f.write(np.array(prediction).tostring())
-
-# decrypt
-#if 0 == role:
-#    prepare_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), "mpc_label")
-    
-

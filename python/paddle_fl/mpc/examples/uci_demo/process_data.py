@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Prepare of UCI housing data for MPC usage
+Process data for UCI Housing.
 """
 import numpy as np
 import paddle
@@ -60,6 +60,3 @@ def load_decrypt_data(filepath, shape):
     for instance in aby3_share_reader():
         p = aby3.reconstruct(np.array(instance))
         print(p)
-
-
-generate_encrypted_data()

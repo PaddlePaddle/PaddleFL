@@ -93,8 +93,8 @@ for sample in loader():
         f.write(np.array(prediction).tostring())
     break
 
-import prepare_data
+import process_data
 print("uci_loss:")
-prepare_data.load_decrypt_data("/tmp/uci_loss", (1, ))
+process_data.load_decrypt_data("/tmp/uci_loss", (1, ))
 print("prediction:")
-prepare_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ))
+process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ))
