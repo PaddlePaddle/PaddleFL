@@ -1,0 +1,22 @@
+# commonly configured
+task_name=test_name
+hdfs_output=/path/to/your/output/file
+train_cmd=python dist_trainer.py
+#monitor_cmd=python system_monitor_app.py 10 100
+monitor_cmd=
+#train_cmd=python test_hadoop.py
+
+hdfs_path=/site/of/hdfs
+ugi=your_fs_name, your_ugi
+worker_nodes=2
+server_nodes=1
+hadoop_home=/local/path/to/your/hadoop
+hpc_home=/local/path/to/your/hpc
+package_path=./package
+priority=high
+#queue name
+queue=queue_name
+server=/site/of/mpi/server
+
+python_tar=/path/to/your/executable/python
+wheel=/path/to/paddle/installation/package
