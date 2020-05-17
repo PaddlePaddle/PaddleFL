@@ -4,14 +4,14 @@ This document introduces how to use PaddleFL to train a model with Fl Strategy: 
 
 ### Dependencies
 
-- paddlepaddle>=1.6
+- paddlepaddle>=1.8
 
 ### How to install PaddleFL
 
-Please use python which has paddlepaddle installed
+Please use pip which has paddlepaddle installed
 
 ```
-python setup.py install
+pip install paddle_fl
 ```
 
 ### Model
@@ -98,15 +98,28 @@ job_generator.generate_fl_job(
     strategy, server_endpoints=endpoints, worker_num=2, output=output)
 ```
 
-How to work in RunTime
+#### How to work in RunTime
 
 ```
 python -u fl_scheduler.py >scheduler.log &
 python -u fl_server.py >server0.log &
-python -u fl_trainer.py 0 data/ >trainer0.log &
-python -u fl_trainer.py 1 data/ >trainer1.log &
+python -u fl_trainer.py 0 >trainer0.log &
+python -u fl_trainer.py 1 >trainer1.log &
+python -u fl_trainer.py 2 >trainer2.log &
+python -u fl_trainer.py 3 >trainer3.log &
 ```
+In fl_scheduler.py, we let server and trainers to do registeration.
 
+```
+worker_num = 4
+server_num = 1
+#Define number of worker/server and the port for scheduler
+scheduler = FLScheduler(worker_num, server_num, port=9091)
+scheduler.set_sample_worker_num(4)
+scheduler.init_env()
+print("init env done.")
+scheduler.start_fl_training()
+```
 In fl_server.py, we load and run the FL server job.  
 
 ```
@@ -115,7 +128,9 @@ server_id = 0
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_server_job(job_path, server_id)
+job._scheduler_ep = "127.0.0.1:9091"  # IP address for scheduler
 server.set_server_job(job)
+server._current_ep = "127.0.0.1:8181"  # IP address for server
 server.start()
 ```
 

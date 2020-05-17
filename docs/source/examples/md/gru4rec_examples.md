@@ -3,12 +3,13 @@
 This document introduces how to use PaddleFL to train a model with Fl Strategy.
 
 ### Dependencies
-- paddlepaddle>=1.6
+- paddlepaddle>=1.8
 
 ### How to install PaddleFL
-Please use python which has paddlepaddle installed
+
+Please use pip which has paddlepaddle installed
 ```sh
-python setup.py install
+pip install paddle_fl
 ```
 
 ### Model
@@ -20,7 +21,6 @@ Public Dataset [Rsc15](https://2015.recsyschallenge.com)
 
 ```sh
 #download data
-cd example/gru4rec_demo
 sh download.sh
 ```
 
@@ -63,7 +63,7 @@ strategy = build_strategy.create_fl_strategy()
 endpoints = ["127.0.0.1:8181"]
 output = "fl_job_config"
 job_generator.generate_fl_job(
-    strategy, server_endpoints=endpoints, worker_num=2, output=output)
+    strategy, server_endpoints=endpoints, worker_num=4, output=output)
 
 ```
 
@@ -72,8 +72,10 @@ job_generator.generate_fl_job(
 ```sh 
 python -u fl_scheduler.py >scheduler.log &
 python -u fl_server.py >server0.log &
-python -u fl_trainer.py 0 data/ >trainer0.log &
-python -u fl_trainer.py 1 data/ >trainer1.log &
+python -u fl_trainer.py 0 >trainer0.log &
+python -u fl_trainer.py 1 >trainer1.log &
+python -u fl_trainer.py 2 >trainer2.log &
+python -u fl_trainer.py 3 >trainer3.log &
 ```
 fl_trainer.py can define own reader according to data. 
 ```python
