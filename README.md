@@ -9,7 +9,66 @@ PaddleFL is an open source federated learning framework based on PaddlePaddle. R
 
 Data is becoming more and more expensive nowadays, and sharing of raw data is very hard across organizations. Federated Learning aims to solve the problem of data isolation and secure sharing of data knowledge among organizations. The concept of federated learning is proposed by researchers in Google [1, 2, 3]. 
 
+## Compilation and Installation
+
+### Docker Installation
+
+```sh
+#Pull and run the docker
+docker pull hub.baidubce.com/paddlefl/paddle_fl:latest
+docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bash
+
+#Install paddle_fl
+pip install paddle_fl
+```
+
+### Compile From Source Code
+
+#### Environment preparation
+
+* CentOS 6 or CentOS 7 (64 bit)
+* Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
+* pip or pip3 9.0.1+ (64 bit)
+* PaddlePaddle release 1.6.3
+* Redis 5.0.8 (64 bit)
+* GCC or G++ 4.8.3+
+* cmake 3.15+
+
+#### Clone the source code, compile and install
+
+Fetch the source code and checkout stable release
+```sh
+git clone https://github.com/PaddlePaddle/PaddleFL
+cd /path/to/PaddleFL
+
+# Checkout stable release
+mkdir build && cd build
+```
+
+Execute compile commands, where `PYTHON_EXECUTABLE` is path to the python binary where the PaddlePaddle is installed, and `PYTHON_INCLUDE_DIRS` is the corresponding python include directory. You can get the `PYTHON_INCLUDE_DIRS` via the following command:
+
+```sh
+${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_inc;print(get_python_inc())"
+```
+Then you can put the directory in the following command and make:
+```sh
+cmake ../ -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DPYTHON_INCLUDE_DIRS=${python_include_dir}
+make -j$(nproc)
+```
+
+Install the package:
+
+```sh
+make install
+cd /path/to/PaddleFL/python
+${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
+pip or pip3 install dist/***.whl -U
+```
+
+
 ## Overview of PaddleFL
+
+### Horizontal Federated Learning
 
 <img src='images/FL-framework.png' width = "1000" height = "320" align="middle"/>
 
@@ -29,9 +88,19 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 - **Active Learning**
 
+### Paddle Encrypted
+
+Paddle Fluid Encrypted is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
+
+With Paddle Fluid Encrypted, it is easy to train models or conduct prediction as on PaddlePaddle over encrypted data, without the need for cryptography expertise. Furthermore, the rich industry-oriented models and algorithms built on PaddlePaddle can be smoothly migrated to secure versions on Paddle Fluid Encrypted with little effort.
+
+As a key product of PaddleFL, Paddle Fluid Encrypted intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. It provides both provable security (semantic security) and competitive performance.
+
+Below please see the installation, examples, or visit the documentation to learn more about the technical details.
 
 ## Framework design of PaddleFL
 
+### Horizontal Federated Learning
 <img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
@@ -53,6 +122,47 @@ In PaddleFL, components for defining a federated learning task and training a fe
 - **FL-Worker**: Each organization participates in federated learning will have one or more federated workers that will communicate with the federated parameter server.
 
 - **FL-scheduler**: Decide which set of trainers can join the training before each updating cycle. 
+
+### Paddle Encrypted
+
+Paddle Fluid Encrypted implements secure training and inference tasks based on the underlying MPC protocol of ABY3[], in which participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). 
+
+Input Parties (e.g., the training data/model owners) encrypt and distribute data or models to Computing Parties. Computing Parties (e.g., the VM on the cloud) conduct training or inference tasks based on specific MPC protocols, being restricted to see only the encrypted data or models, and thus guarantee the data privacy. When the computation is completed, one or more Result Parties (e.g., data owners or specified third-party) receive the encrypted results from Computing Parties, and reconstruct the plaintext results. Roles can be overlapped, e.g., a data owner can also act as a computing party.
+
+A full training or inference process in Paddle Fluid Encrypted consists of mainly three phases: data preparation, training/inference, and result reconstruction.
+
+#### Data preparation
+
+##### Private data alignment
+
+Paddle Fluid Encrypted enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm[], PFE can perform private alignment at a speed of up to 60k records per second.
+
+##### Encryption and distribution
+
+In Paddle Fluid Encrypted, data and models from IPs will be encrypted using Secret-Sharing[], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model[].
+
+#### Training/inference
+
+![img](http://icode.baidu.com/path/to/iamge)
+
+As in PaddlePaddle, a training or inference job can be separated into the compile-time phase and the run-time phase:
+
+##### Compile time
+
+* **MPC environment specification**: a user needs to choose a MPC protocol, and configure the network settings. In current version, PFE provides only the "ABY3" protocol. More protocol implementation will be provided in future.
+* **User-defined job program**: a user can define the machine learning model structure and the training strategies (or inference task) in a PFE program, using the secure operators.
+
+##### Run time
+
+A PFE program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. For example, in run-time a  PFE program will be transpiled into ProgramDesc, and then be passed to and run by the Executor. The main concepts in the run-time phase are as follows:
+
+* **Computing nodes**: a computing node is an entity corresponding to a Computing Party. In real deployment, it can be a bare-metal machine, a cloud VM, a docker or even a process. PFE requires exactly three computing nodes in each run, which is determined by the underlying ABY3 protocol. A PFE program will be deployed and run in parallel on all three computing nodes. 
+* **Operators using MPC**: PFE provides typical machine learning operators in `paddle.fluid_encrypted` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PFE operators are created and run in order by Executor (see [] for details).
+
+#### Result reconstruction
+
+Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFE, and deliver the plaintext results to users.
+
 
 ## Install Guide and Quick-Start
 
