@@ -155,7 +155,7 @@ As in PaddlePaddle, a training or inference job can be separated into the compil
 A PFE program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. For example, in run-time a  PFE program will be transpiled into ProgramDesc, and then be passed to and run by the Executor. The main concepts in the run-time phase are as follows:
 
 * **Computing nodes**: a computing node is an entity corresponding to a Computing Party. In real deployment, it can be a bare-metal machine, a cloud VM, a docker or even a process. PFE requires exactly three computing nodes in each run, which is determined by the underlying ABY3 protocol. A PFE program will be deployed and run in parallel on all three computing nodes. 
-* **Operators using MPC**: PFE provides typical machine learning operators in `paddle.fluid_encrypted` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PFE operators are created and run in order by Executor (see [] for details).
+* **Operators using MPC**: PFE provides typical machine learning operators in `paddle.fluid_encrypted` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PFE operators are created and run in order by Executor.
 
 #### Result reconstruction
 

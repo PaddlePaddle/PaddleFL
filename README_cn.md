@@ -84,15 +84,20 @@ Paddle Encrypted允许数据拥有方（数据方）在不泄露自己数据的�
 
 #### 训练及推理
 
-想PaddlePaddle一样，训练和推理任务可以分为编译阶段和运行阶段。
+像PaddlePaddle一样，训练和推理任务可以分为编译阶段和运行阶段。
 
 ##### 编译时
 
+* **确定MPC环境**：用户需要指定用到的MPC协议，并配置网络环境。现有版本的Paddle Encrypted只支持"ABY3"协议。更多的协议将在后续版本中支持。
+* **用户定义训练任务**：用户可以根据Paddle Encrypted提供的安全接口，定义集齐学习网络以及训练策略。
 ##### 运行时
 
+一个Paddle Encrypted程序实际上就是一个PaddlePaddle程序。在运行时，Paddle Encrypted的程序将会转变为PaddlePaddle中的ProgramDesc，并交给Executor运行。以下是运行阶段的主要概念：
+* **运算节点**：计算节点是与计算方相对应的实体。在实际部署中，它可以是裸机、云虚拟机、docker甚至进程。Paddle Encrypted在每次运行中只需要三个计算节点，这由底层ABY3协议决定。Paddle Encrypted程序将在所有三个计算节点上并行部署和运行。
+* **基于MPC的算子**：Paddle Encrypted 为操作加密数据提供了特殊的算子，这些算子在PaddlePaddle框架中实现，基于像ABY3一样的MPC协议。像PaddlePaddle中一样，在运行时Paddle Encrypted的算子将被创建并按照顺序执行。
 #### 结果重构
 
-
+安全训练和推理工作完成后，模型（或预测结果）将由计算方以加密形式输出。结果方可以收集加密的结果，使用Paddle Encrypted中的工具对其进行解密，并将明文结果传递给用户。
 ## Kubernetes简单部署
 
 ### 横向联邦方案
