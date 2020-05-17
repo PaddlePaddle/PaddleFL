@@ -1,4 +1,4 @@
-# Copyright (c) 2018 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
 """
 mpc math op layers.
 """
-from paddle.fluid.data_feeder import check_type_and_dtype
 
 from ..framework import MpcVariable
+from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
 
 __all__ = [
@@ -39,7 +39,7 @@ def mean(x, name=None):
     Examples: todo
     """
     helper = MpcLayerHelper("mean", **locals())
-    check_type_and_dtype(x, 'x', MpcVariable, ['int64'], 'mean')
+    check_mpc_variable_and_dtype(x, 'x', ['int64'], 'mean')
     if name is None:
         out = helper.create_mpc_variable_for_type_inference(dtype=x.dtype)
     else:
@@ -64,7 +64,7 @@ def square(x, name=None):
     Examples: todo
     """
     helper = MpcLayerHelper("square", **locals())
-    check_type_and_dtype(x, 'x', MpcVariable, ['int64'], 'square')
+    check_mpc_variable_and_dtype(x, 'x', ['int64'], 'square')
     if name is None:
         out = helper.create_mpc_variable_for_type_inference(dtype=x.dtype)
     else:
@@ -89,8 +89,7 @@ def sum(x):
     Examples: todo
     """
     helper = MpcLayerHelper("sum", **locals())
-    out = helper.create_mpc_variable_for_type_inference(
-        dtype=helper.input_dtype('x'))
+    out = helper.create_mpc_variable_for_type_inference(dtype=helper.input_dtype('x'))
     helper.append_op(
         type="mpc_sum",
         inputs={"X": x},
@@ -116,18 +115,16 @@ def square_error_cost(input, label):
     Examples: todo
     """
     helper = MpcLayerHelper('square_error_cost', **locals())
-    minus_out = helper.create_mpc_variable_for_type_inference(
-        dtype=input.dtype)
+    minus_out = helper.create_mpc_variable_for_type_inference(dtype=input.dtype)
     helper.append_op(
         type='mpc_elementwise_sub',
         inputs={'X': [input],
                 'Y': [label]},
         outputs={'Out': [minus_out]})
 
-    square_out = helper.create_mpc_variable_for_type_inference(
-        dtype=input.dtype)
+    square_out = helper.create_mpc_variable_for_type_inference(dtype=input.dtype)
     helper.append_op(
-        type='mpc_square',
+        type='mpc_square', 
         inputs={'X': [minus_out]},
         outputs={'Out': [square_out]})
     return square_out

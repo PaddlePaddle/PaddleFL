@@ -18,20 +18,20 @@
 namespace paddle {
 namespace operators {
 
-// forward op defination
+//forward op defination
 class MpcReluOp : public framework::OperatorWithKernel {
-public:
+ public:
   using framework::OperatorWithKernel::OperatorWithKernel;
 
-  void InferShape(framework::InferShapeContext *ctx) const override {
+  void InferShape(framework::InferShapeContext* ctx) const override {
     auto in_dims = ctx->GetInputDim("X");
     ctx->SetOutputDim("Y", in_dims);
   }
 };
 
-// forward input & output defination
+//forward input & output defination 
 class MpcReluOpMaker : public framework::OpProtoAndCheckerMaker {
-public:
+ public:
   void Make() override {
     AddInput("X", "The input tensor.");
     AddOutput("Y", "Output of relu_op");
@@ -41,43 +41,46 @@ Mpc Relu Operator.
   }
 };
 
-// backward op defination
+//backward op defination
 class MpcReluGradOp : public framework::OperatorWithKernel {
-public:
+ public:
   using framework::OperatorWithKernel::OperatorWithKernel;
 
-  void InferShape(framework::InferShapeContext *ctx) const override {
+  void InferShape(framework::InferShapeContext* ctx) const override {
     auto in_dims = ctx->GetInputDim(framework::GradVarName("Y"));
     ctx->SetOutputDim(framework::GradVarName("X"), in_dims);
   }
 };
 
-// backward type, input & output defination
+//backward type, input & output defination
 template <typename T>
-class MpcReluGradMaker : public framework::SingleGradOpDescMaker {
+class MpcReluGradMaker : public framework::SingleGradOpMaker<T> {
 public:
-  using framework::SingleGradOpDescMaker::SingleGradOpDescMaker;
+    using framework::SingleGradOpMaker<T>::SingleGradOpMaker;
 
-  std::unique_ptr<T> Apply() const override {
-    auto *op = new T();
-    op->SetType("mpc_relu_grad");
-    op->SetInput("Y", this->Output("Y"));
-    op->SetInput(framework::GradVarName("Y"), this->OutputGrad("Y"));
-    op->SetAttrMap(this->Attrs());
-    op->SetOutput(framework::GradVarName("X"), this->InputGrad("X"));
-    return std::unique_ptr<T>(op);
-  }
+protected:
+    void Apply(GradOpPtr<T> grad) const override {
+        grad->SetType("mpc_relu_grad");
+        grad->SetInput("Y", this->Output("Y"));
+        grad->SetInput(framework::GradVarName("Y"), this->OutputGrad("Y"));
+        grad->SetAttrMap(this->Attrs());
+        grad->SetOutput(framework::GradVarName("X"), this->InputGrad("X"));
+    }
 };
 
-} // namespace operators
-} // namespace paddle
+}  // namespace operators
+}  // namespace paddle
 
 namespace ops = paddle::operators;
 
 using CPU = paddle::platform::CPUDeviceContext;
 
-REGISTER_OPERATOR(mpc_relu, ops::MpcReluOp, ops::MpcReluOpMaker,
+REGISTER_OPERATOR(mpc_relu,
+                  ops::MpcReluOp,
+                  ops::MpcReluOpMaker,
                   ops::MpcReluGradMaker<paddle::framework::OpDesc>);
 REGISTER_OPERATOR(mpc_relu_grad, ops::MpcReluGradOp);
-REGISTER_OP_CPU_KERNEL(mpc_relu, ops::MpcReluKernel<CPU, int64_t>);
-REGISTER_OP_CPU_KERNEL(mpc_relu_grad, ops::MpcReluGradKernel<CPU, int64_t>);
+REGISTER_OP_CPU_KERNEL(mpc_relu,
+                       ops::MpcReluKernel<CPU, int64_t>);
+REGISTER_OP_CPU_KERNEL(mpc_relu_grad,
+                       ops::MpcReluGradKernel<CPU, int64_t>);

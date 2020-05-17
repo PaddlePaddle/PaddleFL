@@ -14,9 +14,10 @@
 """
 basic mpc op layers.
 """
-from paddle.fluid.data_feeder import check_type_and_dtype
+from paddle.fluid.data_feeder import check_variable_and_dtype
 
 from ..framework import MpcVariable
+from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
 
 __all__ = [
@@ -32,8 +33,8 @@ def _elementwise_op(helper):
 
     assert x is not None, 'x cannot be None in {}'.format(op_type)
     assert y is not None, 'y cannot be None in {}'.format(op_type)
-    check_type_and_dtype(x, 'x', MpcVariable, ['int64'], op_type)
-    check_type_and_dtype(y, 'y', MpcVariable, ['int64'], op_type)
+    check_mpc_variable_and_dtype(x, 'x', ['int64'], op_type)
+    check_mpc_variable_and_dtype(y, 'y', ['int64'], op_type)
 
     axis = helper.kwargs.get('axis', -1)
     use_mkldnn = helper.kwargs.get('use_mkldnn', False)
