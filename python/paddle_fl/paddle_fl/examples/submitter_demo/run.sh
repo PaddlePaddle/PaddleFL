@@ -1,2 +1,2 @@
 tar -xf python.tar.gz
-python/bin/python scheduler_client.py config.txt 
+python/bin/python client.py config.txt 
