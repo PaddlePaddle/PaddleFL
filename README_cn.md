@@ -64,6 +64,7 @@ Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用
 
 - **FL-Scheduler**: 训练过程中起到调度Worker的作用，在每个更新周期前，决定哪些Worker可以参与训练。
 
+请参考更多的[例子](./python/paddle_fl/paddle_fl/examples), 获取更多的信息。
 ### Paddle Encrypted
 
 Paddle Encrypted 中的安全训练和推理任务是基于底层的ABY3多方计算协议实现的。在ABY3中，参与方可分为：输入方、计算方和结果方。
@@ -98,6 +99,8 @@ Paddle Encrypted允许数据拥有方（数据方）在不泄露自己数据的�
 #### 结果重构
 
 安全训练和推理工作完成后，模型（或预测结果）将由计算方以加密形式输出。结果方可以收集加密的结果，使用Paddle Encrypted中的工具对其进行解密，并将明文结果传递给用户。
+
+请参考[MPC的例子](./python/paddle_fl/mpc/examples)，以获取更多的信息。
 ## Kubernetes简单部署
 
 ### 横向联邦方案

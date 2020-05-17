@@ -1,12 +1,12 @@
-##Instructions for PaddleFL-MPC UCI Housing Demo
+## Instructions for PaddleFL-MPC UCI Housing Demo
 
 ([简体中文](./README_CN.md)|English)
 
 This document introduces how to run UCI Housing demo based on Paddle-MPC, which has two ways of running, i.e., single machine and multi machines.
 
-###1. Running on Single Machine
+### 1. Running on Single Machine
 
-####(1). Prepare Data
+#### (1). Prepare Data
 
 Generate encrypted data utilizing `generate_encrypted_data()` in `process_data.py` script. For example, users can write the following code into a python script named `prepare.py`, and then run the script with command `python prepare.py`.
 
@@ -17,7 +17,7 @@ process_data.generate_encrypted_data()
 
 Encrypted data files of feature and label would be generated and saved in `/tmp` directory. Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `house_feature.part0` means it is a feature file of party 0.
 
-####(2). Launch Demo with A Shell Script
+#### (2). Launch Demo with A Shell Script
 
 Launch demo with the `run_standalone.sh` script. The concrete command is:
 
@@ -48,17 +48,17 @@ fi
 
 
 
-###2. Running on Multi Machines
+### 2. Running on Multi Machines
 
-####(1). Prepare Data
+#### (1). Prepare Data
 
 Data owner encrypts data. Concrete operations are consistent with “Prepare Data” in “Running on Single Machine”.
 
-####(2). Distribute Encrypted Data
+#### (2). Distribute Encrypted Data
 
 According to the suffix of file name, distribute encrypted data files to `/tmp ` directories of all 3 computation parties. For example, send `house_feature.part0` and `house_label.part0` to `/tmp` of party 0 with `scp` command.
 
-####(3). Modify uci_housing_demo.py
+#### (3). Modify uci_housing_demo.py
 
 Each computation party makes the following modifications on `uci_housing_demo.py` according to the environment of machine.
 
@@ -82,7 +82,7 @@ Each computation party makes the following modifications on `uci_housing_demo.py
   process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
   ```
 
-####(4). Launch Demo on Each Party
+#### (4). Launch Demo on Each Party
 
 **Note** that Redis service is necessary for demo running. Remember to clear the cache of Redis server before launching demo on each computation party, in order to avoid any negative influences caused by the cached records in Redis. The following command can be used for clear Redis, where REDIS_BIN is the executable binary of redis-cli, SERVER and PORT represent the IP and port of Redis server respectively.
 
@@ -102,7 +102,7 @@ Similarly, training loss with cypher text format would be printed on the screen 
 
 **Note** that remember to delete the loss and precidtion files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
 
-####(5). Decrypt Loss and Prediction Data
+#### (5). Decrypt Loss and Prediction Data
 
 Each computation party sends `uci_loss.part` and `uci_prediction.part` files in `/tmp` directory to the `/tmp` directory of data owner. Data owner decrypts and gets the plain text of loss and predictions with ` load_decrypt_data()` in `process_data.py`.
 

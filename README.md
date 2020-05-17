@@ -121,6 +121,7 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 - **FL-scheduler**: Decide which set of trainers can join the training before each updating cycle. 
 
+For more instructions, please refer to the [examples](./python/paddle_fl/paddle_fl/examples)
 ### Paddle Encrypted
 
 Paddle Fluid Encrypted implements secure training and inference tasks based on the underlying MPC protocol of ABY3[], in which participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). 
@@ -161,6 +162,7 @@ A PFE program is exactly a PaddlePaddle program, and will be executed as normal 
 
 Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFE, and deliver the plaintext results to users.
 
+For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/examples)
 ## Easy deployment with kubernetes
 
 ### Horizontal Federated Learning
