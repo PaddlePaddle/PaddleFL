@@ -35,7 +35,8 @@ job.load_trainer_job(job_path, trainer_id)
 job._scheduler_ep = "127.0.0.1:9091"  # Inform scheduler IP address to trainer
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000 + trainer_id)
-trainer.start()
+place = fluid.CPUPlace()
+trainer.start(place)
 test_program = trainer._main_program.clone(for_test=True)
 
 train_reader = paddle.batch(

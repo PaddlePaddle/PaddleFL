@@ -8,7 +8,7 @@ This document introduces how to use PaddleFL to train a model with Fl Strategy: 
 
 ### How to install PaddleFL
 
-Please use python which has paddlepaddle installed
+Please use pip which has paddlepaddle installed
 
 ```
 pip install paddle_fl
@@ -96,7 +96,7 @@ job_generator.generate_fl_job(
 
 ```
 
-How to work in RunTime
+#### How to work in RunTime
 
 ```shell
 python3 fl_master.py
@@ -106,6 +106,18 @@ sleep 2
 python3 -u fl_trainer.py 0 >log/trainer0.log &
 sleep 2
 python3 -u fl_trainer.py 1 >log/trainer1.log &
+```
+In fl_scheduler.py, we let server and trainers to do registeration.
+
+```
+worker_num = 2
+server_num = 1
+#Define number of worker/server and the port for scheduler
+scheduler = FLScheduler(worker_num, server_num, port=9091)
+scheduler.set_sample_worker_num(2)
+scheduler.init_env()
+print("init env done.")
+scheduler.start_fl_training()
 ```
 
 In fl_server.py, we load and run the FL server job.  
