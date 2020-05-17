@@ -96,8 +96,6 @@ With Paddle Fluid Encrypted, it is easy to train models or conduct prediction as
 
 As a key product of PaddleFL, Paddle Fluid Encrypted intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. It provides both provable security (semantic security) and competitive performance.
 
-Below please see the installation, examples, or visit the documentation to learn more about the technical details.
-
 ## Framework design of PaddleFL
 
 ### Horizontal Federated Learning
@@ -168,12 +166,12 @@ Upon completion of the secure training (or inference) job, the models (or predic
 ### Horizontal Federated Learning
 ```sh
 
-kubectl apply -f ./paddle_fl/examples/k8s_deployment/master.yaml
+kubectl apply -f ./python/paddle_fl/paddle_fl/examples/k8s_deployment/master.yaml
 
 ```
-Please refer [K8S deployment example](./paddle_fl/examples/k8s_deployment/README.md) for details
+Please refer [K8S deployment example](./python/paddle_fl/paddle_fl/examples/k8s_deployment/README.md) for details
 
-You can also refer [K8S cluster application and kubectl installation](./paddle_fl/examples/k8s_deployment/deploy_instruction.md) to deploy your K8S cluster
+You can also refer [K8S cluster application and kubectl installation](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) to deploy your K8S cluster
 
 ### Paddle Encrypted
 
@@ -221,7 +219,9 @@ Gru4Rec [9] introduces recurrent neural network model in session-based recommend
 
 ## On Going and Future Work
 
-- Vertical Federated Learning Strategies and more horizontal federated learning strategies will be open sourced.
+- Vertial Federated Learning will support more algorithms.
+
+- Add K8S deployment scheme for Paddle Encrypted.
 
 ## Reference
 

@@ -6,7 +6,11 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 如今，数据变得越来越昂贵，而且跨组织共享原始数据非常困难。联合学习旨在解决组织间数据隔离和数据知识安全共享的问题。联邦学习的概念是由谷歌的研究人员提出的[1，2，3]。
 
+## 编译与安装
+
 ## PaddleFL概述
+
+### 横向联邦方案
 
 <img src='images/FL-framework-zh.png' width = "1300" height = "310" align="middle"/>
 
@@ -26,8 +30,17 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 - **主动学习**
 
+### Paddle Encrypted
+
+Paddle Encrypted 是一个基于PaddlePaddle的隐私保护深度学习框架。Paddle Encrypted基于多方计算（MPC）实现安全训练及预测，拥有与PaddlePaddle相同的运行机制及编程范式。
+
+Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用户亦可简单的对加密的数据进行训练和预测。同时，PaddlePaddle中丰富的模型和算法可以轻易地迁移到Paddle Encrypted中。
+
+作为PaddleFL的一个重要组成部分，Paddle Encrypted可以很好滴支持联邦学习，包括横向、纵向及联邦迁移学习等多个场景。既提供了可靠的安全性，也拥有可观的性能。
 
 ## PaddleFL框架设计
+
+### 横向联邦方案
 
 <img src='images/FL-training.png' width = "1300" height = "450" align="middle"/>
 
@@ -51,36 +64,61 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 - **FL-Scheduler**: 训练过程中起到调度Worker的作用，在每个更新周期前，决定哪些Worker可以参与训练。
 
-## 安装指南和快速入门
+### Paddle Encrypted
 
-请参考[快速开始](https://paddlefl.readthedocs.io/en/latest/instruction.html)。
+Paddle Encrypted 中的安全训练和推理任务是基于底层的ABY3多方计算协议实现的。在ABY3中，参与方可分为：输入方、计算方和结果方。
+
+输入方为训练数据及模型的持有方，负责加密数据和模型，并将其发送到计算方。计算方为训练的执行方，基于特定的多方安全计算协议完成训练任务。计算方只能得到加密后的数据及模型，以保证数据隐>私。计算结束后，结果方会拿到计算结果并恢复出明文数据。每个参与方可充当多个角色，如一个数据拥有方也可以作为计算方参与训练。
+
+Paddle Encrypted的整个训练及推理过程主要由三个部分组成：数据准备，训练/推理，结果解析。
+
+#### 数据准备
+
+##### 私有数据对齐
+
+Paddle Encrypted允许数据拥有方（数据方）在不泄露自己数据的情况下，找出多方共有的样本集合。此功能在纵向联邦学习中非常必要，因为其要求多个数据方在训练前进行数据对齐，并且保护用户的数>据隐私。凭借PSI算法，Paddle Encrypted可以在一秒内完成6万条数据的对齐。
+
+##### 数据加密及分发
+
+在Paddle Encrypted中，数据方将数据和模型用秘密共享的方法加密，然后用直接传输或者数据库存储的方式传到计算方。每个计算方只会拿到数据的一部分，因此计算方无法还原真实数据。
+
+#### 训练及推理
+
+想PaddlePaddle一样，训练和推理任务可以分为编译阶段和运行阶段。
+
+##### 编译时
+
+##### 运行时
+
+#### 结果重构
+
 
 ## Kubernetes简单部署
 
+### 横向联邦方案
 ```sh
  
-kubectl apply -f ./paddle_fl/examples/k8s_deployment/master.yaml
+kubectl apply -f ./python/paddle_fl/paddle_fl/examples/k8s_deployment/master.yaml
 
 ```
-请参考[K8S部署实例](./paddle_fl/examples/k8s_deployment/README.md)
+请参考[K8S部署实例](./python/paddle_fl/paddle_fl/examples/k8s_deployment/README.md)
 
-也可以参考[K8S集群申请及kubectl安装](./paddle_fl/examples/k8s_deployment/deploy_instruction.md) 配置自己的K8S集群
+也可以参考[K8S集群申请及kubectl安装](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) 配置自己的K8S集群
+
+### Paddle Encrypted
+
+会在后续版本中发布。
 ## 性能测试
 
+### 横向联邦方案
 Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 一个基于联邦学习训练Gru4Rec模型的示例请参考[Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
-## 版本更新
-- v0.2.0 发布
-    - 支持 Kubernetes 简易部署
-    - 添加在联邦学习设定下的[LEAF](https://arxiv.org/abs/1812.01097) 公开数据集接口，支持基准的设定 
-    - 添加 FL-scheduler, 在训练过程中充当中心控制器的角色 
-    - 添加 FL-Submitter 功能，支持集群任务部署
-    - 添加 secure aggregation 算法
-    - 支持更多的机器学习优化器，例如：Adam
-    - 增加更多的实际应用例子
+### Paddle Encrypted
+
 ## 正在进行的工作
 
-- 垂直联合学习策略和更多的水平联合学习策略将是开源的。
+- 纵向联合学习支持更多的模型。
+- 发布纵向联邦学习K8S部署方案。
 
 ## 参考文献
 
