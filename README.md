@@ -163,12 +163,9 @@ A PFE program is exactly a PaddlePaddle program, and will be executed as normal 
 
 Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFE, and deliver the plaintext results to users.
 
-
-## Install Guide and Quick-Start
-
-Please reference [Quick Start](https://paddlefl.readthedocs.io/en/latest/instruction.html) for installation and quick-start example.
-
 ## Easy deployment with kubernetes
+
+### Horizontal Federated Learning
 ```sh
 
 kubectl apply -f ./paddle_fl/examples/k8s_deployment/master.yaml
@@ -177,19 +174,19 @@ kubectl apply -f ./paddle_fl/examples/k8s_deployment/master.yaml
 Please refer [K8S deployment example](./paddle_fl/examples/k8s_deployment/README.md) for details
 
 You can also refer [K8S cluster application and kubectl installation](./paddle_fl/examples/k8s_deployment/deploy_instruction.md) to deploy your K8S cluster
+
+### Paddle Encrypted
+
+To be added.
+
 ## Benchmark task
 
-Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
-## Release note
+### Horzontal Federated Learning
 
-- v0.2.0 released 
-    - Support Kubernetes easy deployment 
-    - Add api for [LEAF](https://arxiv.org/abs/1812.01097) dataset which is in federated settings, supporting benchmark experiments. 
-    - Add FL-scheduler, acting as a central controller during the training phase. 
-    - Add FL-Submitter to support cluster task submission
-    - Add secure aggregation algorithm
-    - Support more optimizers in PaddleFL such as Adam
-    - More examples available
+Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
+
+### Paddle Encrypted 
+
 
 ## On Going and Future Work
 
