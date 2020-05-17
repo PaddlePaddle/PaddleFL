@@ -62,12 +62,7 @@ fi
 $REDIS_BIN -h $SERVER -p $PORT flushall
 
 # remove temp data generated in last time
-LOSS_FILE="/tmp/mnist_output_loss.*"
 PRED_FILE="/tmp/mnist_output_prediction.*"
-if [ "$LOSS_FILE" ]; then
-        rm -rf $LOSS_FILE
-fi
-
 if [ "$PRED_FILE" ]; then
         rm -rf $PRED_FILE
 fi

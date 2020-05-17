@@ -106,7 +106,6 @@ def _recv_align_result(host):
     The host is represented as "id:ip:port".
     :return: set. The received align result.
     """
-    from multiprocessing.connection import Listener
     ip_addr = host.split(":")[1]
     port = int(host.split(":")[2])
     server = Listener((ip_addr, port))

@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Prepare of MNIST data for MPC usage
+Process data for MNIST.
 """
-import sys
-
 import numpy as np
 import paddle
 import six
@@ -81,7 +79,7 @@ def load_decrypt_data(filepath, shape):
 
 def decrypt_data_to_file(filepath, shape, decrypted_filepath):
     """
-    load the encrypted data and reconstruct
+    load the encrypted data and reconstruct to a file
     """
     part_readers = []
     for id in six.moves.range(3):
@@ -93,7 +91,3 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
         with open(decrypted_filepath, 'a+') as f:
             for i in p:
                 f.write(str(i) + '\n')
-
-generate_encrypted_data()
-generate_encrypted_test_data()
-
