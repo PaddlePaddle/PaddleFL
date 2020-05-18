@@ -87,7 +87,7 @@ where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the I
 
 Similarly, predictions with cypher text format would be saved in `/tmp` directory, for example, a file named `mnist_output_prediction.part0` for party 0.
 
-**Note** that remember to delete the precidtion files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
+**Note** that remember to delete the prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
 
 #### (5). Decrypt Prediction Data
 

@@ -100,7 +100,7 @@ where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the I
 
 Similarly, training loss with cypher text format would be printed on the screen of each computation party. And at the same time, the loss and predictions would be saved in `/tmp` directory.
 
-**Note** that remember to delete the loss and precidtion files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
+**Note** that remember to delete the loss and prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
 
 #### (5). Decrypt Loss and Prediction Data
 
