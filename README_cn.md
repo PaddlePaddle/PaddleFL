@@ -26,7 +26,7 @@ pip install paddle_fl
 * CentOS 6 or CentOS 7 (64 bit)
 * Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
 * pip or pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.6.3
+* PaddlePaddle release 1.8
 * Redis 5.0.8 (64 bit)
 * GCC or G++ 4.8.3+
 * cmake 3.15+
@@ -42,7 +42,7 @@ cd /path/to/PaddleFL
 mkdir build && cd build
 ```
 
-执行编译指令, `PYTHON_EXECUTABLE` 为安装了PaddlePaddle的可执行python路径, `PYTHON_INCLUDE_DIRS` 是相应的include路径，可以用如下指令获得。`CMAKE_CXX_COMPILER` 为指定的g++路径。
+执行编译指令, `PYTHON_EXECUTABLE` 为安装了PaddlePaddle的可执行python路径, `CMAKE_CXX_COMPILER` 为指定的g++路径。 `PYTHON_INCLUDE_DIRS` 是相应的include路径，可以用如下指令获得：
 
 ```sh
 ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_inc;print(get_python_inc())"
@@ -60,6 +60,14 @@ make install
 cd /path/to/PaddleFL/python
 ${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
 pip or pip3 install dist/***.whl -U
+```
+
+我们也提供了稳定的redis安装包, 可供下载。
+
+```sh
+wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
+tar -xf redis-stable.tar
+cd redis-stable &&  make
 ```
 
 ## PaddleFL概述

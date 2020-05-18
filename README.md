@@ -29,7 +29,7 @@ pip install paddle_fl
 * CentOS 6 or CentOS 7 (64 bit)
 * Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
 * pip or pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.6.3
+* PaddlePaddle release 1.8
 * Redis 5.0.8 (64 bit)
 * GCC or G++ 4.8.3+
 * cmake 3.15+
@@ -64,7 +64,13 @@ cd /path/to/PaddleFL/python
 ${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
 pip or pip3 install dist/***.whl -U
 ```
+We also prepare a stable redis package for you to download and install
 
+```sh
+wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
+tar -xf redis-stable.tar
+cd redis-stable &&  make
+```
 
 ## Overview of PaddleFL
 
