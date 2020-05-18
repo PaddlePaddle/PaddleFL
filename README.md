@@ -24,7 +24,7 @@ pip install paddle_fl
 
 ### Compile From Source Code
 
-#### Environment preparation
+#### A. Environment preparation
 
 * CentOS 6 or CentOS 7 (64 bit)
 * Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
@@ -34,7 +34,7 @@ pip install paddle_fl
 * GCC or G++ 4.8.3+
 * cmake 3.15+
 
-#### Clone the source code, compile and install
+#### B. Clone the source code, compile and install
 
 Fetch the source code and checkout stable release
 ```sh
@@ -80,13 +80,13 @@ cd redis-stable &&  make
 
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
 
-#### Federated Learning Strategy
+#### A. Federated Learning Strategy
 
 - **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
 
 - **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
 
-#### Training Strategy
+#### B. Training Strategy
 
 - **Multi Task Learning** [7]
 
@@ -109,7 +109,7 @@ As a key product of PaddleFL, Paddle Fluid Encrypted intrinsically supports fede
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
-#### Compile Time
+#### A. Compile Time
 
 - **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[2]
 
@@ -119,7 +119,7 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 - **FL-Job-Generator**: Given FL-Strategy, User-Defined Program and Distributed Training Config, FL-Job for federated server and worker will be generated through FL Job Generator. FL-Jobs will be sent to organizations and federated parameter server for run-time execution.
 
-#### Run Time
+#### B. Run Time
 
 - **FL-Server**: federated parameter server that usually runs in cloud or third-party clusters.
 
@@ -136,35 +136,35 @@ Input Parties (e.g., the training data/model owners) encrypt and distribute data
 
 A full training or inference process in Paddle Fluid Encrypted consists of mainly three phases: data preparation, training/inference, and result reconstruction.
 
-#### Data preparation
+#### A. Data preparation
 
-##### Private data alignment
+##### 1. Private data alignment
 
 Paddle Fluid Encrypted enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm, PFE can perform private alignment at a speed of up to 60k records per second.
 
-##### Encryption and distribution
+##### 2. Encryption and distribution
 
 In Paddle Fluid Encrypted, data and models from IPs will be encrypted using Secret-Sharing, and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
 
-#### Training/inference
+#### B. Training/inference
 
 ![img](http://icode.baidu.com/path/to/iamge)
 
 As in PaddlePaddle, a training or inference job can be separated into the compile-time phase and the run-time phase:
 
-##### Compile time
+##### 1. Compile time
 
 * **MPC environment specification**: a user needs to choose a MPC protocol, and configure the network settings. In current version, PFE provides only the "ABY3" protocol. More protocol implementation will be provided in future.
 * **User-defined job program**: a user can define the machine learning model structure and the training strategies (or inference task) in a PFE program, using the secure operators.
 
-##### Run time
+##### 2. Run time
 
 A PFE program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. For example, in run-time a  PFE program will be transpiled into ProgramDesc, and then be passed to and run by the Executor. The main concepts in the run-time phase are as follows:
 
 * **Computing nodes**: a computing node is an entity corresponding to a Computing Party. In real deployment, it can be a bare-metal machine, a cloud VM, a docker or even a process. PFE requires exactly three computing nodes in each run, which is determined by the underlying ABY3 protocol. A PFE program will be deployed and run in parallel on all three computing nodes. 
 * **Operators using MPC**: PFE provides typical machine learning operators in `paddle.fluid_encrypted` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PFE operators are created and run in order by Executor.
 
-#### Result reconstruction
+#### C. Result reconstruction
 
 Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFE, and deliver the plaintext results to users.
 
