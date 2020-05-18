@@ -21,7 +21,7 @@ pip install paddle_fl
 
 ### 从源码编译
 
-#### 环境准备
+#### A. 环境准备
 
 * CentOS 6 or CentOS 7 (64 bit)
 * Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
@@ -31,7 +31,7 @@ pip install paddle_fl
 * GCC or G++ 4.8.3+
 * cmake 3.15+
 
-#### 克隆源代码并编译安装
+#### B. 克隆源代码并编译安装
 
 获取源代码
 ```sh
@@ -78,13 +78,13 @@ cd redis-stable &&  make
 
 在PaddleFL中，横向和纵向联邦学习策略将根据[4]中给出的分类来实现。PaddleFL也将提供在自然语言处理，计算机视觉和推荐算法等领域的应用示例。
 
-#### 联邦学习策略
+#### A. 联邦学习策略
 
 - **纵向联邦学习**: 带privc的逻辑回归，带第三方privc的神经网络[5]
 
 - **横向联邦学习**: 联邦平均 [2]，差分隐私 [6]，安全聚合
 
-#### 训练策略
+#### B. 训练策略
 
 - **多任务学习** [7]
 
@@ -108,7 +108,7 @@ Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用
 
 在PaddeFL中，用于定义联邦学习任务和联邦学习训练工作的组件如下：
 
-#### 编译时
+#### A. 编译时
 
 - **FL-Strategy**: 用户可以使用FL-Strategy定义联邦学习策略，例如Fed-Avg[2]。
 
@@ -118,7 +118,7 @@ Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用
 
 - **FL-Job-Generator**: 给定FL-Strategy, User-Defined Program 和 Distributed Training Config，联邦参数的Server端和Worker端的FL-Job将通过FL Job Generator生成。FL-Jobs 被发送到组织和联邦参数服务器以进行联合训练。
 
-#### 运行时
+#### B. 运行时
 
 - **FL-Server**: 在云或第三方集群中运行的联邦参数服务器。
 
@@ -135,30 +135,30 @@ Paddle Encrypted 中的安全训练和推理任务是基于底层的ABY3多方�
 
 Paddle Encrypted的整个训练及推理过程主要由三个部分组成：数据准备，训练/推理，结果解析。
 
-#### 数据准备
+#### A. 数据准备
 
-##### 私有数据对齐
+##### 1. 私有数据对齐
 
 Paddle Encrypted允许数据拥有方（数据方）在不泄露自己数据的情况下，找出多方共有的样本集合。此功能在纵向联邦学习中非常必要，因为其要求多个数据方在训练前进行数据对齐，并且保护用户的数>据隐私。凭借PSI算法，Paddle Encrypted可以在一秒内完成6万条数据的对齐。
 
-##### 数据加密及分发
+##### 2. 数据加密及分发
 
 在Paddle Encrypted中，数据方将数据和模型用秘密共享的方法加密，然后用直接传输或者数据库存储的方式传到计算方。每个计算方只会拿到数据的一部分，因此计算方无法还原真实数据。
 
-#### 训练及推理
+#### B. 训练及推理
 
 像PaddlePaddle一样，训练和推理任务可以分为编译阶段和运行阶段。
 
-##### 编译时
+##### 1. 编译时
 
 * **确定MPC环境**：用户需要指定用到的MPC协议，并配置网络环境。现有版本的Paddle Encrypted只支持"ABY3"协议。更多的协议将在后续版本中支持。
 * **用户定义训练任务**：用户可以根据Paddle Encrypted提供的安全接口，定义集齐学习网络以及训练策略。
-##### 运行时
+##### 2. 运行时
 
 一个Paddle Encrypted程序实际上就是一个PaddlePaddle程序。在运行时，Paddle Encrypted的程序将会转变为PaddlePaddle中的ProgramDesc，并交给Executor运行。以下是运行阶段的主要概念：
 * **运算节点**：计算节点是与计算方相对应的实体。在实际部署中，它可以是裸机、云虚拟机、docker甚至进程。Paddle Encrypted在每次运行中只需要三个计算节点，这由底层ABY3协议决定。Paddle Encrypted程序将在所有三个计算节点上并行部署和运行。
 * **基于MPC的算子**：Paddle Encrypted 为操作加密数据提供了特殊的算子，这些算子在PaddlePaddle框架中实现，基于像ABY3一样的MPC协议。像PaddlePaddle中一样，在运行时Paddle Encrypted的算子将被创建并按照顺序执行。
-#### 结果重构
+#### C. 结果重构
 
 安全训练和推理工作完成后，模型（或预测结果）将由计算方以加密形式输出。结果方可以收集加密的结果，使用Paddle Encrypted中的工具对其进行解密，并将明文结果传递给用户。
 
@@ -185,15 +185,15 @@ Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。Paddl
 
 ### Paddle Encrypted
 
-#### 精度测试
+#### A. 精度测试
 
-##### 训练参数
+##### 1. 训练参数
 
 - 数据集：波士顿房价预测。
 - 训练轮数： 20
 - Batch Size：10
 
-#####实验结果
+##### 2. 实验结果
 
 | Epoch/Step | paddle_fl.mpc | Paddle |
 | ---------- | ------------- | ------ |
