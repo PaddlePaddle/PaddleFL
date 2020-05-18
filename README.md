@@ -193,14 +193,14 @@ Gru4Rec [9] introduces recurrent neural network model in session-based recommend
 
 ### Paddle Encrypted 
 
-#### Convergence of paddle_fl.mpc vs paddle
+#### A. Convergence of paddle_fl.mpc vs paddle
 
-##### Training Parameters
+##### 1. Training Parameters
 - Dataset: Boston house price dataset
 - Number of Epoch: 20
 - Batch Size: 10
 
-##### Experiment Results
+##### 2. Experiment Results
 
 | Epoch/Step | paddle_fl.mpc | Paddle |
 | ---------- | ------------- | ------ |
