@@ -124,7 +124,7 @@ In PaddleFL, components for defining a federated learning task and training a fe
 For more instructions, please refer to the [examples](./python/paddle_fl/paddle_fl/examples)
 ### Paddle Encrypted
 
-Paddle Fluid Encrypted implements secure training and inference tasks based on the underlying MPC protocol of ABY3[], in which participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). 
+Paddle Fluid Encrypted implements secure training and inference tasks based on the underlying MPC protocol of ABY3, in which participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). 
 
 Input Parties (e.g., the training data/model owners) encrypt and distribute data or models to Computing Parties. Computing Parties (e.g., the VM on the cloud) conduct training or inference tasks based on specific MPC protocols, being restricted to see only the encrypted data or models, and thus guarantee the data privacy. When the computation is completed, one or more Result Parties (e.g., data owners or specified third-party) receive the encrypted results from Computing Parties, and reconstruct the plaintext results. Roles can be overlapped, e.g., a data owner can also act as a computing party.
 
@@ -134,11 +134,11 @@ A full training or inference process in Paddle Fluid Encrypted consists of mainl
 
 ##### Private data alignment
 
-Paddle Fluid Encrypted enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm[], PFE can perform private alignment at a speed of up to 60k records per second.
+Paddle Fluid Encrypted enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm, PFE can perform private alignment at a speed of up to 60k records per second.
 
 ##### Encryption and distribution
 
-In Paddle Fluid Encrypted, data and models from IPs will be encrypted using Secret-Sharing[], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model[].
+In Paddle Fluid Encrypted, data and models from IPs will be encrypted using Secret-Sharing, and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
 
 #### Training/inference
 
