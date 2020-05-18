@@ -10,7 +10,7 @@ This document introduces how to submit an FL job to mpi cluster
 
 Please use pip which has paddlepaddle installed
 
-```
+```sh
 pip install paddle_fl
 ```
 
@@ -26,7 +26,7 @@ pip install paddle_fl
 The information of the cluster is defined in config.txt and will be transmitted into client.py. Then a function called job_generator() will generate job for fl_server and fl_trainer. Finally, the job will be submitted. 
 
 The train_program.py is the executed program in cluster.
-```
+```sh
 #use the python prepared above to submit job
 python/bin/python client.py config.txt
 ```

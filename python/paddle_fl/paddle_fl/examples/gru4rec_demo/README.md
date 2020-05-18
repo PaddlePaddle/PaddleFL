@@ -104,4 +104,4 @@ wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchma
 | 1/4 of the whole dataset | private training | - | 0.269 | 
 | 1/4 of the whole dataset | private training | - | 0.282 | 
 
-<img src="fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
+<img src="../../../../../docs/source/examples/md/fl_benchmark.png" height=300 width=500 hspace='10'/> <br />

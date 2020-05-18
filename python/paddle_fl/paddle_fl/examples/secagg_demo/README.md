@@ -10,7 +10,7 @@ This document introduces how to use PaddleFL to train a model with Fl Strategy: 
 
 Please use pip which has paddlepaddle installed
 
-```
+```sh
 pip install paddle_fl
 ```
 
@@ -35,7 +35,7 @@ The dataset will downloaded automatically in the API and will be located under `
 
 PaddleFL has two phases , CompileTime and RunTime. In CompileTime, a federated learning task is defined by fl_master. In RunTime, a federated learning job is executed on fl_server and fl_trainer in distributed clusters.
 
-```
+```sh
 sh run.sh
 ```
 
@@ -43,7 +43,7 @@ sh run.sh
 
 In this example, we implement compile time programs in fl_master.py
 
-```
+```sh
 python fl_master.py
 ```
 
@@ -98,7 +98,7 @@ job_generator.generate_fl_job(
 
 #### How to work in RunTime
 
-```shell
+```sh
 python3 fl_master.py
 sleep 2
 python3 -u fl_server.py >log/server0.log &
@@ -109,7 +109,7 @@ python3 -u fl_trainer.py 1 >log/trainer1.log &
 ```
 In fl_scheduler.py, we let server and trainers to do registeration.
 
-```
+```python
 worker_num = 2
 server_num = 1
 #Define number of worker/server and the port for scheduler
@@ -122,7 +122,7 @@ scheduler.start_fl_training()
 
 In fl_server.py, we load and run the FL server job.  
 
-```
+```python
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"

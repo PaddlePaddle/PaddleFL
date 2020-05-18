@@ -9,7 +9,7 @@ This document introduces how to load a pre-defined model, and transfer into prog
 
 Please use pip which has paddlepaddle installed
 
-```
+```sh
 pip install paddle_fl
 ``` 
 
@@ -18,7 +18,8 @@ pip install paddle_fl
 #### How to save a program
 
 In program_saver.py, you can defind a model. And save the program in to 'load_file'
-```
+
+```python
 input = fluid.layers.data(name='input', shape=[1, 28, 28], dtype="float32")
 label = fluid.layers.data(name='label', shape=[1], dtype='int64')
 feeder = fluid.DataFeeder(feed_list=[input, label], place=fluid.CPUPlace())
@@ -42,7 +43,7 @@ job_generator.save_program(program_path, [input, label],
 
 In fl_master.py, you can load the program in 'load_file' and transfer it into an fl program.
 
-```
+```python
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True
 build_strategy.inner_step = 10
@@ -62,7 +63,7 @@ job_generator.generate_fl_job_from_program(
 
 #### How to work in RunTime
 
-```
+```sh
 python -u fl_scheduler.py >scheduler.log &
 python -u fl_server.py >server0.log &
 python -u fl_trainer.py 0  >trainer0.log &
@@ -70,7 +71,7 @@ python -u fl_trainer.py 1  >trainer1.log &
 ```
 In fl_scheduler.py, we let server and trainers to do registeration.
 
-```
+```python
 worker_num = 2
 server_num = 1
 #Define number of worker/server and the port for scheduler
@@ -82,7 +83,7 @@ scheduler.start_fl_training()
 ```
 In fl_server.py, we load and run the FL server job.
 
-```
+```python
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"
@@ -95,7 +96,8 @@ server.start()
 ```
 
 In fl_trainer.py, we load and run the FL trainer job, then evaluate the accuracy with test data.
-```
+
+```python
 trainer_id = int(sys.argv[1])  # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()

@@ -6,6 +6,36 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 如今，数据变得越来越昂贵，而且跨组织共享原始数据非常困难。联合学习旨在解决组织间数据隔离和数据知识安全共享的问题。联邦学习的概念是由谷歌的研究人员提出的[1，2，3]。
 
+## PaddleFL概述
+
+### 横向联邦方案
+
+<img src='images/FL-framework-zh.png' width = "1300" height = "310" align="middle"/>
+
+在PaddleFL中，横向和纵向联邦学习策略将根据[4]中给出的分类来实现。PaddleFL也将提供在自然语言处理，计算机视觉和推荐算法等领域的应用示例。
+
+#### A. 联邦学习策略
+
+- **纵向联邦学习**: 带privc的逻辑回归，带第三方privc的神经网络[5]
+
+- **横向联邦学习**: 联邦平均 [2]，差分隐私 [6]，安全聚合
+
+#### B. 训练策略
+
+- **多任务学习** [7]
+
+- **迁移学习** [8]
+
+- **主动学习**
+
+### Paddle Encrypted
+
+Paddle Encrypted 是一个基于PaddlePaddle的隐私保护深度学习框架。Paddle Encrypted基于多方计算（MPC）实现安全训练及预测，拥有与PaddlePaddle相同的运行机制及编程范式。
+
+Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用户亦可简单的对加密的数据进行训练和预测。同时，PaddlePaddle中丰富的模型和算法可以轻易地迁移到Paddle Encrypted中。
+
+作为PaddleFL的一个重要组成部分，Paddle Encrypted可以很好滴支持联邦学习，包括横向、纵向及联邦迁移学习等多个场景。既提供了可靠的安全性，也拥有可观的性能。
+
 ## 编译与安装
 
 ### 使用docker安装
@@ -52,7 +82,6 @@ ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_inc;print(ge
 cmake ../ -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DPYTHON_INCLUDE_DIRS=${python_include_dir} -DCMAKE_CXX_COMPILER=${g++_path}
 make -j$(nproc)
 ```
-
 安装对应的安装包
 
 ```sh
@@ -69,36 +98,6 @@ wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
 tar -xf redis-stable.tar
 cd redis-stable &&  make
 ```
-
-## PaddleFL概述
-
-### 横向联邦方案
-
-<img src='images/FL-framework-zh.png' width = "1300" height = "310" align="middle"/>
-
-在PaddleFL中，横向和纵向联邦学习策略将根据[4]中给出的分类来实现。PaddleFL也将提供在自然语言处理，计算机视觉和推荐算法等领域的应用示例。
-
-#### A. 联邦学习策略
-
-- **纵向联邦学习**: 带privc的逻辑回归，带第三方privc的神经网络[5]
-
-- **横向联邦学习**: 联邦平均 [2]，差分隐私 [6]，安全聚合
-
-#### B. 训练策略
-
-- **多任务学习** [7]
-
-- **迁移学习** [8]
-
-- **主动学习**
-
-### Paddle Encrypted
-
-Paddle Encrypted 是一个基于PaddlePaddle的隐私保护深度学习框架。Paddle Encrypted基于多方计算（MPC）实现安全训练及预测，拥有与PaddlePaddle相同的运行机制及编程范式。
-
-Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用户亦可简单的对加密的数据进行训练和预测。同时，PaddlePaddle中丰富的模型和算法可以轻易地迁移到Paddle Encrypted中。
-
-作为PaddleFL的一个重要组成部分，Paddle Encrypted可以很好滴支持联邦学习，包括横向、纵向及联邦迁移学习等多个场景。既提供了可靠的安全性，也拥有可观的性能。
 
 ## PaddleFL框架设计
 
@@ -131,7 +130,7 @@ Paddle Encrypted 设计与PaddlePaddle相似，没有密码学相关背景的用
 
 Paddle Encrypted 中的安全训练和推理任务是基于底层的ABY3多方计算协议实现的。在ABY3中，参与方可分为：输入方、计算方和结果方。
 
-输入方为训练数据及模型的持有方，负责加密数据和模型，并将其发送到计算方。计算方为训练的执行方，基于特定的多方安全计算协议完成训练任务。计算方只能得到加密后的数据及模型，以保证数据隐>私。计算结束后，结果方会拿到计算结果并恢复出明文数据。每个参与方可充当多个角色，如一个数据拥有方也可以作为计算方参与训练。
+输入方为训练数据及模型的持有方，负责加密数据和模型，并将其发送到计算方。计算方为训练的执行方，基于特定的多方安全计算协议完成训练任务。计算方只能得到加密后的数据及模型，以保证数据隐私。计算结束后，结果方会拿到计算结果并恢复出明文数据。每个参与方可充当多个角色，如一个数据拥有方也可以作为计算方参与训练。
 
 Paddle Encrypted的整个训练及推理过程主要由三个部分组成：数据准备，训练/推理，结果解析。
 
@@ -139,7 +138,7 @@ Paddle Encrypted的整个训练及推理过程主要由三个部分组成：数�
 
 ##### 1. 私有数据对齐
 
-Paddle Encrypted允许数据拥有方（数据方）在不泄露自己数据的情况下，找出多方共有的样本集合。此功能在纵向联邦学习中非常必要，因为其要求多个数据方在训练前进行数据对齐，并且保护用户的数>据隐私。凭借PSI算法，Paddle Encrypted可以在一秒内完成6万条数据的对齐。
+Paddle Encrypted允许数据拥有方（数据方）在不泄露自己数据的情况下，找出多方共有的样本集合。此功能在纵向联邦学习中非常必要，因为其要求多个数据方在训练前进行数据对齐，并且保护用户的数据隐私。凭借PSI算法，Paddle Encrypted可以在一秒内完成6万条数据的对齐。
 
 ##### 2. 数据加密及分发
 

@@ -9,6 +9,36 @@ PaddleFL is an open source federated learning framework based on PaddlePaddle. R
 
 Data is becoming more and more expensive nowadays, and sharing of raw data is very hard across organizations. Federated Learning aims to solve the problem of data isolation and secure sharing of data knowledge among organizations. The concept of federated learning is proposed by researchers in Google [1, 2, 3]. 
 
+## Overview of PaddleFL
+
+### Horizontal Federated Learning
+
+<img src='images/FL-framework.png' width = "1000" height = "320" align="middle"/>
+
+In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
+
+#### A. Federated Learning Strategy
+
+- **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
+
+- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
+
+#### B. Training Strategy
+
+- **Multi Task Learning** [7]
+
+- **Transfer Learning** [8]
+
+- **Active Learning**
+
+### Paddle Encrypted
+
+Paddle Fluid Encrypted is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
+
+With Paddle Fluid Encrypted, it is easy to train models or conduct prediction as on PaddlePaddle over encrypted data, without the need for cryptography expertise. Furthermore, the rich industry-oriented models and algorithms built on PaddlePaddle can be smoothly migrated to secure versions on Paddle Fluid Encrypted with little effort.
+
+As a key product of PaddleFL, Paddle Fluid Encrypted intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. It provides both provable security (semantic security) and competitive performance.
+
 ## Compilation and Installation
 
 ### Docker Installation
@@ -55,7 +85,6 @@ Then you can put the directory in the following command and make:
 cmake ../ -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DPYTHON_INCLUDE_DIRS=${python_include_dir} -DCMAKE_CXX_COMPILER=${g++_path}
 make -j$(nproc)
 ```
-
 Install the package:
 
 ```sh
@@ -71,36 +100,6 @@ wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
 tar -xf redis-stable.tar
 cd redis-stable &&  make
 ```
-
-## Overview of PaddleFL
-
-### Horizontal Federated Learning
-
-<img src='images/FL-framework.png' width = "1000" height = "320" align="middle"/>
-
-In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
-
-#### A. Federated Learning Strategy
-
-- **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
-
-- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
-
-#### B. Training Strategy
-
-- **Multi Task Learning** [7]
-
-- **Transfer Learning** [8]
-
-- **Active Learning**
-
-### Paddle Encrypted
-
-Paddle Fluid Encrypted is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
-
-With Paddle Fluid Encrypted, it is easy to train models or conduct prediction as on PaddlePaddle over encrypted data, without the need for cryptography expertise. Furthermore, the rich industry-oriented models and algorithms built on PaddlePaddle can be smoothly migrated to secure versions on Paddle Fluid Encrypted with little effort.
-
-As a key product of PaddleFL, Paddle Fluid Encrypted intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. It provides both provable security (semantic security) and competitive performance.
 
 ## Framework design of PaddleFL
 
@@ -128,6 +127,7 @@ In PaddleFL, components for defining a federated learning task and training a fe
 - **FL-scheduler**: Decide which set of trainers can join the training before each updating cycle. 
 
 For more instructions, please refer to the [examples](./python/paddle_fl/paddle_fl/examples)
+
 ### Paddle Encrypted
 
 Paddle Fluid Encrypted implements secure training and inference tasks based on the underlying MPC protocol of ABY3, in which participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). 

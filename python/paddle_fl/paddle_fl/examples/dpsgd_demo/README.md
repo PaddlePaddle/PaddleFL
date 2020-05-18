@@ -10,7 +10,7 @@ This document introduces how to use PaddleFL to train a model with Fl Strategy: 
 
 Please use pip which has paddlepaddle installed
 
-```
+```sh
 pip install paddle_fl
 ```
 
@@ -35,7 +35,7 @@ The dataset will downloaded automatically in the API and will be located under `
 
 PaddleFL has two phases , CompileTime and RunTime. In CompileTime, a federated learning task is defined by fl_master. In RunTime, a federated learning job is executed on fl_server and fl_trainer in distributed clusters.
 
-```
+```sh
 sh run.sh
 ```
 
@@ -43,7 +43,7 @@ sh run.sh
 
 In this example, we implement compile time programs in fl_master.py
 
-```
+```sh
 python fl_master.py
 ```
 
@@ -100,7 +100,7 @@ job_generator.generate_fl_job(
 
 #### How to work in RunTime
 
-```
+```sh
 python -u fl_scheduler.py >scheduler.log &
 python -u fl_server.py >server0.log &
 python -u fl_trainer.py 0 >trainer0.log &
@@ -110,7 +110,7 @@ python -u fl_trainer.py 3 >trainer3.log &
 ```
 In fl_scheduler.py, we let server and trainers to do registeration.
 
-```
+```python
 worker_num = 4
 server_num = 1
 #Define number of worker/server and the port for scheduler
@@ -122,7 +122,7 @@ scheduler.start_fl_training()
 ```
 In fl_server.py, we load and run the FL server job.  
 
-```
+```python
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"
@@ -136,18 +136,15 @@ server.start()
 
 In fl_trainer.py, we load and run the FL trainer job, then evaluate the accuracy with test data and compute the privacy budget.  
 
-```
+```python
 trainer_id = int(sys.argv[1]) # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()
 job.load_trainer_job(job_path, trainer_id)
 trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer.start()
-```
 
 
-
-```
 def train_test(train_test_program, train_test_feed, train_test_reader):
         acc_set = []
         for test_data in train_test_reader():
@@ -195,4 +192,4 @@ while not trainer.stop():
 
 To show the effectiveness of DPSGD-based federated learning with PaddleFL, a simulated experiment is conducted on an open source dataset MNIST. From the figure given below, model evaluation results are similar between DPSGD-based federated learning and traditional parameter server training when the overall privacy budget *epsilon* is 1.3 or 0.13. 
 
-<img src="fl_dpsgd_benchmark.png" height=400 width=600 hspace='10'/> <br />
+<img src="../../../../../docs/source/examples/md/fl_dpsgd_benchmark.png" height=400 width=600 hspace='10'/> <br />
