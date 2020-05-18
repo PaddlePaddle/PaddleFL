@@ -42,7 +42,7 @@ cd /path/to/PaddleFL
 mkdir build && cd build
 ```
 
-执行编译指令, `PYTHON_EXECUTABLE` 为安装了PaddlePaddle的可执行python路径, `PYTHON_INCLUDE_DIRS` 是相应的include路径，可以用如下指令获得。'g++_path' 为指定的g++路径。
+执行编译指令, `PYTHON_EXECUTABLE` 为安装了PaddlePaddle的可执行python路径, `PYTHON_INCLUDE_DIRS` 是相应的include路径，可以用如下指令获得。`CMAKE_CXX_COMPILER` 为指定的g++路径。
 
 ```sh
 ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_inc;print(get_python_inc())"
