@@ -5,13 +5,14 @@ This document introduces how to submit an FL job to mpi cluster
 ### Dependency
 
 - paddlepaddle>=1.8
+- paddle_fl==0.2.0
 
 ### How to install PaddleFL
 
 Please use pip which has paddlepaddle installed
 
 ```sh
-pip install paddle_fl
+pip install paddle_fl==0.2.0
 ```
 
 ### How it works 
@@ -27,7 +28,7 @@ The information of the cluster is defined in config.txt and will be transmitted 
 
 The train_program.py is the executed program in cluster.
 ```sh
-#use the python prepared above to submit job
+#use the python prepared above to generate fl job and submit the job to mpi cluster
 python/bin/python client.py config.txt
 ```
 

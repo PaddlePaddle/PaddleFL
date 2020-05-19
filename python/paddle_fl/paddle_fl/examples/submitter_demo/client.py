@@ -18,16 +18,16 @@ import random
 import zmq
 import time
 import sys
-from paddle_fl.paddle_fl.core.submitter.client_base import HPCClient
-from paddle_fl.paddle_fl.core.scheduler.agent_master import FLScheduler
+from paddle_fl.core.submitter.client_base import HPCClient
+from paddle_fl.core.scheduler.agent_master import FLScheduler
 import paddle.fluid as fluid
-from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
-from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+from paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 from model import Model
 import tarfile
 
 #random_port = random.randint(60001, 64001)
-random_port = 60001
+random_port = 64001
 print(random_port)
 current_ip = socket.gethostbyname(socket.gethostname())
 endpoints = "{}:{}".format(current_ip, random_port)
@@ -51,8 +51,8 @@ default_dict = {
     "ugi": "",
     "worker_nodes": 5,
     "server_nodes": 1,
-    "hadoop_home": "",
-    "hpc_home": "",
+    "hadoop_home": "/path/to/hadoop",
+    "hpc_home": "/path/to/hpc",
     "package_path": "./package",
     "priority": "high",
     "queue": "",
