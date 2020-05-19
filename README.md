@@ -33,7 +33,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ### Federated Learning with MPC
 
-<img src='images/PFM-overview.png' width = "1000" height = "320" align="middle"/>
+<img src='images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
 
 Paddle FL MPC (PFM) is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
 
@@ -106,7 +106,7 @@ cd redis-stable &&  make
 ## Framework design of PaddleFL
 
 ### Horizontal Federated Learning
-<img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
+<img src='images/FL-training.png' width = "1000" height = "622" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
