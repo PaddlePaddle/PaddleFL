@@ -20,6 +20,11 @@ pip install paddle_fl
 In program_saver.py, you can defind a model. And save the program in to 'load_file'
 
 ```python
+import os
+import json
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+
 input = fluid.layers.data(name='input', shape=[1, 28, 28], dtype="float32")
 label = fluid.layers.data(name='label', shape=[1], dtype='int64')
 feeder = fluid.DataFeeder(feed_list=[input, label], place=fluid.CPUPlace())
@@ -44,6 +49,10 @@ job_generator.save_program(program_path, [input, label],
 In fl_master.py, you can load the program in 'load_file' and transfer it into an fl program.
 
 ```python
+import paddle_fl.paddle_fl as fl
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 build_strategy = FLStrategyFactory()
 build_strategy.fed_avg = True
 build_strategy.inner_step = 10
@@ -72,6 +81,8 @@ python -u fl_trainer.py 1  >trainer1.log &
 In fl_scheduler.py, we let server and trainers to do registeration.
 
 ```python
+from paddle_fl.paddle_fl.core.scheduler.agent_master import FLScheduler
+
 worker_num = 2
 server_num = 1
 #Define number of worker/server and the port for scheduler
@@ -84,6 +95,11 @@ scheduler.start_fl_training()
 In fl_server.py, we load and run the FL server job.
 
 ```python
+import paddle_fl.paddle_fl as fl
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.server.fl_server import FLServer
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"
@@ -98,6 +114,15 @@ server.start()
 In fl_trainer.py, we load and run the FL trainer job, then evaluate the accuracy with test data.
 
 ```python
+from paddle_fl.paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+import numpy
+import sys
+import paddle
+import paddle.fluid as fluid
+import logging
+import math
+
 trainer_id = int(sys.argv[1])  # trainer id for each guest
 job_path = "fl_job_config"
 job = FLRunTimeJob()

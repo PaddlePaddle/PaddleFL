@@ -33,6 +33,11 @@ python fl_master.py
 In fl_master.py, we first define FL-Strategy, User-Defined-Program and Distributed-Config. Then FL-Job-Generator generate FL-Job for federated server and worker.
 
 ```python
+import paddle.fluid as fluid
+import paddle_fl.paddle_fl as fl
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+
 class Model(object):
     def __init__(self):
         pass
@@ -93,6 +98,8 @@ python -u fl_trainer.py 1  >trainer1.log &
 In fl_scheduler.py, we let server and trainers to do registeration.
 
 ```python
+from paddle_fl.paddle_fl.core.scheduler.agent_master import FLScheduler
+
 worker_num = 2
 server_num = 1
 # Define the number of worker/server and the port for scheduler
@@ -105,6 +112,11 @@ scheduler.start_fl_training()
 In fl_server.py, we load and run the FL server job.  
 
 ```python
+import paddle_fl.paddle_fl as fl
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.server.fl_server import FLServer
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"
@@ -119,6 +131,14 @@ server.start()
 In fl_trainer.py, we load and run the FL trainer job, then evaluate the accuracy with test data and compute the privacy budget. The DataSet is ramdomly generated. 
 
 ```python
+import sys
+import time
+import logging
+import numpy as np
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+
 def reader():
     for i in range(1000):
         data_dict = {}

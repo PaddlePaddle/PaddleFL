@@ -39,6 +39,11 @@ python fl_master.py
 ```
 In fl_master.py,  we first define FL-Strategy, User-Defined-Program and Distributed-Config. Then FL-Job-Generator generate FL-Job for federated server and worker.
 ```python
+import paddle.fluid as fluid
+import paddle_fl.paddle_fl as fl
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+
 # define model
 model = Model()
 model.gru4rec_network()
