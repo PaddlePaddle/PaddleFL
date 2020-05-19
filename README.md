@@ -148,7 +148,6 @@ In PFM, data and models from IPs will be encrypted using Secret-Sharing[10], and
 
 #### B. Training/inference
 
-![img](http://icode.baidu.com/path/to/iamge)
 
 As in PaddlePaddle, a training or inference job can be separated into the compile-time phase and the run-time phase:
 
