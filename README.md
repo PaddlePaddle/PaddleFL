@@ -106,7 +106,7 @@ cd redis-stable &&  make
 ## Framework design of PaddleFL
 
 ### Horizontal Federated Learning
-<img src='images/FL-training.png' width = "1000" height = "622" align="middle"/>
+<img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
 
@@ -150,7 +150,7 @@ In PFM, data and models from IPs will be encrypted using Secret-Sharing[10], and
 
 #### B. Training/inference
 
-<img src='images/PFM-design.png' width = "1000" height = "400" align="middle"/>
+<img src='images/PFM-design.png' width = "1000" height = "622" align="middle"/>
 
 As in PaddlePaddle, a training or inference job can be separated into the compile-time phase and the run-time phase:
 
