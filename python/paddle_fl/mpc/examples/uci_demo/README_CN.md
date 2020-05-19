@@ -1,12 +1,12 @@
-##PaddleFL-MPC UCI Housing Demo运行说明
+## PaddleFL-MPC UCI Housing Demo运行说明
 
 (简体中文|[English](./README.md))
 
 本示例介绍基于PaddleFL-MPC进行UCI房价预测模型训练和预测的使用说明，分为单机运行和多机运行两种方式。
 
-###一. 单机运行
+### 一. 单机运行
 
-####1. 准备数据
+#### 1. 准备数据
 
 使用`process_data.py`脚本中的`generate_encrypted_data()`产生加密数据，比如将如下内容写到一个`prepare.py`脚本中，然后`python prepare.py`
 
@@ -17,7 +17,7 @@ process_data.generate_encrypted_data()
 
 将在/tmp目录下生成对应于3个计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`house_feature.part0`表示属于party0的feature数据。
 
-####2. 使用shell脚本启动demo
+#### 2. 使用shell脚本启动demo
 
 使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
 
@@ -48,19 +48,19 @@ fi
 
 
 
-###二. 多机运行
+### 二. 多机运行
 
-####1. 准备数据
+#### 1. 准备数据
 
 数据方对数据进行加密处理。具体操作和单机运行中的准备数据步骤一致。
 
-####2. 分发数据
+#### 2. 分发数据
 
 按照后缀名，将步骤1中准备好的数据分别发送到对应的计算party的/tmp目录下。比如，使用scp命令，将
 
 `house_feature.part0`和`house_label.part0`发送到party0的/tmp目录下。
 
-####3. 计算party修改uci_housing_demo.py脚本
+#### 3. 计算party修改uci_housing_demo.py脚本
 
 各计算party根据自己的机器环境，对uci_housing_demo.py做如下改动：
 
@@ -84,7 +84,7 @@ fi
   process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
   ```
 
-####4. 各计算party启动demo
+#### 4. 各计算party启动demo
 
 **注意**：运行需要用到redis服务。为了确保redis中已保存的数据不会影响demo的运行，请在各计算party启动demo之前，使用如下命令清空redis。其中，REDIS_BIN表示redis-cli可执行程序，SERVER和PORT分别表示redis server的IP地址和端口号。
 
@@ -104,7 +104,7 @@ $PYTHON_EXECUTABLE uci_housing_demo.py $PARTY_ID $SERVER $PORT
 
 **注意**：再次启动运行demo之前，请先将上次在`/tmp`保存的loss和prediction文件删除，以免影响本次密文数据的恢复结果。
 
-####5. 数据方解密loss和prediction
+#### 5. 数据方解密loss和prediction
 
 各计算party将`/tmp`目录下的`uci_loss.part`和`uci_prediction.part`文件发送到数据方的/tmp目录下。数据方使用process_data.py脚本中的load_decrypt_data()解密恢复出loss数据和prediction数据。
 

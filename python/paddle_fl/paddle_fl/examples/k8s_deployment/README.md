@@ -1,6 +1,12 @@
 # PaddleFL deployment example with Kubernetes
 
-## compile time
+## How to run in PaddleFL
+
+```sh
+kubectl apply -f master.yaml
+```
+
+## Compile time
 
 #### Master
 

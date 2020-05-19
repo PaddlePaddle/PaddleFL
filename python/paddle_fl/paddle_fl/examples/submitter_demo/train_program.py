@@ -17,17 +17,17 @@ import random
 import zmq
 import os
 import tarfile
-import paddle_fl.paddle_fl as fl
+import paddle_fl as fl
 import paddle.fluid as fluid
-from paddle_fl.paddle_fl.core.server.fl_server import FLServer
-from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
-from paddle_fl.paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.core.server.fl_server import FLServer
+from paddle_fl.core.master.fl_job import FLRunTimeJob
+from paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
 import numpy as np
 import sys
 import logging
 import time
 
-random_port = 60001
+random_port = 64001
 scheduler_conf = {}
 
 #connect to scheduler and get the role and id of the endpoint
@@ -99,8 +99,7 @@ else:
     job._scheduler_ep = scheduler_conf["ENDPOINT"]
     trainer = FLTrainerFactory().create_fl_trainer(job)
     trainer._current_ep = endpoint
-    place = fluid.CPUPlace()
-    trainer.start(place)
+    trainer.start()
     print(trainer._scheduler_ep, trainer._current_ep)
     output_folder = "fl_model"
     epoch_id = 0

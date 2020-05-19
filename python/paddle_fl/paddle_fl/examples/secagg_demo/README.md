@@ -10,7 +10,7 @@ This document introduces how to use PaddleFL to train a model with Fl Strategy: 
 
 Please use pip which has paddlepaddle installed
 
-```
+```sh
 pip install paddle_fl
 ```
 
@@ -35,7 +35,7 @@ The dataset will downloaded automatically in the API and will be located under `
 
 PaddleFL has two phases , CompileTime and RunTime. In CompileTime, a federated learning task is defined by fl_master. In RunTime, a federated learning job is executed on fl_server and fl_trainer in distributed clusters.
 
-```
+```sh
 sh run.sh
 ```
 
@@ -43,13 +43,18 @@ sh run.sh
 
 In this example, we implement compile time programs in fl_master.py
 
-```
+```sh
 python fl_master.py
 ```
 
 In fl_master.py, we first define FL-Strategy, User-Defined-Program and Distributed-Config. Then FL-Job-Generator generate FL-Job for federated server and worker.
 
 ```python
+import paddle.fluid as fluid
+import paddle_fl.paddle_fl as fl
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+
 def linear_regression(self, inputs, label):
         param_attrs = fluid.ParamAttr(
             name="fc_0.b_0",
@@ -98,7 +103,7 @@ job_generator.generate_fl_job(
 
 #### How to work in RunTime
 
-```shell
+```sh
 python3 fl_master.py
 sleep 2
 python3 -u fl_server.py >log/server0.log &
@@ -109,7 +114,9 @@ python3 -u fl_trainer.py 1 >log/trainer1.log &
 ```
 In fl_scheduler.py, we let server and trainers to do registeration.
 
-```
+```python
+from paddle_fl.paddle_fl.core.scheduler.agent_master import FLScheduler
+
 worker_num = 2
 server_num = 1
 #Define number of worker/server and the port for scheduler
@@ -122,7 +129,12 @@ scheduler.start_fl_training()
 
 In fl_server.py, we load and run the FL server job.  
 
-```
+```python
+import paddle_fl.paddle_fl as fl
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.server.fl_server import FLServer
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+
 server = FLServer()
 server_id = 0
 job_path = "fl_job_config"
@@ -135,6 +147,19 @@ server.start()
 In fl_trainer.py, we prepare the MNIST dataset, load and run the FL trainer job, then evaluate the accuracy.  Before training , we first prepare the party's private key and other party's public key. Then, each party generates a random noise using Diffie-Hellman key aggregate protocol with its private key and each other's public key [1]. If the other party's id is larger than this party's id, the model parameters add this random noise. If the other party's id is less than this party's id, the model parameters subtract this random noise. So, and the model parameters is masked before uploading to the server. Finally, the random noises can be removed when aggregating the masked parameters from all the parties.
 
 ```python
+import numpy
+import sys
+import logging
+import time
+import datetime
+import math
+import hashlib
+import hmac
+import paddle
+import paddle.fluid as fluid
+from paddle_fl.paddle_fl.core.trainer.fl_trainer import FLTrainerFactory
+from paddle_fl.paddle_fl.core.master.fl_job import FLRunTimeJob
+
 logging.basicConfig(filename="log/test.log", filemode="w", format="%(asctime)s %(name)s:%(levelname)s:%(message)s", datefmt="%d-%M-%Y %H:%M:%S", level=logging.DEBUG)
 logger = logging.getLogger("FLTrainer")
 

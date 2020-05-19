@@ -18,16 +18,16 @@ import random
 import zmq
 import time
 import sys
-from paddle_fl.paddle_fl.core.submitter.client_base import HPCClient
-from paddle_fl.paddle_fl.core.scheduler.agent_master import FLScheduler
+from paddle_fl.core.submitter.client_base import HPCClient
+from paddle_fl.core.scheduler.agent_master import FLScheduler
 import paddle.fluid as fluid
-from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
-from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+from paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
 from model import Model
 import tarfile
 
 #random_port = random.randint(60001, 64001)
-random_port = 60001
+random_port = 64001
 print(random_port)
 current_ip = socket.gethostbyname(socket.gethostname())
 endpoints = "{}:{}".format(current_ip, random_port)
@@ -46,17 +46,17 @@ with open("package/scheduler.conf", "w") as fout:
 # submit a job with current endpoint
 
 default_dict = {
-    "task_name": "test_submit_job",
-    "hdfs_path": "afs://xingtian.afs.baidu.com:9902",
+    "task_name": "",
+    "hdfs_path": "",
     "ugi": "",
     "worker_nodes": 5,
-    "server_nodes": 5,
-    "hadoop_home": "/home/jingqinghe/hadoop-xingtian/hadoop",
-    "hpc_home": "/home/jingqinghe/mpi_feed4/smart_client",
+    "server_nodes": 1,
+    "hadoop_home": "/path/to/hadoop",
+    "hpc_home": "/path/to/hpc",
     "package_path": "./package",
     "priority": "high",
-    "queue": "paddle-dev-amd",
-    "server": "yq01-hpc-lvliang01-smart-master.dmop.baidu.com",
+    "queue": "",
+    "server": "",
     "mpi_node_mem": 11000,
     "pcpu": 180,
     "python_tar": "./python.tar.gz",

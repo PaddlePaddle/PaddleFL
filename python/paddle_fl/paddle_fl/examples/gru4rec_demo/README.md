@@ -39,6 +39,11 @@ python fl_master.py
 ```
 In fl_master.py,  we first define FL-Strategy, User-Defined-Program and Distributed-Config. Then FL-Job-Generator generate FL-Job for federated server and worker.
 ```python
+import paddle.fluid as fluid
+import paddle_fl.paddle_fl as fl
+from paddle_fl.paddle_fl.core.master.job_generator import JobGenerator
+from paddle_fl.paddle_fl.core.strategy.fl_strategy_base import FLStrategyFactory
+
 # define model
 model = Model()
 model.gru4rec_network()
@@ -104,4 +109,4 @@ wget https://paddle-zwh.bj.bcebos.com/gru4rec_paddlefl_benchmark/gru4rec_benchma
 | 1/4 of the whole dataset | private training | - | 0.269 | 
 | 1/4 of the whole dataset | private training | - | 0.282 | 
 
-<img src="fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
+<img src="../../../../../docs/source/examples/md/fl_benchmark.png" height=300 width=500 hspace='10'/> <br />
