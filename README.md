@@ -19,7 +19,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 #### A. Federated Learning Strategy
 
-- **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
+- **Vertical Federated Learning**: Logistic Regression with PrivC[5], Neural Network with ABY3 [11]
 
 - **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
 
@@ -31,13 +31,13 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 - **Active Learning**
 
-### Paddle Encrypted
+### Federated Learning with MPC
 
-Paddle Fluid Encrypted is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
+Paddle FL MPC (PFM) is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
 
-With Paddle Fluid Encrypted, it is easy to train models or conduct prediction as on PaddlePaddle over encrypted data, without the need for cryptography expertise. Furthermore, the rich industry-oriented models and algorithms built on PaddlePaddle can be smoothly migrated to secure versions on Paddle Fluid Encrypted with little effort.
+With PFM, it is easy to train models or conduct prediction as on PaddlePaddle over encrypted data, without the need for cryptography expertise. Furthermore, the rich industry-oriented models and algorithms built on PaddlePaddle can be smoothly migrated to secure versions on PFM with little effort.
 
-As a key product of PaddleFL, Paddle Fluid Encrypted intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. It provides both provable security (semantic security) and competitive performance.
+As a key product of PaddleFL, PFM intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. It provides both provable security (semantic security) and competitive performance.
 
 ## Compilation and Installation
 
@@ -128,23 +128,23 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 For more instructions, please refer to the [examples](./python/paddle_fl/paddle_fl/examples)
 
-### Paddle Encrypted
+### Federated Learning with MPC
 
-Paddle Fluid Encrypted implements secure training and inference tasks based on the underlying MPC protocol of ABY3, in which participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). 
+Paddle FL MPC implements secure training and inference tasks based on the underlying MPC protocol like ABY3[11], which is a high efficient three-party computing model.
 
-Input Parties (e.g., the training data/model owners) encrypt and distribute data or models to Computing Parties. Computing Parties (e.g., the VM on the cloud) conduct training or inference tasks based on specific MPC protocols, being restricted to see only the encrypted data or models, and thus guarantee the data privacy. When the computation is completed, one or more Result Parties (e.g., data owners or specified third-party) receive the encrypted results from Computing Parties, and reconstruct the plaintext results. Roles can be overlapped, e.g., a data owner can also act as a computing party.
+In ABY3, participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). Input Parties (e.g., the training data/model owners) encrypt and distribute data or models to Computing Parties. Computing Parties (e.g., the VM on the cloud) conduct training or inference tasks based on specific MPC protocols, being restricted to see only the encrypted data or models, and thus guarantee the data privacy. When the computation is completed, one or more Result Parties (e.g., data owners or specified third-party) receive the encrypted results from Computing Parties, and reconstruct the plaintext results. Roles can be overlapped, e.g., a data owner can also act as a computing party.
 
-A full training or inference process in Paddle Fluid Encrypted consists of mainly three phases: data preparation, training/inference, and result reconstruction.
+A full training or inference process in PFM consists of mainly three phases: data preparation, training/inference, and result reconstruction.
 
 #### A. Data preparation
 
 ##### 1. Private data alignment
 
-Paddle Fluid Encrypted enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm, PFE can perform private alignment at a speed of up to 60k records per second.
+PFM enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training. Using the OT-based PSI (Private Set Intersection) algorithm, PFM can perform private alignment at a speed of up to 60k records per second.
 
 ##### 2. Encryption and distribution
 
-In Paddle Fluid Encrypted, data and models from IPs will be encrypted using Secret-Sharing, and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
+In PFM, data and models from IPs will be encrypted using Secret-Sharing[10], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
 
 #### B. Training/inference
 
@@ -155,18 +155,18 @@ As in PaddlePaddle, a training or inference job can be separated into the compil
 ##### 1. Compile time
 
 * **MPC environment specification**: a user needs to choose a MPC protocol, and configure the network settings. In current version, PFE provides only the "ABY3" protocol. More protocol implementation will be provided in future.
-* **User-defined job program**: a user can define the machine learning model structure and the training strategies (or inference task) in a PFE program, using the secure operators.
+* **User-defined job program**: a user can define the machine learning model structure and the training strategies (or inference task) in a PFM program, using the secure operators.
 
 ##### 2. Run time
 
-A PFE program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. For example, in run-time a  PFE program will be transpiled into ProgramDesc, and then be passed to and run by the Executor. The main concepts in the run-time phase are as follows:
+A PFM program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. For example, in run-time a PFM program will be transpiled into ProgramDesc, and then be passed to and run by the Executor. The main concepts in the run-time phase are as follows:
 
-* **Computing nodes**: a computing node is an entity corresponding to a Computing Party. In real deployment, it can be a bare-metal machine, a cloud VM, a docker or even a process. PFE requires exactly three computing nodes in each run, which is determined by the underlying ABY3 protocol. A PFE program will be deployed and run in parallel on all three computing nodes. 
-* **Operators using MPC**: PFE provides typical machine learning operators in `paddle.fluid_encrypted` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PFE operators are created and run in order by Executor.
+* **Computing nodes**: a computing node is an entity corresponding to a Computing Party. In real deployment, it can be a bare-metal machine, a cloud VM, a docker or even a process. PFM requires exactly three computing nodes in each run, which is determined by the underlying ABY3 protocol. A PFM program will be deployed and run in parallel on all three computing nodes. 
+* **Operators using MPC**: PFM provides typical machine learning operators in `paddle_fl.mpc` over encrypted data. Such operators are implemented upon PaddlePaddle framework, based on MPC protocols like ABY3. Like other PaddlePaddle operators, in run time, instances of PFE operators are created and run in order by Executor.
 
 #### C. Result reconstruction
 
-Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFE, and deliver the plaintext results to users.
+Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFM, and deliver the plaintext results to users.
 
 For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/examples)
 ## Easy deployment with kubernetes
@@ -181,7 +181,7 @@ Please refer [K8S deployment example](./python/paddle_fl/paddle_fl/examples/k8s_
 
 You can also refer [K8S cluster application and kubectl installation](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) to deploy your K8S cluster
 
-### Paddle Encrypted
+### Federated Learning with MPC
 
 To be added.
 
@@ -191,7 +191,7 @@ To be added.
 
 Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
-### Paddle Encrypted 
+### Federated Learning with MPC 
 
 #### A. Convergence of paddle_fl.mpc vs paddle
 
@@ -241,7 +241,7 @@ Gru4Rec [9] introduces recurrent neural network model in session-based recommend
 
 [4]. Qiang Yang, Yang Liu, Tianjian Chen, Yongxin Tong. **Federated Machine Learning: Concept and Applications.** 2019
 
-[5]. Kai He, Liu Yang, Jue Hong, Jinghua Jiang, Jieming Wu, Xu Dong et al. **PrivC  - A framework for efficient Secure Two-Party Computation. In Proceedings of 15th EAI International Conference on Security and Privacy in Communication Networks.** SecureComm 2019
+[5]. Kai He, Liu Yang, Jue Hong, Jinghua Jiang, Jieming Wu, Xu Dong et al. **PrivC  - A framework for efficient Secure Two-Party Computation.** In Proc. of SecureComm 2019
 
 [6]. Martín Abadi, Andy Chu, Ian Goodfellow, H. Brendan McMahan, Ilya Mironov, Kunal Talwar, Li Zhang. **Deep Learning with Differential Privacy.** 2016
 
@@ -250,3 +250,7 @@ Gru4Rec [9] introduces recurrent neural network model in session-based recommend
 [8]. Yang Liu, Tianjian Chen, Qiang Yang. **Secure Federated Transfer Learning.** 2018
 
 [9]. Balázs Hidasi, Alexandros Karatzoglou, Linas Baltrunas, Domonkos Tikk. **Session-based Recommendations with Recurrent Neural Networks.** 2016
+
+[10]. https://en.wikipedia.org/wiki/Secret_sharing
+
+[11]. Payman Mohassel and Peter Rindal. **ABY3: A Mixed Protocol Framework for Machine Learning.** In Proc. of CCS 2018
