@@ -30,6 +30,8 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 ### Federated Learning with MPC
 
+<img src='images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
+
 Paddle FL MPC(PFM) 是一个基于PaddlePaddle的隐私保护深度学习框架。Paddle Encrypted基于多方计算（MPC）实现安全训练及预测，拥有与PaddlePaddle相同的运行机制及编程范式。
 
 PFM 设计与PaddlePaddle相似，没有密码学相关背景的用户亦可简单的对加密的数据进行训练和预测。同时，PaddlePaddle中丰富的模型和算法可以轻易地迁移到PFM中。
@@ -146,6 +148,8 @@ PFM允许数据拥有方（数据方）在不泄露自己数据的情况下，�
 在PFM中，数据方将数据和模型用秘密共享[10]的方法加密，然后用直接传输或者数据库存储的方式传到计算方。每个计算方只会拿到数据的一部分，因此计算方无法还原真实数据。
 
 #### B. 训练及推理
+
+<img src='images/PFM-design.png' width = "1000" height = "622" align="middle"/>
 
 像PaddlePaddle一样，训练和推理任务可以分为编译阶段和运行阶段。
 
