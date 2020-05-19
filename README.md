@@ -33,7 +33,7 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 ### Federated Learning with MPC
 
-<img src='images/PFM-OVerview.png' width = "1000" height = "320" align="middle"/>
+<img src='images/PFM-overview.png' width = "1000" height = "320" align="middle"/>
 
 Paddle FL MPC (PFM) is a framework for privacy-preserving deep learning based on PaddlePaddle. It follows the same running mechanism and programming paradigm with PaddlePaddle, while using secure multi-party computation (MPC) to enable secure training and prediction. 
 
