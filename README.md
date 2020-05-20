@@ -80,6 +80,7 @@ Besides, PFM is implemented based on secure multi-party computation (MPC) to ena
 Below, we will introduce them into details: 
 
 ### Data Parallel
+
 <img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
 
 In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
@@ -106,66 +107,15 @@ For more instructions, please refer to the [examples](./python/paddle_fl/paddle_
 
 ### Federated Learning with MPC
 
-
-
-
-
-## Easy deployment with kubernetes
-
-### Data Parallel
-```sh
-
-kubectl apply -f ./python/paddle_fl/paddle_fl/examples/k8s_deployment/master.yaml
-
-```
-Please refer [K8S deployment example](./python/paddle_fl/paddle_fl/examples/k8s_deployment/README.md) for details
-
-You can also refer [K8S cluster application and kubectl installation](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) to deploy your K8S cluster
-
-### Federated Learning with MPC
-
-To be added.
-
 ## Benchmark task
 
-### Horzontal Federated Learning
+### Data Parallel 
 
 Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
 ### Federated Learning with MPC 
 
-
-#### A. Convergence of paddle_fl.mpc vs paddle
-
-##### 1. Training Parameters
-- Dataset: Boston house price dataset
-- Number of Epoch: 20
-- Batch Size: 10
-
-##### 2. Experiment Results
-
-| Epoch/Step | paddle_fl.mpc | Paddle |
-| ---------- | ------------- | ------ |
-| Epoch=0, Step=0  | 738.39491 | 738.46204 |
-| Epoch=1, Step=0  | 630.68834 | 629.9071 |
-| Epoch=2, Step=0  | 539.54683 | 538.1757 |
-| Epoch=3, Step=0  | 462.41159 | 460.64722 |
-| Epoch=4, Step=0  | 397.11516 | 395.11017 |
-| Epoch=5, Step=0  | 341.83102 | 339.69815 |
-| Epoch=6, Step=0  | 295.01114 | 292.83597 |
-| Epoch=7, Step=0  | 255.35141 | 253.19429 |
-| Epoch=8, Step=0  | 221.74739 | 219.65132 |
-| Epoch=9, Step=0  | 193.26459 | 191.25981 |
-| Epoch=10, Step=0  | 169.11423 | 167.2204 |
-| Epoch=11, Step=0  | 148.63138 | 146.85835 |
-| Epoch=12, Step=0  | 131.25081 | 129.60391 |
-| Epoch=13, Step=0  | 116.49708 | 114.97599 |
-| Epoch=14, Step=0  | 103.96669 | 102.56854 |
-| Epoch=15, Step=0  | 93.31706 | 92.03858 |
-| Epoch=16, Step=0  | 84.26219 | 83.09653 |
-| Epoch=17, Step=0  | 76.55664 | 75.49785 |
-| Epoch=18, Step=0  | 69.99673 | 69.03561 |
-| Epoch=19, Step=0  | 64.40562 | 63.53539 |
+We conduct tests on PFM using Boston house price dataset, and the implementation is given in [uci_demo](./python/paddle_fl/mpc/examples/uci_demo)
 
 ## On Going and Future Work
 
