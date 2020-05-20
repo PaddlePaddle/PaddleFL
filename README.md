@@ -53,6 +53,22 @@ tar -xf redis-stable.tar
 cd redis-stable &&  make
 ```
 
+## Easy deployment with kubernetes
+
+### Data Parallel
+```sh
+
+kubectl apply -f ./python/paddle_fl/paddle_fl/examples/k8s_deployment/master.yaml
+
+```
+Please refer [K8S deployment example](./python/paddle_fl/paddle_fl/examples/k8s_deployment/README.md) for details
+
+You can also refer [K8S cluster application and kubectl installation](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) to deploy your K8S cluster
+
+### Federated Learning with MPC
+
+To be added.
+
 ## Framework design of PaddleFL
 
 There are mainly two components in PaddleFL: **Data Parallel** and **Federated Learning with MPC (PFM)**. 
@@ -117,6 +133,7 @@ To be added.
 Gru4Rec [9] introduces recurrent neural network model in session-based recommendation. PaddlePaddle's Gru4Rec implementation is in https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. An example is given in [Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
 ### Federated Learning with MPC 
+
 
 #### A. Convergence of paddle_fl.mpc vs paddle
 
