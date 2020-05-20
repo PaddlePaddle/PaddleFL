@@ -1,0 +1,33 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from .sampler_base import SamplerBase
+
+
+class UniformSampler(SamplerBase):
+    def __init__(self):
+        self.sample_num = 100
+        self.min_ins_num = 1
+
+    def set_sample_num(self, sample_num):
+        self.sample_num = sample_num
+
+    def set_min_ins_num(self, min_ins_num):
+        self.min_ins_num = min_ins_num
+
+    def sample_user_list(self, scheduler_client, date, sim_idx, shard_num,
+                         sim_num):
+        user_info = scheduler_client.uniform_sample_user_list(
+            date, sim_idx, self.sample_num, shard_num, sim_num,
+            self.min_ins_num)
+        return user_info
