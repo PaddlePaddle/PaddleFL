@@ -83,7 +83,7 @@ Below, we will introduce them into details:
 
 <img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
 
-In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
+In Data Parallel, components for defining a federated learning task and training a federated learning job are as follows:
 
 #### A. Compile Time
 
@@ -106,6 +106,32 @@ In PaddleFL, components for defining a federated learning task and training a fe
 For more instructions, please refer to the [examples](./python/paddle_fl/paddle_fl/examples)
 
 ### Federated Learning with MPC
+
+<img src='images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
+
+Paddle FL MPC implements secure training and inference tasks based on the underlying MPC protocol like ABY3[11], which is a high efficient three-party computing model.
+
+In ABY3, participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). Input Parties (e.g., the training data/model owners) encrypt and distribute data or models to Computing Parties. Computing Parties (e.g., the VM on the cloud) conduct training or inference tasks based on specific MPC protocols, being restricted to see only the encrypted data or models, and thus guarantee the data privacy. When the computation is completed, one or more Result Parties (e.g., data owners or specified third-party) receive the encrypted results from Computing Parties, and reconstruct the plaintext results. Roles can be overlapped, e.g., a data owner can also act as a computing party. 
+
+A full training or inference process in PFM consists of mainly three phases: data preparation, training/inference, and result reconstruction.
+
+#### A. Data preparation
+
+- **Private data alignment**: PFM enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training.
+
+- **Encryption and distribution**: In PFM, data and models from IPs will be encrypted using Secret-Sharing[10], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
+
+#### B. Training/inference
+
+A PFM program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. Before training/inference, user needs to choose a MPC protocol, define a machine learning model and their training strategies. Typical machine learning operators are provided in `paddle_fl.mpc` over encrypted data, of which the instances are created and run in order by Executor during run-time.
+
+For more information of Training/inference phase, please refer to the following [doc](./docs/source/md/mpc_train.md)
+
+#### C. Result reconstruction
+
+Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFM, and deliver the plaintext results to users.
+
+For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/examples) 
 
 ## Benchmark task
 
