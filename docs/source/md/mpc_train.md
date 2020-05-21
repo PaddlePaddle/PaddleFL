@@ -1,6 +1,6 @@
 ## Training/inference in MPC
 
-<img src='images/PFM-design.png' width = "1000" height = "622" align="middle"/>
+<img src='../../../images/PFM-design.png' width = "1000" height = "622" align="middle"/>
 
 As in PaddlePaddle, a training or inference job can be separated into the compile-time phase and the run-time phase:
 
