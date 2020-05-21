@@ -125,7 +125,7 @@ A full training or inference process in PFM consists of mainly three phases: dat
 
 A PFM program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. Before training/inference, user needs to choose a MPC protocol, define a machine learning model and their training strategies. Typical machine learning operators are provided in `paddle_fl.mpc` over encrypted data, of which the instances are created and run in order by Executor during run-time.
 
-For more information of Training/inference phase, please refer to the following [doc](./docs/source/md/mpc_train.md)
+For more information of Training/inference phase, please refer to the following [doc](./docs/source/md/mpc_train.md).
 
 #### C. Result reconstruction
 
@@ -148,6 +148,8 @@ We conduct tests on PFM using Boston house price dataset, and the implementation
 - Vertial Federated Learning will support more algorithms.
 
 - Add K8S deployment scheme for Paddle Encrypted.
+
+- FL mobile simulator will be open sourced in following versions.
 
 ## Reference
 
