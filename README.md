@@ -11,7 +11,6 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-
 <img src='images/FL-framework.png' width = "1000" height = "320" align="middle"/>
 
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL. 
@@ -29,6 +28,12 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 - **Transfer Learning** [8]
 
 - **Active Learning**
+
+There are mainly two components in PaddleFL: **Data Parallel** and **Federated Learning with MPC (PFM)**.
+
+With Data Parallel, distributed data holders can finish their Federated Learning tasks based on common horizontal federated strategies, such as FedAvg, DPSGD, etc.
+
+Besides, PFM is implemented based on secure multi-party computation (MPC) to enable secure training and prediction. As a key product of PaddleFL, PFM intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. Users with little cryptography expertise can also train models or conduct prediction on encrypted data.
 
 ## Installation
 
@@ -70,14 +75,6 @@ You can also refer [K8S cluster application and kubectl installation](./python/p
 To be added.
 
 ## Framework design of PaddleFL
-
-There are mainly two components in PaddleFL: **Data Parallel** and **Federated Learning with MPC (PFM)**. 
-
-With Data Parallel, distributed data holders can finish their Federated Learning tasks based on common horizontal federated strategies, such as FedAvg, DPSGD, etc. 
-
-Besides, PFM is implemented based on secure multi-party computation (MPC) to enable secure training and prediction. As a key product of PaddleFL, PFM intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. Users with little cryptography expertise can also train models or conduct prediction on encrypted data. 
-
-Below, we will introduce them into details: 
 
 ### Data Parallel
 
