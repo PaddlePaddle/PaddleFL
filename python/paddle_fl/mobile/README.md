@@ -60,10 +60,10 @@ mpirun -np 2 python application.py lm_data
 ### 训练结果
 
 ```shell
-framework.py : INFO  infer results: 0.085723
+framework.py : INFO  infer results: 0.116334
 ```
 
-即：在测试集上的，测试Top1为 8.6% 
+即：在测试集上的，测试Top1为 11.6% 
 
 ## 添加自己的数据集和Trainer
 
@@ -89,7 +89,7 @@ framework.py : INFO  infer results: 0.085723
 - Step1 模型初始化
 
     1. 全局参数初始化：由编号为0的simulator来做模型初始化工作，初始化之后，它会通过UpdateGlobalParams()接口将参数传递给Scheduler；
-   
+     
     2. 个性化参数初始化
 
 - Step2 模型分发

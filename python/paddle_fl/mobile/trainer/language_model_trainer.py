@@ -34,10 +34,10 @@ def train_one_user(arg_dict, trainer_config):
     max_training_steps = trainer_config["max_training_steps"]
     batch_size = trainer_config["batch_size"]
     # logging.info("training one user...")
-    main_program = fluid.Program.parse_from_string(trainer_config[
-        "main_program_desc"])
-    startup_program = fluid.Program.parse_from_string(trainer_config[
-        "startup_program_desc"])
+    main_program = fluid.Program.parse_from_string(
+        trainer_config["main_program_desc"])
+    startup_program = fluid.Program.parse_from_string(
+        trainer_config["startup_program_desc"])
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
     scope = fluid.global_scope()
@@ -46,10 +46,9 @@ def train_one_user(arg_dict, trainer_config):
         exit()
     exe.run(startup_program)
 
-    feeder = fluid.DataFeeder(
-        feed_list=trainer_config["input_names"],
-        place=place,
-        program=main_program)
+    feeder = fluid.DataFeeder(feed_list=trainer_config["input_names"],
+                              place=place,
+                              program=main_program)
     data_server_endpoints = arg_dict["data_endpoints"]
     # create data clients
     data_client = DataClient()
@@ -76,36 +75,43 @@ def train_one_user(arg_dict, trainer_config):
     epoch = trainer_config["epoch"]
     max_steps_in_epoch = trainer_config.get("max_steps_in_epoch", -1)
     metrics = trainer_config["metrics"]
-    metric_keys = metrics.keys()
-    fetch_list = [main_program.global_block().var(trainer_config["loss_name"])]
-    for key in metric_keys:
-        fetch_list.append(main_program.global_block().var(metrics[key]))
+    fetch_list = []
+    for var in trainer_config["target_names"]:
+        fetch_list.append(var)
 
-    seq_len = 10
     for ei in range(epoch):
+        fetch_res_list = []
         trained_sample_num = 0
         step = 0
-        fetch_res_list = []
-        total_loss = 0.0
-        total_correct = 0
+        num_layers = trainer_config["num_layers"]
+        hidden_size = trainer_config["n_hidden"]
+        tot_loss, tot_correct = 0, 0
+        tot_samples = 0
+        init_hidden, init_cell = generate_init_data(batch_size, num_layers,
+                                                    hidden_size)
         for data in train_reader():
+            feed_data, input_lengths = prepare_input(batch_size, data,
+                                                     init_hidden, init_cell)
             fetch_res = exe.run(main_program,
-                                feed=feeder.feed(data),
+                                feed=feeder.feed(feed_data),
                                 fetch_list=fetch_list)
+            loss, last_hidden, last_cell, correct = fetch_res
+
+            init_hidden = np.array(last_hidden)
+            init_cell = np.array(last_cell)
+            tot_loss += np.array(loss)
+            tot_correct += np.array(correct)
+            tot_samples += np.sum(input_lengths)
             step += 1
             trained_sample_num += len(data)
-            fetch_res_list.append([x[0] for x in fetch_res])
+            fetch_res_list.append([np.array(loss), np.array(correct)])
             if max_steps_in_epoch != -1 and step >= max_steps_in_epoch:
                 break
 
         if show_metric and trained_sample_num > 0:
-            loss = sum([x[0] for x in fetch_res_list]) / trained_sample_num
-            print("loss: {}, ppl: {}".format(loss, np.exp(loss)))
-            for i, key in enumerate(metric_keys):
-                if key == "correct":
-                    value = float(sum([x[i + 1] for x in fetch_res_list
-                                       ])) / trained_sample_num
-                    print("correct: {}".format(value / seq_len))
+            loss = tot_loss / step
+            acc = float(tot_correct) / tot_samples
+            print("loss: {}, acc: {}".format(loss, acc))
 
     local_updated_param_dict = {}
     # update user param
@@ -142,10 +148,10 @@ def infer_one_user(arg_dict, trainer_config):
     # run startup program, set params
     uid = arg_dict["uid"]
     batch_size = trainer_config["batch_size"]
-    startup_program = fluid.Program.parse_from_string(trainer_config[
-        "startup_program_desc"])
-    infer_program = fluid.Program.parse_from_string(trainer_config[
-        "infer_program_desc"])
+    startup_program = fluid.Program.parse_from_string(
+        trainer_config["startup_program_desc"])
+    infer_program = fluid.Program.parse_from_string(
+        trainer_config["infer_program_desc"])
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
     scope = fluid.global_scope()
@@ -169,7 +175,6 @@ def infer_one_user(arg_dict, trainer_config):
                           arg_dict["global_params"], scope)
 
     # reader
-
     date = arg_dict["date"]
     global_param_dict = arg_dict["global_params"]
     user_data = data_client.get_data_by_uid(uid, date)
@@ -179,36 +184,60 @@ def infer_one_user(arg_dict, trainer_config):
     # run infer program
     os.mkdir(arg_dict["infer_result_dir"])
     #pred_file = open(arg_dict["infer_result_dir"] + '/' + "pred_file", "w")
-    feeder = fluid.DataFeeder(
-        feed_list=trainer_config["input_names"],
-        place=place,
-        program=infer_program)
+    feeder = fluid.DataFeeder(feed_list=trainer_config["input_names"],
+                              place=place,
+                              program=infer_program)
 
     fetch_list = trainer_config["target_names"]
     #logging.info("fetch_list: {}".format(fetch_list))
     fetch_res = []
     sample_count = 0
 
-    total_loss = 0.0
-    total_correct = 0
-    iters = 0
-    steps = 0
-    seq_len = 10
+    num_layers = trainer_config["num_layers"]
+    hidden_size = trainer_config["n_hidden"]
+    tot_correct, tot_loss = 0, 0
+    tot_samples, tot_batches = 0, 0
+    init_hidden, init_cell = generate_init_data(batch_size, num_layers,
+                                                hidden_size)
     for data in infer_reader():
-        # feed_data = [x["features"] + [x["label"]] for x in data]
-        # prediction, acc_val= exe.run(infer_program,
-        pred, correct_count, loss = exe.run(infer_program,
-                                            feed=feeder.feed(data),
-                                            fetch_list=fetch_list)
-        total_loss += loss
-        total_correct += correct_count
-        steps += 1
-        sample_count += len(data)
+        feed_data, input_lengths = prepare_input(batch_size, data, init_hidden,
+                                                 init_cell)
+        fetch_res = exe.run(infer_program,
+                            feed=feeder.feed(feed_data),
+                            fetch_list=fetch_list)
+        loss, last_hidden, last_cell, correct = fetch_res
 
-    correct = float(total_correct) / (seq_len * sample_count)
-    # logging.info("correct: {}".format(correct))
+        cost_eval = np.array(loss)
+        init_hidden = np.array(last_hidden)
+        init_cell = np.array(last_cell)
+        correct_val = np.array(correct)
+        tot_loss += cost_eval
+        tot_correct += correct_val
+        tot_samples += np.sum(input_lengths)
+        tot_batches += 1
+
+    loss = tot_loss / tot_batches
+    acc = float(tot_correct) / tot_samples
+    logging.info("infer acc: {}".format(acc))
     with open(arg_dict["infer_result_dir"] + "/res", "w") as f:
-        f.write("%d\t%f\n" % (1, correct))
+        f.write("%d\t%f\n" % (1, acc))
+
+
+def prepare_input(batch_size, data, init_hidden, init_cell):
+    init_hidden = np.split(init_hidden, batch_size)
+    init_cell = np.split(init_cell, batch_size)
+    data = [[features] + [labels] + [seq_len_ph] + [seq_mask_ph] + [init_hidden[i]] + [init_cell[i]  ] \
+              for i, (features, labels, seq_len_ph, seq_mask_ph) in enumerate(data)]
+    input_lengths = [x[2] for x in data]
+    return data, input_lengths
+
+
+def generate_init_data(batch_size, num_layers, hidden_size):
+    init_hidden = np.zeros((batch_size, num_layers, hidden_size),
+                           dtype='float32')
+    init_cell = np.zeros((batch_size, num_layers, hidden_size),
+                         dtype='float32')
+    return init_hidden, init_cell
 
 
 def save_and_upload(arg_dict, trainer_config, dfs_upload_path):
@@ -219,7 +248,6 @@ def save_and_upload(arg_dict, trainer_config, dfs_upload_path):
 def evaluate_a_group(group):
     group_list = []
     for label, pred, _ in group:
-        # print("%s\t%s\n" % (label, pred))
         group_list.append((int(label), float(pred)))
     random.shuffle(group_list)
     labels = [x[0] for x in group_list]
@@ -236,7 +264,6 @@ class LanguageModelTrainer(TrainerBase):
     """
     LanguageModelTrainer only support training with PaddlePaddle
     """
-
     def __init__(self):
         super(LanguageModelTrainer, self).__init__()
         self.main_program_ = fluid.Program()
@@ -270,10 +297,13 @@ class LanguageModelTrainer(TrainerBase):
         """
         with fluid.program_guard(self.main_program_, self.startup_program_):
             self.input_model_ = LanguageModel()
-            model_configs = {}
+            model_configs = self.trainer_config
             self.input_model_.build_model(model_configs)
+
             optimizer = fluid.optimizer.SGD(
-                learning_rate=self.trainer_config["lr"])
+                learning_rate=self.trainer_config["lr"],
+                grad_clip=fluid.clip.GradientClipByGlobalNorm(
+                    clip_norm=self.trainer_config["max_grad_norm"]))
             optimizer.minimize(self.input_model_.get_model_loss())
 
         self.main_program_desc_ = self.main_program_.desc.serialize_to_string()
@@ -283,13 +313,16 @@ class LanguageModelTrainer(TrainerBase):
                                     self.input_model_.get_model_loss_name())
         self.update_trainer_configs(
             "input_names",
-            self.input_model_.get_model_input_names(), )
+            self.input_model_.get_model_input_names(),
+        )
         self.update_trainer_configs(
             "target_names",
-            self.input_model_.get_target_names(), )
+            self.input_model_.get_target_names(),
+        )
         self.update_trainer_configs(
             "metrics",
-            self.input_model_.get_model_metrics(), )
+            self.input_model_.get_model_metrics(),
+        )
         self.update_trainer_configs("show_metric", True)
         self.update_trainer_configs("max_training_steps", "inf")
         self.update_trainer_configs("shuffle", False)
