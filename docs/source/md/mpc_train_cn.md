@@ -1,4 +1,4 @@
-## B. 训练及推理
+## MPC 训练及推理
 
 <img src='../../../images/PFM-design.png' width = "1000" height = "622" align="middle"/>
 
