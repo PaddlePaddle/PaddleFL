@@ -2,19 +2,13 @@
 
 .. mdinclude:: md/logo.md
 
-Quick Start
-===========
 .. toctree::
     :maxdepth: 1
     :caption: Quick Start
-    :hidden:
 
-    instruction.rst
-
-See instruction_ for quick start.
-
-.. _instruction: instruction.html
-
+    compile_and_intall.rst
+    data_parallel_instruction.rst
+    mpc_instruction.rst
 
 .. toctree::
     :maxdepth: 1
@@ -31,14 +25,8 @@ See instruction_ for quick start.
    :caption: Examples
 
    examples/gru4rec_examples.rst
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API Reference
-
-   api/paddle_fl
-
+   examples/dpsgd_examples.rst
+   examples/mpc_uci_demo.rst
 
 The Team
 ========
@@ -49,7 +37,7 @@ The Team
 
     team.rst
 
-PaddleFL is developed and maintained by Nimitz Team at Baidu
+PaddleFL is developed by PaddlePaddle and Security team.
 
 
 .. toctree::

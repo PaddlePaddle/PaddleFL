@@ -1,3 +1,26 @@
+# Compile and Install
+
+## Installation
+
+We **highly recommend** to run PaddleFL in Docker
+
+```sh
+#Pull and run the docker
+docker pull hub.baidubce.com/paddlefl/paddle_fl:latest
+docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bash
+
+#Install paddle_fl
+pip install paddle_fl
+```
+
+We also prepare a stable redis package for you to download and install, which will be used in tasks with MPC.
+
+```sh
+wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
+tar -xf redis-stable.tar
+cd redis-stable &&  make
+```
+
 ## Compile From Source Code
 
 #### A. Environment preparation
