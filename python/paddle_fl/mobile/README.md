@@ -12,11 +12,19 @@ FL-mobile是一个集移动端算法模拟调研、训练和部署为一体的�
 ## 准备工作
 
 - 安装mpirun
+
 - python安装grpc
     ```shell
     pip install grpcio==1.28.1
     ```
+    
 - 安装Paddle
+
+    ```shell
+    pip install paddlepaddle==1.8.0
+    ```
+
+    
 
 ## 快速开始
 
@@ -89,7 +97,7 @@ framework.py : INFO  infer results: 0.116334
 - Step1 模型初始化
 
     1. 全局参数初始化：由编号为0的simulator来做模型初始化工作，初始化之后，它会通过UpdateGlobalParams()接口将参数传递给Scheduler；
-     
+    
     2. 个性化参数初始化
 
 - Step2 模型分发

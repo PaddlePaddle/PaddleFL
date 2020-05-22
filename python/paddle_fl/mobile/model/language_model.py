@@ -194,7 +194,8 @@ class LanguageModel(ModelBase):
                 - fluid.layers.reduce_sum(correct_pad)
 
         self.loss_ = loss
-        self.correct_ = eval_metric_opsself.input_name_list_ = [
+        self.correct_ = eval_metric_ops
+        self.input_name_list_ = [
             'features', 'labels', 'seq_len_ph', 'seq_mask_ph', 'init_hidden',
             'init_cell'
         ]
