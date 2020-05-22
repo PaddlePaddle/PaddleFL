@@ -122,18 +122,18 @@ print("prediction:")
 process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
 ```
 
-#### Convergence of paddle_fl.mpc vs paddle
+### 3. Convergence of paddle_fl.mpc vs paddle
 
-Below, is the result of our experiment to test the convergence of paddle_fl.mpc
+Below, is the result of our experiment to test the convergence of paddle_fl.mpc on single machine.
 
-#### A. Convergence of paddle_fl.mpc vs paddle
 
-##### 1. Training Parameters
+#### (1). Training Parameters
+
 - Dataset: Boston house price dataset
 - Number of Epoch: 20
 - Batch Size: 10
 
-##### 2. Experiment Results
+#### (2). Experiment Results
 
 | Epoch/Step | paddle_fl.mpc | Paddle |
 | ---------- | ------------- | ------ |

@@ -124,15 +124,15 @@ print("prediction:")
 process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
 ```
 
-#### A. 精度测试
+### 三. 单机精度测试
 
-##### 1. 训练参数
+#### 1. 训练参数
 
 - 数据集：波士顿房价预测。
 - 训练轮数： 20
 - Batch Size：10
 
-##### 2. 实验结果
+#### 2. 实验结果
 
 | Epoch/Step | paddle_fl.mpc | Paddle |
 | ---------- | ------------- | ------ |
