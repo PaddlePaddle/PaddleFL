@@ -144,7 +144,7 @@ We conduct tests on PFM using Boston house price dataset, and the implementation
 
 - Vertial Federated Learning will support more algorithms.
 
-- Add K8S deployment scheme for Paddle Encrypted.
+- Add K8S deployment scheme for PFM.
 
 - FL mobile simulator will be open sourced in following versions.
 
