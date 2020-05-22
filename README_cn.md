@@ -53,6 +53,7 @@ pip install paddle_fl
 wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
 tar -xf redis-stable.tar
 cd redis-stable &&  make
+```
 
 ## Kubernetes简单部署
 
