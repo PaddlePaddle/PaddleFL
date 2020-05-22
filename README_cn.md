@@ -1,14 +1,12 @@
 # PaddleFL
 
-PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可以很轻松地用PaddleFL复制和比较不同的联邦学习算法。开发人员也可以从padderFL中获益，因为用PaddleFL在大规模分布式集群中部署联邦学习系统很容易。PaddleFL提供很多联邦学习策略及其在计算机视觉、自然语言处理、推荐算法等领域的应用。此外，PaddleFL还将提供传统机器学习训练策略的应用，例如多任务学习、联邦学习环境下的迁移学习。依靠着PaddlePaddle的大规模分布式训练和Kubernetes对训练任务的弹性调度能力，PaddleFL可以基于全栈开源软件轻松地部署。
+PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可以很轻松地用PaddleFL复制和比较不同的联邦学习算法。开发人员也可以从paddleFL中获益，因为用PaddleFL在大规模分布式集群中部署联邦学习系统很容易。PaddleFL提供很多联邦学习策略及其在计算机视觉、自然语言处理、推荐算法等领域的应用。此外，PaddleFL还将提供传统机器学习训练策略的应用，例如多任务学习、联邦学习环境下的迁移学习。依靠着PaddlePaddle的大规模分布式训练和Kubernetes对训练任务的弹性调度能力，PaddleFL可以基于全栈开源软件轻松地部署。
 
 ## 联邦学习
 
 如今，数据变得越来越昂贵，而且跨组织共享原始数据非常困难。联合学习旨在解决组织间数据隔离和数据知识安全共享的问题。联邦学习的概念是由谷歌的研究人员提出的[1，2，3]。
 
 ## PaddleFL概述
-
-### 横向联邦方案
 
 <img src='images/FL-framework-zh.png' width = "1300" height = "310" align="middle"/>
 
@@ -28,19 +26,15 @@ PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可
 
 - **主动学习**
 
-### Federated Learning with MPC
+PaddleFL 中主要提供两种解决方案：**Data Parallel** 以及 **Federated Learning with MPC (PFM)**。
 
-<img src='images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
+通过Data Parallel，各数据方可以基于经典的横向联邦学习策略（如 FedAvg，DPSGD等）完成模型训练。
 
-Paddle FL MPC(PFM) 是一个基于PaddlePaddle的隐私保护深度学习框架。Paddle Encrypted基于多方计算（MPC）实现安全训练及预测，拥有与PaddlePaddle相同的运行机制及编程范式。
+此外，PFM是基于多方安全计算（MPC）实现的联邦学习方案。作为PaddleFL的一个重要组成部分，PFM可以很好地支持联邦学习，包括横向、纵向及联邦迁移学习等多个场景。既提供了可靠的安全性，也拥有可观的性能。
 
-PFM 设计与PaddlePaddle相似，没有密码学相关背景的用户亦可简单的对加密的数据进行训练和预测。同时，PaddlePaddle中丰富的模型和算法可以轻易地迁移到PFM中。
+## 安装
 
-作为PaddleFL的一个重要组成部分，PFM可以很好地支持联邦学习，包括横向、纵向及联邦迁移学习等多个场景。既提供了可靠的安全性，也拥有可观的性能。
-
-## 编译与安装
-
-### 使用docker安装
+我们**强烈建议** 您在docker中使用PaddleFL。
 
 ```sh
 #Pull and run the docker
@@ -51,47 +45,7 @@ docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bas
 pip install paddle_fl
 ```
 
-### 从源码编译
-
-#### A. 环境准备
-
-* CentOS 6 or CentOS 7 (64 bit)
-* Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
-* pip or pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.8
-* Redis 5.0.8 (64 bit)
-* GCC or G++ 4.8.3+
-* cmake 3.15+
-
-#### B. 克隆源代码并编译安装
-
-获取源代码
-```sh
-git clone https://github.com/PaddlePaddle/PaddleFL
-cd /path/to/PaddleFL
-
-# Checkout stable release
-mkdir build && cd build
-```
-
-执行编译指令, `PYTHON_EXECUTABLE` 为安装了PaddlePaddle的可执行python路径, `CMAKE_CXX_COMPILER` 为指定的g++路径。 `PYTHON_INCLUDE_DIRS` 是相应的include路径，可以用如下指令获得：
-
-```sh
-${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import get_python_inc;print(get_python_inc())"
-```
-之后就可以执行编译和安装的指令
-```sh
-cmake ../ -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DPYTHON_INCLUDE_DIRS=${python_include_dir} -DCMAKE_CXX_COMPILER=${g++_path}
-make -j$(nproc)
-```
-安装对应的安装包
-
-```sh
-make install
-cd /path/to/PaddleFL/python
-${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
-pip or pip3 install dist/***.whl -U
-```
+若您希望从源码编译安装，请点击[这里](./docs/source/md/compile_and_install_cn.md)。
 
 我们也提供了稳定的redis安装包, 可供下载。
 
@@ -101,9 +55,25 @@ tar -xf redis-stable.tar
 cd redis-stable &&  make
 ```
 
-## PaddleFL框架设计
+## Kubernetes简单部署
 
 ### 横向联邦方案
+```sh
+
+kubectl apply -f ./python/paddle_fl/paddle_fl/examples/k8s_deployment/master.yaml
+
+```
+请参考[K8S部署实例](./python/paddle_fl/paddle_fl/examples/k8s_deployment/README.md)
+
+也可以参考[K8S集群申请及kubectl安装](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) 配置自己的K8S集群
+
+### Federated Learning with MPC
+
+会在后续版本中发布。
+
+## PaddleFL框架设计
+
+### Data Parallel 
 
 <img src='images/FL-training.png' width = "1300" height = "450" align="middle"/>
 
@@ -131,101 +101,44 @@ cd redis-stable &&  make
 
 ### Federated Learning with MPC
 
+<img src='images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
+
 Paddle FL MPC 中的安全训练和推理任务是基于高效的多方计算协议实现的，如ABY3[11]
 
-在ABY3[11]中，参与方可分为：输入方、计算方和结果方。输入方为训练数据及模型的持有方，负责加密数据和模型，并将其发送到计算方。计算方为训练的执行方，基于特定的多方安全计算协议完成训练任务。计算方只能得到加密后的数据及模型，以保证数据隐私。计算结束后，结果方会拿到计算结果并恢复出明文数据。每个参与方可充当多个角色，如一个数据拥有方也可以作为计算方参与训练。
+在ABY3[11]中，参与方可分为：输入方、计算方和结果方。输入方为训练数据及模型的持有方，负责加密数据和模型，并将其发送到计算方。计算方为训练的执行方，基于特定的多方安全计算协议完成训练任务。计算方只能得到加密后的数据
+及模型，以保证数据隐私。计算结束后，结果方会拿到计算结果并恢复出明文数据。每个参与方可充当多个角色，如一个数据拥有方也可以作为计算方参与训练。
 
 PFM的整个训练及推理过程主要由三个部分组成：数据准备，训练/推理，结果解析。
 
 #### A. 数据准备
 
-##### 1. 私有数据对齐
+- **私有数据对齐**： PFM允许数据拥有方（数据方）在不泄露自己数据的情况下，找出多方共有的样本集合。此功能在纵向联邦学习中非常必要，因为其要求多个数据方在训练前进行数据对齐，并且保护用户的数据隐私。
+- **数据加密及分发**：在PFM中，数据方将数据和模型用秘密共享[10]的方法加密，然后用直接传输或者数据库存储的方式传到计算方。每个计算方只会拿到数据的一部分，因此计算方无法还原真实数据。
 
-PFM允许数据拥有方（数据方）在不泄露自己数据的情况下，找出多方共有的样本集合。此功能在纵向联邦学习中非常必要，因为其要求多个数据方在训练前进行数据对齐，并且保护用户的数据隐私。凭借PSI算法，PFM可以在一秒内完成6万条数据的对齐。
+#### B. 训练/推理
 
-##### 2. 数据加密及分发
+PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定义MPC协议，训练模型以及训练策略。`paddle_fl.mpc`中提供了可以操作加密数据的算子，在运行时算子的实例会被创建并被执行器依次运行。
 
-在PFM中，数据方将数据和模型用秘密共享[10]的方法加密，然后用直接传输或者数据库存储的方式传到计算方。每个计算方只会拿到数据的一部分，因此计算方无法还原真实数据。
-
-#### B. 训练及推理
-
-<img src='images/PFM-design.png' width = "1000" height = "622" align="middle"/>
-
-像PaddlePaddle一样，训练和推理任务可以分为编译阶段和运行阶段。
-
-##### 1. 编译时
-
-* **确定MPC环境**：用户需要指定用到的MPC协议，并配置网络环境。现有版本的Paddle Encrypted只支持"ABY3"协议。更多的协议将在后续版本中支持。
-* **用户定义训练任务**：用户可以根据PFM提供的安全接口，定义集齐学习网络以及训练策略。
-##### 2. 运行时
-
-一个Paddle Encrypted程序实际上就是一个PaddlePaddle程序。在运行时，PFM的程序将会转变为PaddlePaddle中的ProgramDesc，并交给Executor运行。以下是运行阶段的主要概念：
-* **运算节点**：计算节点是与计算方相对应的实体。在实际部署中，它可以是裸机、云虚拟机、docker甚至进程。PFM在每次运行中只需要三个计算节点，这由底层ABY3协议决定。Paddle Encrypted程序将在所有三个计算节点上并行部署和运行。
-* **基于MPC的算子**：PFM 为操作加密数据提供了特殊的算子，这些算子在PaddlePaddle框架中实现，基于像ABY3一样的MPC协议。像PaddlePaddle中一样，在运行时PFM的算子将被创建并按照顺序执行。
+请参考以下[文档](./docs/source/md/mpc_train_cn.md), 以获得更多关于训练阶段的信息。
 #### C. 结果重构
 
 安全训练和推理工作完成后，模型（或预测结果）将由计算方以加密形式输出。结果方可以收集加密的结果，使用PFM中的工具对其进行解密，并将明文结果传递给用户。
 
 请参考[MPC的例子](./python/paddle_fl/mpc/examples)，以获取更多的信息。
-## Kubernetes简单部署
 
-### 横向联邦方案
-```sh
- 
-kubectl apply -f ./python/paddle_fl/paddle_fl/examples/k8s_deployment/master.yaml
-
-```
-请参考[K8S部署实例](./python/paddle_fl/paddle_fl/examples/k8s_deployment/README.md)
-
-也可以参考[K8S集群申请及kubectl安装](./python/paddle_fl/paddle_fl/examples/k8s_deployment/deploy_instruction.md) 配置自己的K8S集群
-
-### Federated Learning with MPC 
-
-会在后续版本中发布。
 ## 性能测试
 
 ### 横向联邦方案
 Gru4Rec [9] 在基于会话的推荐中引入了递归神经网络模型。PaddlePaddle的GRU4RC实现代码在 https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/gru4rec. 一个基于联邦学习训练Gru4Rec模型的示例请参考[Gru4Rec in Federated Learning](https://paddlefl.readthedocs.io/en/latest/examples/gru4rec_examples.html)
 
 ### Federated Learning with MPC 
-
-#### A. 精度测试
-
-##### 1. 训练参数
-
-- 数据集：波士顿房价预测。
-- 训练轮数： 20
-- Batch Size：10
-
-##### 2. 实验结果
-
-| Epoch/Step | paddle_fl.mpc | Paddle |
-| ---------- | ------------- | ------ |
-| Epoch=0, Step=0  | 738.39491 | 738.46204 |
-| Epoch=1, Step=0  | 630.68834 | 629.9071 |
-| Epoch=2, Step=0  | 539.54683 | 538.1757 |
-| Epoch=3, Step=0  | 462.41159 | 460.64722 |
-| Epoch=4, Step=0  | 397.11516 | 395.11017 |
-| Epoch=5, Step=0  | 341.83102 | 339.69815 |
-| Epoch=6, Step=0  | 295.01114 | 292.83597 |
-| Epoch=7, Step=0  | 255.35141 | 253.19429 |
-| Epoch=8, Step=0  | 221.74739 | 219.65132 |
-| Epoch=9, Step=0  | 193.26459 | 191.25981 |
-| Epoch=10, Step=0  | 169.11423 | 167.2204 |
-| Epoch=11, Step=0  | 148.63138 | 146.85835 |
-| Epoch=12, Step=0  | 131.25081 | 129.60391 |
-| Epoch=13, Step=0  | 116.49708 | 114.97599 |
-| Epoch=14, Step=0  | 103.96669 | 102.56854 |
-| Epoch=15, Step=0  | 93.31706 | 92.03858 |
-| Epoch=16, Step=0  | 84.26219 | 83.09653 |
-| Epoch=17, Step=0  | 76.55664 | 75.49785 |
-| Epoch=18, Step=0  | 69.99673 | 69.03561 |
-| Epoch=19, Step=0  | 64.40562 | 63.53539 |
+我们基于波士顿房价数据集对PFM进行了测试，具体的事例及实现请参考 [uci_demo](./python/paddle_fl/mpc/examples/uci_demo)
 
 ## 正在进行的工作
 
 - 纵向联合学习支持更多的模型。
 - 发布纵向联邦学习K8S部署方案。
+- 手机端的联邦学习模拟器将在下一版本开源。
 
 ## 参考文献
 

@@ -8,15 +8,17 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-<img src='_static/FL-framework.png' width = "1300" height = "310" align="middle"/>
+<img src='../../../images/FL-framework.png' width = "1000" height = "320" align="middle"/>
+
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL.
 
-#### Federated Learning Strategy
-- **Vertical Federated Learning**: Logistic Regression with PrivC, Neural Network with third-party PrivC [5]
+#### A. Federated Learning Strategy
 
-- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6]
+- **Vertical Federated Learning**: Logistic Regression with PrivC[5], Neural Network with MPC [11]
 
-#### Training Strategy
+- **Horizontal Federated Learning**: Federated Averaging [2], Differential Privacy [6], Secure Aggregation
+
+#### B. Training Strategy
 
 - **Multi Task Learning** [7]
 
@@ -24,15 +26,23 @@ In PaddleFL, horizontal and vertical federated learning strategies will be imple
 
 - **Active Learning**
 
+There are mainly two components in PaddleFL: **Data Parallel** and **Federated Learning with MPC (PFM)**.
+
+With Data Parallel, distributed data holders can finish their Federated Learning tasks based on common horizontal federated strategies, such as FedAvg, DPSGD, etc.
+
+Besides, PFM is implemented based on secure multi-party computation (MPC) to enable secure training and prediction. As a key product of PaddleFL, PFM intrinsically supports federated learning well, including horizontal, vertical and transfer learning scenarios. Users with little cryptography expertise can also train models or conduct prediction on encrypted data.
+
 ## Framework design of PaddleFL
 
-<img src='_static/FL-training.png' width = "1300" height = "400" align="middle"/>
+### Data Parallel
 
-In PaddleFL, components for defining a federated learning task and training a federated learning job are as follows:
+<img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
 
-#### Compile Time
+In Data Parallel, components for defining a federated learning task and training a federated learning job are as follows:
 
-- **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[1]
+#### A. Compile Time
+
+- **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[2]
 
 - **User-Defined-Program**: PaddlePaddle's program that defines the machine learning model structure and training strategies such as multi-task learning.
 
@@ -40,7 +50,7 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 - **FL-Job-Generator**: Given FL-Strategy, User-Defined Program and Distributed Training Config, FL-Job for federated server and worker will be generated through FL Job Generator. FL-Jobs will be sent to organizations and federated parameter server for run-time execution.
 
-#### Run Time
+#### B. Run Time
 
 - **FL-Server**: federated parameter server that usually runs in cloud or third-party clusters.
 
@@ -48,10 +58,37 @@ In PaddleFL, components for defining a federated learning task and training a fe
 
 - **FL-scheduler**: Decide which set of trainers can join the training before each updating cycle.
 
-## On Going and Future Work
+### Federated Learning with MPC
 
-- Experimental benchmark with public datasets in federated learning settings.
+<img src='../../../images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
 
-- Federated Learning Systems deployment methods in Kubernetes.
+Paddle FL MPC implements secure training and inference tasks based on the underlying MPC protocol like ABY3[11], which is a high efficient three-party computing model.
 
-- Vertical Federated Learning Strategies and more horizontal federated learning strategies will be open sourced.
+In ABY3, participants can be classified into roles of Input Party (IP), Computing Party (CP) and Result Party (RP). Input Parties (e.g., the training data/model owners) encrypt and distribute data or models to Computing Parties. Computing Parties (e.g., the VM on the cloud) conduct training or inference tasks based on specific MPC protocols, being restricted to see only the encrypted data or models, and thus guarantee the data privacy. When the computation is completed, one or more Result Parties (e.g., data owners or specified third-party) receive the encrypted results from Computing Parties, and reconstruct the plaintext results. Roles can be overlapped, e.g., a data owner can also act as a computing party.
+
+A full training or inference process in PFM consists of mainly three phases: data preparation, training/inference, and result reconstruction.
+
+#### A. Data preparation
+
+- **Private data alignment**: PFM enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training.
+
+- **Encryption and distribution**: In PFM, data and models from IPs will be encrypted using Secret-Sharing[10], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
+
+#### B. Training/inference
+
+A PFM program is exactly a PaddlePaddle program, and will be executed as normal PaddlePaddle programs. Before training/inference, user needs to choose a MPC protocol, define a machine learning model and their training strategies. Typical machine learning operators are provided in `paddle_fl.mpc` over encrypted data, of which the instances are created and run in order by Executor during run-time.
+
+
+#### C. Result reconstruction
+
+Upon completion of the secure training (or inference) job, the models (or prediction results) will be output by CPs in encrypted form. Result Parties can collect the encrypted results, decrypt them using the tools in PFM, and deliver the plaintext results to users.
+
+# On Going and Future Work
+
+- Vertial Federated Learning will support more algorithms.
+
+- Add K8S deployment scheme for Paddle Encrypted.
+
+- FL mobile simulator will be open sourced in following versions.
+
+
