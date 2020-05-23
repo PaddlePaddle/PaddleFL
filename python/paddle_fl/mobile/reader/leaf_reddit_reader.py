@@ -108,7 +108,7 @@ def train_reader(lines):
 
             input_data, input_length = process_x(data_x, VOCAB)
             target_data = process_y(data_y, VOCAB)
-            yield [input_data] + [target_data]
+            yield [input_data] + [target_data] + [input_length] + [data_mask]
 
     return local_iter
 

@@ -36,17 +36,22 @@ simulator = SimulationFramework(role_maker)
 language_model_trainer = LanguageModelTrainer()
 
 language_model_trainer.set_trainer_configs({
-    "epoch": 3,
+    "epoch": 1,
     "max_steps_in_epoch": -1,
-    "lr": 0.1,
+    "lr": 1.0,
     "batch_size": 5,
+    "max_grad_norm": 5,
+    "n_hidden": 256,
+    "num_layers": 2,
+    "init_scale": 0.1,
+    "dropout_prob": 0.0,
 })
 
 sampler = UniformSampler()
-sampler.set_sample_num(30)
+sampler.set_sample_num(10)
 sampler.set_min_ins_num(1)
 test_sampler = Test1percentSampler()
-fed_avg_optimizer = FedAvgOptimizer(learning_rate=2.0)
+fed_avg_optimizer = FedAvgOptimizer(learning_rate=1.85)
 
 simulator.set_trainer(language_model_trainer)
 simulator.set_sampler(sampler)
@@ -68,5 +73,8 @@ elif simulator.is_simulator():
     print("dates: {}".format(dates))
 
     time.sleep(10)
-    simulator.run_simulation(
-        base_path, dates, sim_num_everyday=100, do_test=True, test_skip_day=1)
+    simulator.run_simulation(base_path,
+                             dates,
+                             sim_num_everyday=100,
+                             do_test=True,
+                             test_skip_day=1)

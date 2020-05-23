@@ -12,16 +12,23 @@ FL-mobile是一个集移动端算法模拟调研、训练和部署为一体的�
 ## 准备工作
 
 - 安装mpirun
+
 - python安装grpc
     ```shell
     pip install grpcio==1.28.1
     ```
+    
 - 安装Paddle
+
+    ```shell
+    pip install paddlepaddle==1.8.0
+    ```
+
+    
 
 ## 快速开始
 
-我们以Leaf数据集中的[reddit数据](https://github.com/TalwalkarLab/leaf/tree/master/data/reddit)为例，用LSTM建模，在simulator
-中给出一个单机训练的例子，通过这个例子，您能了解simulator的基础用法。
+我们以Leaf数据集中的[reddit数据](https://github.com/TalwalkarLab/leaf/tree/master/data/reddit)为例，参考[这篇论文](https://arxiv.org/pdf/1812.01097.pdf)，用LSTM建模，在simulator中给出一个单机训练的例子。通过这个例子，您能了解simulator的基础用法。
 
 ### 准备数据
 
@@ -52,6 +59,8 @@ cd ..
 
 ### 开始训练
 
+在训练中，我们每轮用均匀采样（Uniform Sample）方式选取`10`个Client进行训练，每个Client在本地用该Client对应的全部数据（未经shuffle）训练`1`个epoch，总共训练`100`轮。在本实验中使用的Client学习率为`1.0`，FedAvg学习率为`1.85	`。
+
 ```shell
 export PYTHONPATH=$PWD:$PYTHONPATH
 mpirun -np 2 python application.py lm_data
@@ -59,11 +68,13 @@ mpirun -np 2 python application.py lm_data
 
 ### 训练结果
 
+在测试集上，测试Top1为 `11.6% `。
+
 ```shell
-framework.py : INFO  infer results: 0.085723
+framework.py : INFO  infer results: 0.116334
 ```
 
-即：在测试集上的，测试Top1为 8.6% 
+相同参数的非联邦训练测试Top1为`11.1%`。
 
 ## 添加自己的数据集和Trainer
 
@@ -89,7 +100,7 @@ framework.py : INFO  infer results: 0.085723
 - Step1 模型初始化
 
     1. 全局参数初始化：由编号为0的simulator来做模型初始化工作，初始化之后，它会通过UpdateGlobalParams()接口将参数传递给Scheduler；
-   
+    
     2. 个性化参数初始化
 
 - Step2 模型分发
