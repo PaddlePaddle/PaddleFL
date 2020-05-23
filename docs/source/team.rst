@@ -1,3 +1,3 @@
 The Team
 ========
-PGL is developed and maintained by NLP and Paddle Teams at Baidu
+PaddleFL is developed by PaddlePaddle and Security team.
