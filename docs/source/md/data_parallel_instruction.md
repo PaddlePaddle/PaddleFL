@@ -1,3 +1,5 @@
+# Instructions for Data Parallel
+
 ## Step 1: Define Federated Learning Compile-Time
 
 We define very simple multiple layer perceptron for demonstration. When multiple organizations
