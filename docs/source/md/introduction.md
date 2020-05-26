@@ -8,7 +8,8 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 ## Overview of PaddleFL
 
-<img src='../../../images/FL-framework.png' width = "1000" height = "320" align="middle"/>
+<img src='_static/FL-framework.png' width = "1000" height = "320" align="middle"/>
+
 
 In PaddleFL, horizontal and vertical federated learning strategies will be implemented according to the categorization given in [4]. Application demonstrations in natural language processing, computer vision and recommendation will be provided in PaddleFL.
 
@@ -36,7 +37,7 @@ Besides, PFM is implemented based on secure multi-party computation (MPC) to ena
 
 ### Data Parallel
 
-<img src='images/FL-training.png' width = "1000" height = "400" align="middle"/>
+<img src='_static/FL-training.png' width = "1000" height = "400" align="middle"/>
 
 In Data Parallel, components for defining a federated learning task and training a federated learning job are as follows:
 
@@ -60,7 +61,7 @@ In Data Parallel, components for defining a federated learning task and training
 
 ### Federated Learning with MPC
 
-<img src='../../../images/PFM-overview.png' width = "1000" height = "446" align="middle"/>
+<img src='_static/PFM-overview.png' width = "1000" height = "446" align="middle"/>
 
 Paddle FL MPC implements secure training and inference tasks based on the underlying MPC protocol like ABY3[11], which is a high efficient three-party computing model.
 
