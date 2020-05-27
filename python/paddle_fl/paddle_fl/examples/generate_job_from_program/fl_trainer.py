@@ -79,6 +79,3 @@ while not trainer.stop():
         train_test_feed=feeder)
 
     print("Test with epoch %d, accuracy: %s" % (epoch_id, acc_val))
-
-    save_dir = (output_folder + "/epoch_%d") % epoch_id
-    trainer.save_inference_program(output_folder)
