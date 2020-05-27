@@ -79,3 +79,7 @@ while not trainer.stop():
         train_test_feed=feeder)
 
     print("Test with epoch %d, accuracy: %s" % (epoch_id, acc_val))
+
+    if trainer_id == 0:
+        save_dir = (output_folder + "/epoch_%d") % epoch_id
+        trainer.save(para_dir, save_dir)
