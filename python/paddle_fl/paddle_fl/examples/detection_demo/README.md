@@ -5,7 +5,7 @@ This document introduce how to start a detection model training in PaddleFL with
 ### Dependencies
 
 - paddlepaddle>=1.8
-- paddle_fl>=1.0
+- paddle_fl>=1.0.1
 
 Please use pip which has paddlepaddle installed
 
