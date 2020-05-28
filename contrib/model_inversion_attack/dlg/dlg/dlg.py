@@ -43,13 +43,6 @@ def dlg_attack(args, feature, label, network, exe, origin_grad):
     main_program = fluid.Program()
     # use a new program
     with fluid.program_guard(main_program):
-        # print(feature.shape)
-        # print(feature.dtype)
-        # print(label.shape)
-        # print(label.dtype)
-        # test = numpy.array(feature)
-        # print(test)
-
         # the dummy feature, which aims to imitate the target data
         dummy_x = fluid.data(name="dummy_x",
                              shape=list(feature.shape),
