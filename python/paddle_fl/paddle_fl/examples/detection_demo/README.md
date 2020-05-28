@@ -33,7 +33,7 @@ Before training, please modify the following paths according to your environment
 export PYTHONPATH=/path/to/PaddleDetection
 
 # In fl_train.py, change the path to your fl_fruit dataset that is downloaded in download.sh. 
-# Note, the path should be absolute path rather than relatice path. Otherwise, error will be raised. 
+# Note, the path should be absolute path rather than relative path. Otherwise, error will be raised. 
 
 #line 41
 self.root_path = '/path/to/your/fl_fruit'
