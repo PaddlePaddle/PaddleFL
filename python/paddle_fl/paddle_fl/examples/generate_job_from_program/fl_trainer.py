@@ -61,6 +61,7 @@ def train_test(train_test_program, train_test_feed, train_test_reader):
     return acc_val_mean
 
 
+para_dir = 'load_file'
 output_folder = "model_node%d" % trainer_id
 epoch_id = 0
 step = 0
