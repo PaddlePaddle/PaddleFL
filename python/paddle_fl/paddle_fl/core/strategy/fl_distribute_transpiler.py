@@ -695,7 +695,8 @@ class FLDistributeTranspiler(object):
         opti_to_param = dict()
         param_to_opti = dict()
         for op in self.optimize_ops:
-            if (op.type == "sgd") or (op.type == "adam"):
+            if (op.type == "sgd") or (op.type == "adam") or (
+                    op.type == "momentum"):
                 origin_name = op.output("ParamOut")
                 var = self.origin_program.global_block().var(origin_name[0])
                 new_var_name = "%s.opti.trainer_%d" % (origin_name[0],

@@ -25,12 +25,13 @@ sum_cost = fluid.layers.cross_entropy(input=predict, label=label)
 accuracy = fluid.layers.accuracy(input=predict, label=label)
 avg_cost = fluid.layers.mean(sum_cost, name="loss")
 startup_program = fluid.default_startup_program()
+main_program = fluid.default_main_program()
 place = fluid.CPUPlace()
 exe = fluid.Executor(place)
 exe.run(startup_program)
 
 job_generator = JobGenerator()
 program_path = './load_file'
-job_generator.save_program(program_path, [input, label],
-                           [['predict', predict], ['accuracy', accuracy]],
-                           avg_cost)
+job_generator.save_program(
+    main_program, startup_program, program_path, [input, label],
+    [['predict', predict], ['accuracy', accuracy]], avg_cost)
