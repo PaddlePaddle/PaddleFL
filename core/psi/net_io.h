@@ -138,6 +138,9 @@ public:
       if (ret < 0) {
         throw std::runtime_error("socket error: recv, errno: " +
                                  std::to_string(errno));
+      } else if (ret == 0) {
+        throw std::runtime_error("socket error: 0 byte recved, "
+                                 "socket shutdown by peer");
       }
       recved += ret;
     }
