@@ -42,7 +42,7 @@ We **highly recommend** to run PaddleFL in Docker
 ```sh
 #Pull and run the docker
 docker pull hub.baidubce.com/paddlefl/paddle_fl:latest
-docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bash
+docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/bash
 
 #Install paddle_fl
 pip install paddle_fl
