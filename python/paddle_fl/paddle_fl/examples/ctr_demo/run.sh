@@ -1,3 +1,4 @@
+#!/bin/bash
 unset http_proxy
 unset https_proxy
 python fl_master.py

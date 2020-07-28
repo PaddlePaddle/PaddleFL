@@ -20,6 +20,7 @@ import paddle
 import paddle.fluid as fluid
 import logging
 import math
+import time
 
 logging.basicConfig(
     filename="test.log",
@@ -72,9 +73,10 @@ epoch_id = 0
 step = 0
 while not trainer.stop():
     epoch_id += 1
-    if epoch_id > 40:
+    if epoch_id > 10:
         break
-    print("epoch %d start train" % (epoch_id))
+    #print("epoch %d start train" % (epoch_id))
+    print("{} Epoch {} start train".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch_id))
     for step_id, data in enumerate(train_reader()):
         acc = trainer.run(feeder.feed(data), fetch=["accuracy_0.tmp_0"])
         step += 1
