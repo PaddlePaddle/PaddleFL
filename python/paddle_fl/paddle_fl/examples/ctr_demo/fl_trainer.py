@@ -44,11 +44,13 @@ trainer = FLTrainerFactory().create_fl_trainer(job)
 trainer._current_ep = "127.0.0.1:{}".format(9000 + trainer_id)
 place = fluid.CPUPlace()
 trainer.start(place)
-print(trainer._scheduler_ep, trainer._current_ep)
+print("scheduler_ep is {}, current_ep is {}".format(trainer._scheduler_ep, trainer._current_ep))
 output_folder = "fl_model"
 epoch_id = 0
 while not trainer.stop():
-    print("batch %d start train" % (epoch_id))
+    if epoch_id > 15:
+        break
+    print("{} epoch {} start train".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch_id))
     train_step = 0
     for data in reader():
         trainer.run(feed=data, fetch=[])
