@@ -50,7 +50,7 @@ epoch_id = 0
 while not trainer.stop():
     if epoch_id > 15:
         break
-    print("{} epoch {} start train".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch_id))
+    print("{} Epoch {} start train".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch_id))
     train_step = 0
     for data in reader():
         trainer.run(feed=data, fetch=[])
