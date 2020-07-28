@@ -1,7 +1,10 @@
 unset http_proxy
 unset https_proxy
+ps -ef | grep -E fl_ | grep -v grep | awk '{print $2}' | xargs kill -9
+
 log_dir=${1:-$(pwd)}
 mkdir -p ${log_dir}
+
 python fl_master.py > ${log_dir}/master.log 2>&1 &
 sleep 2
 python -u fl_scheduler.py > ${log_dir}/scheduler.log 2>&1 &
