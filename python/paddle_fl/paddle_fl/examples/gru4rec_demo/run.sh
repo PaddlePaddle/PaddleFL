@@ -7,7 +7,7 @@ if [ ! -d mid_data ];then
     sh download.sh
 fi
 
-log_dir=${1:-$(pwd)}
+log_dir=${1:-"logs"}
 mkdir -p ${log_dir}
 
 python fl_master.py > ${log_dir}/master.log 2>&1 &

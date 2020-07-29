@@ -6,7 +6,7 @@ if [ ! -d load_file ]; then
     python program_saver.py
 fi
 
-log_dir=${1:-$(pwd)}
+log_dir=${1:-"logs"}
 mkdir -p ${log_dir}
 
 python fl_master.py > ${log_dir}/master.log 2>&1 &
