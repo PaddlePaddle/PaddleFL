@@ -32,11 +32,14 @@ bash run_standalone.sh mnist_demo.py
 
 #### 3. 解密数据
 
-使用`process_data.py`脚本中的`decrypt_data_to_file()`，将保存的密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python decrypt_save.py`，将把明文预测结果保存在`mpc_label`文件中。
+使用`process_data.py`脚本中的`decrypt_data_to_file()`，将保存的密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python decrypt_save.py decrypt_file`，将把明文预测结果保存在`decrypt_file`文件中。
 
 ```python
+import sys
+
+decrypt_file=sys.argv[1]
 import process_data
-process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), "mpc_label")
+process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 
 **注意**：再次启动运行demo之前，请先将上次在`/tmp`保存的预测密文结果文件删除，以免影响本次密文数据的恢复结果。为了简化用户操作，我们在`run_standalone.sh`脚本中加入了如下的内容，可以在执行脚本时删除上次的数据。
@@ -93,10 +96,13 @@ $PYTHON_EXECUTABLE mnist_demo.py $PARTY_ID $SERVER $PORT
 
 #### 5. 解密预测数据
 
-各计算party将`/tmp`目录下的`mnist_output_prediction.part`文件发送到数据方的/tmp目录下。数据方使用`process_data.py`脚本中的`decrypt_data_to_file()`，将密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python decrypt_save.py`，将把明文预测结果保存在`mpc_label`文件中。
+各计算party将`/tmp`目录下的`mnist_output_prediction.part`文件发送到数据方的/tmp目录下。数据方使用`process_data.py`脚本中的`decrypt_data_to_file()`，将密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python decrypt_save.py decrypt_file`，将把明文预测结果保存在`decrypt_file`文件中。
 
 ```python
+import sys
+
+decrypt_file=sys.argv[1]
 import process_data
-process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), "mpc_label")
+process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 
