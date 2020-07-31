@@ -94,7 +94,6 @@ while not trainer.stop():
         if step_i % 100 == 0:
             print("{} Epoch {} start train, step: {}, accuracy: {}".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), 
                 epoch_id, step_i, accuracy[0]))
-    #print(step_i)
     avg_loss_val, acc_val = train_test(
         train_test_program=test_program,
         train_test_reader=test_reader,
