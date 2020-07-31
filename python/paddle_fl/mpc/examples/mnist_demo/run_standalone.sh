@@ -31,12 +31,13 @@
 # bash run_standalone.sh TEST_SCRIPT_NAME
 #
 
-# modify the following vars according to your environment
-PYTHON="python"
-REDIS_HOME="path_to_redis_bin"
-SERVER="localhost"
-PORT=9937
+# please set the following environment vars according in your environment
+PYTHON=${PYTHON}
+REDIS_HOME=${PATH_TO_REDIS_BIN}
+SERVER=${LOCALHOST}
+PORT=${REDIS_PORT}
 
+echo "redis home in ${REDIS_HOME}, server is ${SERVER}, port is ${PORT}"
 function usage() {
     echo 'run_standalone.sh SCRIPT_NAME [ARG...]'
     exit 0
@@ -65,6 +66,15 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 PRED_FILE="/tmp/mnist_output_prediction.*"
 if [ "$PRED_FILE" ]; then
         rm -rf $PRED_FILE
+fi
+
+PRED_FILE="/tmp/mnist2_feature.part*"
+if [ ! "$PRED_FILE" ]; then
+    echo "There is no data in /tmp, please prepare data with "python prepare.py" firstly"
+    exit 1
+else
+    echo "There are data for mnist:"
+    echo "`ls ${PRED_FILE}`"
 fi
 
 
