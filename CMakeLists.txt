@@ -34,8 +34,8 @@ execute_process(COMMAND ${PYTHON} -c "import paddle;print(paddle.version.full_ve
   RESULT_VARIABLE ret OUTPUT_VARIABLE paddle_version OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 if (NOT ret)
-  if (NOT ${paddle_version} STREQUAL "1.8.0")
-    message(FATAL_ERROR "Paddle installation of 1.8.0 is required but ${paddle_version} is found")
+  if (NOT ${paddle_version} STRGREATER_EQUAL "1.8.0")
+    message(FATAL_ERROR "Paddle installation of >= 1.8.0 is required but ${paddle_version} is found")
   endif()
 else()
   message(FATAL_ERROR "Could not get paddle version.")
