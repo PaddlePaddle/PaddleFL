@@ -20,6 +20,15 @@ Encrypted data files of feature and label would be generated and saved in `/tmp`
 
 #### (2). Launch Demo with A Shell Script
 
+You should set the env params as follow:
+
+```
+export PYTHON=/yor/python
+export PATH_TO_REDIS_BIN=/path/to/redis_bin
+export LOCALHOST=/your/localhost
+export REDIS_PORT=/your/redis/port
+```
+
 Launch demo with the `run_standalone.sh` script. The concrete command is:
 
 ```bash

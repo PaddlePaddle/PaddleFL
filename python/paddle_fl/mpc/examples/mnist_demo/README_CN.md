@@ -20,7 +20,16 @@ process_data.generate_encrypted_test_data()
 
 #### 2. 使用shell脚本启动demo
 
-使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
+运行demo之前，需设置以下环境变量：
+
+```
+export PYTHON=/yor/python
+export PATH_TO_REDIS_BIN=/path/to/redis_bin
+export LOCALHOST=/your/localhost
+export REDIS_PORT=/your/redis/port
+```
+
+然后使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
 
 ```bash 
 bash run_standalone.sh mnist_demo.py
