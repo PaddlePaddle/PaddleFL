@@ -68,13 +68,13 @@ if [ "$PRED_FILE" ]; then
         rm -rf $PRED_FILE
 fi
 
-PRED_FILE="/tmp/mnist2_feature.part*"
-if [ ! "$PRED_FILE" ]; then
+TRAINING_FILE="/tmp/mnist2_feature.part*"
+if [ ! "$TRAINING_FILE" ]; then
     echo "There is no data in /tmp, please prepare data with "python prepare.py" firstly"
     exit 1
 else
     echo "There are data for mnist:"
-    echo "`ls ${PRED_FILE}`"
+    echo "`ls ${TRAINING_FILE}`"
 fi
 
 
