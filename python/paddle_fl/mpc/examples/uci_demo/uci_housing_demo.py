@@ -61,8 +61,8 @@ exe = fluid.Executor(place)
 exe.run(fluid.default_startup_program())
 epoch_num = 20
 
-start_time = time.time()
 for epoch_id in range(epoch_num):
+    start_time = time.time()
     step = 0
 
     # Method 1: feed data directly 
@@ -71,17 +71,18 @@ for epoch_id in range(epoch_num):
 
     # Method 2: feed data via loader
     for sample in loader():
+        step_start = time.time()
         mpc_loss = exe.run(feed=sample, fetch_list=[avg_loss])
+        step_end = time.time()
 
-        if step % 50 == 0:
-            print('Epoch={}, Step={}, Loss={}'.format(epoch_id, step,
-                                                      mpc_loss))
+        if step % 5 == 0:
+            print('Epoch={}, Step={}, batch_cost={:.4f} s, Loss={},'.format(epoch_id, step,
+                                                      (step_end - step_start), mpc_loss))
             with open(loss_file, 'ab') as f:
                 f.write(np.array(mpc_loss).tostring())
-            step += 1
-
-end_time = time.time()
-print('Mpc Training of Epoch={} Batch_size={}, cost time in seconds:{}'
+        step += 1
+    end_time = time.time()
+    print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
       .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
 
 prediction_file = "/tmp/uci_prediction.part{}".format(role)
@@ -92,9 +93,3 @@ for sample in loader():
     with open(prediction_file, 'ab') as f:
         f.write(np.array(prediction).tostring())
     break
-
-import process_data
-print("uci_loss:")
-process_data.load_decrypt_data("/tmp/uci_loss", (1, ))
-print("prediction:")
-process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ))

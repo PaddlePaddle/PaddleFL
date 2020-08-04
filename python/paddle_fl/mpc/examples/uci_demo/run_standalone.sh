@@ -32,10 +32,11 @@
 #
 
 # modify the following vars according to your environment
-PYTHON="python"
-REDIS_HOME="path_to_redis_bin"
-SERVER="localhost"
-PORT=9937
+PYTHON=${PYTHON}
+REDIS_HOME=${PATH_TO_REDIS_BIN}
+SERVER=${LOCALHOST}
+PORT=${REDIS_PORT}
+echo "redis home in ${REDIS_HOME}, server is ${SERVER}, port is ${PORT}"
 
 function usage() {
     echo 'run_standalone.sh SCRIPT_NAME [ARG...]'
@@ -72,6 +73,14 @@ if [ "$PRED_FILE" ]; then
         rm -rf $PRED_FILE
 fi
 
+TRAINING_FILE="/tmp/house_feature.part*"
+if [ ! "$TRAINING_FILE" ]; then
+    echo "There is no data in /tmp, please prepare data with "python prepare.py" firstly"
+    exit 1
+else
+    echo "There are data for uci:"
+    echo "`ls ${TRAINING_FILE}`"
+fi
 
 # kick off script with roles of 1 and 2, and redirect output to /dev/null
 for role in {1..2}; do
