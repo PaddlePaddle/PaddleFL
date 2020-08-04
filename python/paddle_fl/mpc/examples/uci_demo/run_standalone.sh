@@ -38,7 +38,7 @@ SERVER=${LOCALHOST}
 PORT=${REDIS_PORT}
 echo "redis home in ${REDIS_HOME}, server is ${SERVER}, port is ${PORT}"
 
-function usage() {
+function usage(){
     echo 'run_standalone.sh SCRIPT_NAME [ARG...]'
     exit 0
 }
@@ -65,16 +65,19 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 # remove temp data generated in last time
 LOSS_FILE="/tmp/uci_loss.*"
 PRED_FILE="/tmp/uci_prediction.*"
-if [ "$LOSS_FILE" ]; then
+ls ${LOSS_FILE}
+if [ $? -eq 0 ]; then
         rm -rf $LOSS_FILE
 fi
 
-if [ "$PRED_FILE" ]; then
+ls ${PRED_FILE}
+if [ $? -eq 0 ]; then
         rm -rf $PRED_FILE
 fi
 
 TRAINING_FILE="/tmp/house_feature.part*"
-if [ ! "$TRAINING_FILE" ]; then
+ls ${TRAINING_FILE}
+if [ $? -ne 0 ]; then
     echo "There is no data in /tmp, please prepare data with "python prepare.py" firstly"
     exit 1
 else
