@@ -27,11 +27,9 @@ import paddle_fl.mpc as pfl_mpc
 import paddle_fl.mpc.data_utils.aby3 as aby3
 
 
-env_dist = os.environ
-local_host= env_dist.get('LOCALHOST')
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 # modify host(localhost).
-pfl_mpc.init("aby3", int(role), local_host, server, int(port))
+pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 role = int(role)
 
 # data preprocessing
