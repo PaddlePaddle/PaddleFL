@@ -22,7 +22,7 @@ import process_data
 decrypt_loss_file=sys.argv[1]
 decrypt_prediction_file=sys.argv[2]
 BATCH_SIZE=10
-print("uci_loss:")
 process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
-print("prediction:")
+print("uci_loss done")
 process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
+print("prediction done")
