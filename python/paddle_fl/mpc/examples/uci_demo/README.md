@@ -19,6 +19,15 @@ Encrypted data files of feature and label would be generated and saved in `/tmp`
 
 #### (2). Launch Demo with A Shell Script
 
+You should set the env params as follow:
+
+```
+export PYTHON=/yor/python
+export PATH_TO_REDIS_BIN=/path/to/redis_bin
+export LOCALHOST=/your/localhost
+export REDIS_PORT=/your/redis/port
+```
+
 Launch demo with the `run_standalone.sh` script. The concrete command is:
 
 ```bash
@@ -29,7 +38,24 @@ The loss with cypher text format will be displayed on screen while training. At 
 
 Besides, predictions would be made in this demo once training is finished. The predictions with cypher text format would also be save in `/tmp` directory.
 
+#### (3). Decrypt Data
+
 Finally, using `load_decrypt_data()` in `process_data.py` script, this demo would decrypt and print the loss and predictions, which can be compared with related results of Paddle plain text model.
+
+For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py decrypt_loss_file decrypt_prediction_file`. The decrypted loss and prediction results would be saved into two files correspondingly.
+
+```python
+import sys
+
+import process_data
+
+
+decrypt_loss_file=sys.argv[1]
+decrypt_prediction_file=sys.argv[2]
+BATCH_SIZE=10
+process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
+process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
+```
 
 **Note** that remember to delete the loss and prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running. For simplifying users operations, we provide the following commands in `run_standalone.sh`, which can delete the files mentioned above when running this script.
 
@@ -70,18 +96,6 @@ Each computation party makes the following modifications on `uci_housing_demo.py
   pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
   ```
 
-* Comment Out Codes for Single Machine Running
-
-  Comment out the following codes which are used when running on single machine.
-
-  ```python
-  import process_data
-  print("uci_loss:")
-  process_data.load_decrypt_data("/tmp/uci_loss", (1,))
-  print("prediction:")
-  process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
-  ```
-
 #### (4). Launch Demo on Each Party
 
 **Note** that Redis service is necessary for demo running. Remember to clear the cache of Redis server before launching demo on each computation party, in order to avoid any negative influences caused by the cached records in Redis. The following command can be used for clear Redis, where REDIS_BIN is the executable binary of redis-cli, SERVER and PORT represent the IP and port of Redis server respectively.
@@ -106,20 +120,19 @@ Similarly, training loss with cypher text format would be printed on the screen 
 
 Each computation party sends `uci_loss.part` and `uci_prediction.part` files in `/tmp` directory to the `/tmp` directory of data owner. Data owner decrypts and gets the plain text of loss and predictions with ` load_decrypt_data()` in `process_data.py`.
 
-For example, the following code can be written into a python script to decrypt and print training loss.
+For example, the following code can be written into a python script to decrypt and print training loss and predictions.
 
 ```python
-import process_data
-print("uci_loss:")
-process_data.load_decrypt_data("/tmp/uci_loss", (1,))
-```
+import sys
 
-And the following code can be written into a python script to decrypt and print predictions.
-
-```python
 import process_data
-print("prediction:")
-process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
+
+
+decrypt_loss_file=sys.argv[1]
+decrypt_prediction_file=sys.argv[2]
+BATCH_SIZE=10
+process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
+process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
 ```
 
 ### 3. Convergence of paddle_fl.mpc vs paddle

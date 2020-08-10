@@ -77,10 +77,12 @@ def load_decrypt_data(filepath, shape):
         p = aby3.reconstruct(np.array(instance))
         print(p)
 
-def decrypt_data_to_file(filepath, shape, decrypted_filepath):
+def decrypt_data_to_file(filepath, shape, decrypted_file):
     """
     load the encrypted data and reconstruct to a file
     """
+    if os.path.exists(decrypted_file):
+        os.remove(decrypted_file)
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
@@ -88,6 +90,6 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
 
     for instance in aby3_share_reader():
         p = aby3.reconstruct(np.array(instance))
-        with open(decrypted_filepath, 'a+') as f:
+        with open(decrypted_file, 'a+') as f:
             for i in p:
                 f.write(str(i) + '\n')
