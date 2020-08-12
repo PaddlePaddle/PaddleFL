@@ -17,6 +17,7 @@ Process data for MNIST.
 import numpy as np
 import paddle
 import six
+import os
 from paddle_fl.mpc.data_utils import aby3
 
 sample_reader = paddle.dataset.mnist.train()

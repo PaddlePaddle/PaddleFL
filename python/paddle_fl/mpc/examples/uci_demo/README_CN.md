@@ -31,7 +31,7 @@ export REDIS_PORT=/your/redis/port
 然后使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
 
 ```bash 
-bash run_standalone.sh uci_housing_demo.py
+bash run_standalone.sh uci_demo.py
 ```
 
 运行之后将在屏幕上打印训练过程中的密文loss数据，同时，对应的密文loss数据将会保存到/tmp目录下的文件中，文件命名格式类似于步骤1中所述。
@@ -85,9 +85,9 @@ fi
 
 `house_feature.part0`和`house_label.part0`发送到party0的/tmp目录下。
 
-#### 3. 计算party修改uci_housing_demo.py脚本
+#### 3. 计算party修改uci_demo.py脚本
 
-各计算party根据自己的机器环境，对uci_housing_demo.py做如下改动：
+各计算party根据自己的机器环境，对uci_demo.py做如下改动：
 
 * 修改IP信息
 
@@ -109,7 +109,7 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 在各计算party分别执行以下命令，启动demo：
 
 ```
-$PYTHON_EXECUTABLE uci_housing_demo.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT
 ```
 
 其中，PYTHON_EXECUTABLE表示自己安装了PaddleFL的python，PARTY_ID表示计算party的编号，值为0、1或2，SERVER和PORT分别表示redis server的IP地址和端口号。
