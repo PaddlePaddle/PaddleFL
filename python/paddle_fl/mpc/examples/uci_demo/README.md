@@ -31,7 +31,7 @@ export REDIS_PORT=/your/redis/port
 Launch demo with the `run_standalone.sh` script. The concrete command is:
 
 ```bash
-bash run_standalone.sh uci_housing_demo.py
+bash run_standalone.sh uci_demo.py
 ```
 
 The loss with cypher text format will be displayed on screen while training. At the same time, the loss data would be also save in `/tmp` directory, and the format of file name is similar to what is described in Step 1.
@@ -84,9 +84,9 @@ Data owner encrypts data. Concrete operations are consistent with “Prepare Dat
 
 According to the suffix of file name, distribute encrypted data files to `/tmp ` directories of all 3 computation parties. For example, send `house_feature.part0` and `house_label.part0` to `/tmp` of party 0 with `scp` command.
 
-#### (3). Modify uci_housing_demo.py
+#### (3). Modify uci_demo.py
 
-Each computation party makes the following modifications on `uci_housing_demo.py` according to the environment of machine.
+Each computation party makes the following modifications on `uci_demo.py` according to the environment of machine.
 
 * Modify IP Information
 
@@ -107,7 +107,7 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 Launch demo on each computation party with the following command,
 
 ```
-$PYTHON_EXECUTABLE uci_housing_demo.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT
 ```
 
 where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively.

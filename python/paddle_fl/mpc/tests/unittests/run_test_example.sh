@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set redis server ip and port for test
-export TEST_REDIS_IP="test_redis_server_ip"
-export TEST_REDIS_PORT="test_redis_port"
+export TEST_REDIS_IP=${LOCALHOST}
+export TEST_REDIS_PORT=${REDIS_PORT}
 
 # unittest command
 PYTHON_TEST="python -m unittest"
