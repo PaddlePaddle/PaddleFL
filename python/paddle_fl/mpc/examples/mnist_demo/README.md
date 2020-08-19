@@ -20,6 +20,15 @@ Encrypted data files of feature and label would be generated and saved in `/tmp`
 
 #### (2). Launch Demo with A Shell Script
 
+You should set the env params as follow:
+
+```
+export PYTHON=/yor/python
+export PATH_TO_REDIS_BIN=/path/to/redis_bin
+export LOCALHOST=/your/localhost
+export REDIS_PORT=/your/redis/port
+```
+
 Launch demo with the `run_standalone.sh` script. The concrete command is:
 
 ```bash
@@ -32,11 +41,14 @@ Besides, predictions would be made in this demo once training is finished. The p
 
 #### (3). Decrypt Data
 
-Decrypt the saved prediction data and save the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py`. The decrypted prediction results would be saved into `mpc_label`.
+Decrypt the saved prediction data and save the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py decrypt_file`. The decrypted prediction results would be saved into `decrypt_file`.
 
 ```python
+import sys
+
+decrypt_file=sys.argv[1]
 import process_data
-process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), "mpc_label")
+process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 
 **Note** that remember to delete the prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running. For simplifying users operations, we provide the following commands in `run_standalone.sh`, which can delete the files mentioned above when running this script.
@@ -91,10 +103,13 @@ Similarly, predictions with cypher text format would be saved in `/tmp` director
 
 #### (5). Decrypt Prediction Data
 
-Each computation party sends  `mnist_output_prediction.part` file in `/tmp` directory to the `/tmp` directory of data owner. Data owner decrypts the prediction data and saves the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py`. The decrypted prediction results would be saved into file `mpc_label`.
+Each computation party sends  `mnist_output_prediction.part` file in `/tmp` directory to the `/tmp` directory of data owner. Data owner decrypts the prediction data and saves the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py decrypt_file`. The decrypted prediction results would be saved into file `decrypt_file`.
 
 ```python
+import sys
+
+decrypt_file=sys.argv[1]
 import process_data
-process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), "mpc_label")
+process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 

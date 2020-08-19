@@ -16,6 +16,7 @@ MNIST Demo
 """
 
 import sys
+import os
 
 import numpy as np
 import time
@@ -78,18 +79,20 @@ test_loader.set_batch_generator(test_batch_sample, places=place)
 exe = fluid.Executor(place)
 exe.run(fluid.default_startup_program())
 
-start_time = time.time()
-step = 0
 for epoch_id in range(epoch_num):
+    start_time = time.time()
+    step = 0
     # feed data via loader
     for sample in loader():
+        batch_start = time.time()
         exe.run(feed=sample, fetch_list=[cost.name])
+        batch_end = time.time()
         if step % 50 == 0:
-            print('Epoch={}, Step={}'.format(epoch_id, step))
+            print('Epoch={}, Step={}, batch_cost={:.4f} s'.format(epoch_id, step, (batch_end - batch_start)))
         step += 1
 
-end_time = time.time()
-print('Mpc Training of Epoch={} Batch_size={}, cost time in seconds:{}'
+    end_time = time.time()
+    print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
       .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
 
 # prediction
