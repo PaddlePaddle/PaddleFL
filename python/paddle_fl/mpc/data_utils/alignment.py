@@ -1,4 +1,4 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,11 @@
 This module provide data alignment tools, implemented by OT (Oblivious Transfer)-based
 PSI (Private Set Intersection) algorithm.
 """
+from multiprocessing.connection import Client, Listener
 import os
 import sys
 import mpc_data_utils as mdu
-from multiprocessing.connection import Client, Listener
+
 __all__ = ['align', ]
 
 

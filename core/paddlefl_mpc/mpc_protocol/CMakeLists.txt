@@ -1,5 +1,3 @@
-add_compile_options(-msse4.2 -maes)
-
 set(PROTO_SRCS
     "./aby3_protocol.cc"
     "./mesh_network.cc"
@@ -17,3 +15,5 @@ target_link_libraries(mpc_protocol fluid_framework gloo hiredis privc3)
 cc_test(mesh_network_test SRCS mesh_network_test.cc DEPS mpc_protocol)
 cc_test(mpc_protocol_test SRCS mpc_protocol_test.cc DEPS mpc_protocol)
 cc_test(mpc_instance_test SRCS mpc_instance_test.cc DEPS mpc_protocol)
+
+

@@ -1,9 +1,7 @@
-add_compile_options(-msse4.2 -maes)
- 
 set(PYBIND_SRCS
     "./data_utils.cc"
 )
- 
+
 if (NOT PYTHON_INCLUDE_DIRS)
   find_package(PythonLibs REQUIRED)
 endif()

@@ -19,7 +19,7 @@
 namespace paddle {
 namespace operators {
 
-template <typename DeviceContext, typename T>
+template <typename DeviceContext, typename T, typename T1>
 class MpcSGDOpKernel : public MpcOpKernel<T> {
   public:
     void ComputeImpl(const framework::ExecutionContext &ctx) const override{
@@ -47,14 +47,14 @@ class MpcSGDOpKernel : public MpcOpKernel<T> {
         PADDLE_ENFORCE_EQ(param->numel(), sz);
         PADDLE_ENFORCE_EQ(grad->numel(), sz);
 
-        const double *lr = learning_rate->data<double>();
+        double lr = *learning_rate->data<T1>();
 
         param_out->mutable_data<T>(ctx.GetPlace());
         PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_protocol, "Protocol %s is not yet created in MPC Protocol.");
         // update parameters
         framework::Tensor temp;
         temp.mutable_data<T>(param->dims(), ctx.GetPlace());
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(grad, lr[0], &temp);
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(grad, lr, &temp);
         mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->sub(param, &temp, param_out);
     }
 };
