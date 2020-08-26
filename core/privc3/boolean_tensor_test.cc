@@ -27,19 +27,20 @@
 #include "boolean_tensor.h"
 #include "fixedpoint_tensor.h"
 #include "paddle_tensor.h"
-#include "circuit_context.h"
+#include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
 
 namespace aby3 {
 
 using paddle::framework::Tensor;
+using AbstractContext = paddle::mpc::AbstractContext;
 
 class BooleanTensorTest : public ::testing::Test {
 public:
     paddle::platform::CPUDeviceContext _cpu_ctx;
 
     std::shared_ptr<paddle::framework::ExecutionContext> _exec_ctx;
-    std::shared_ptr<CircuitContext> _mpc_ctx[3];
+    std::shared_ptr<AbstractContext> _mpc_ctx[3];
 
     std::shared_ptr<gloo::rendezvous::HashStore> _store;
 
@@ -83,7 +84,7 @@ public:
     void gen_mpc_ctx(size_t idx) {
         auto net = gen_network(idx);
         net->init();
-        _mpc_ctx[idx] = std::make_shared<CircuitContext>(idx, net);
+        _mpc_ctx[idx] = std::make_shared<ABY3Context>(idx, net);
     }
 
     std::shared_ptr<TensorAdapter<int64_t>> gen1() {

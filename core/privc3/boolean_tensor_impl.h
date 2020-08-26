@@ -258,7 +258,7 @@ void BooleanTensor<T>::ppa(const BooleanTensor *rhs, BooleanTensor *ret,
 }
 
 template <typename T, size_t N>
-void a2b(CircuitContext *aby3_ctx, TensorAdapterFactory *tensor_factory,
+void a2b(AbstractContext *aby3_ctx, TensorAdapterFactory *tensor_factory,
          const FixedPointTensor<T, N> *a, BooleanTensor<T> *b, size_t n_bits) {
 
   std::shared_ptr<TensorAdapter<T>> tmp[4];

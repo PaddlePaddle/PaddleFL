@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "boolean_tensor.h"
-#include "circuit_context.h"
+#include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "paddle_tensor.h"
 
@@ -139,7 +139,7 @@ public:
   void neq(const CTensor<T, N1...> *rhs, BooleanTensor<T> *ret) const;
 
 private:
-  static inline std::shared_ptr<CircuitContext> aby3_ctx() {
+  static inline std::shared_ptr<AbstractContext> aby3_ctx() {
     return paddle::mpc::ContextHolder::mpc_ctx();
   }
 

@@ -116,7 +116,7 @@ public:
   void bit_extract(size_t i, BooleanTensor *ret) const;
 
 private:
-  static inline std::shared_ptr<CircuitContext> aby3_ctx() {
+  static inline std::shared_ptr<AbstractContext> aby3_ctx() {
     return paddle::mpc::ContextHolder::mpc_ctx();
   }
 

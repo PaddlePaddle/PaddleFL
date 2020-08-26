@@ -18,61 +18,44 @@
 #include <memory>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
-#include "prng_utils.h"
+#include "core/privc3/prng_utils.h"
+#include "paddle/fluid/platform/enforce.h"
 
-namespace aby3 {
+namespace paddle {
 
-using AbstractNetwork = paddle::mpc::AbstractNetwork;
+namespace mpc {
 
-class CircuitContext {
+using block = psi::block;
+using PseudorandomNumberGenerator = psi::PseudorandomNumberGenerator;
+
+class AbstractContext {
 public:
-  CircuitContext(size_t party, std::shared_ptr<AbstractNetwork> network,
-                 const block &seed = g_zero_block,
-                 const block &seed2 = g_zero_block) {
+/*
+  AbstractContext(size_t party, std::shared_ptr<AbstractNetwork> network,
+                 const block &seed = psi::g_zero_block,
+                 const block &seed2 = psi::g_zero_block) {
     init(party, network, seed, seed2);
   }
+*/
+  AbstractContext() = default;
+  AbstractContext(const AbstractContext &other) = delete;
 
-  CircuitContext(const CircuitContext &other) = delete;
+  AbstractContext &operator=(const AbstractContext &other) = delete;
 
-  CircuitContext &operator=(const CircuitContext &other) = delete;
-
-  void init(size_t party, std::shared_ptr<AbstractNetwork> network, block seed,
-            block seed2) {
-    set_party(party);
-    set_network(network);
-
-    if (equals(seed, g_zero_block)) {
-      seed = block_from_dev_urandom();
-    }
-
-    if (equals(seed2, g_zero_block)) {
-      seed2 = block_from_dev_urandom();
-    }
-    set_random_seed(seed, 0);
-    // seed2 is private
-    set_random_seed(seed2, 2);
-
-    // 3 for 3-party computation
-    size_t party_pre = (this->party() - 1 + 3) % 3;
-    size_t party_next = (this->party() + 1) % 3;
-
-    if (party == 1) {
-      block recv_seed = this->network()->template recv<block>(party_next);
-      this->network()->template send(party_pre, seed);
-      seed = recv_seed;
-    } else {
-      this->network()->template send(party_pre, seed);
-      seed = this->network()->template recv<block>(party_next);
-    }
-
-    set_random_seed(seed, 1);
-  }
+  virtual void init(size_t party, std::shared_ptr<AbstractNetwork> network, block seed,
+            block seed2) = 0;
 
   void set_party(size_t party) {
-    if (party >= 3) {
-      // exception handling
-    }
+    PADDLE_ENFORCE_LT(party, _num_party,
+                     "party idx should less than %d.",
+                     _num_party);
     _party = party;
+  }
+
+  void set_num_party(size_t num_party) {
+    PADDLE_ENFORCE_TRUE(num_party == 2 || num_party == 3,
+                     "2 or 3 party protocol is supported.");
+    _num_party = num_party;
   }
 
   void set_network(std::shared_ptr<AbstractNetwork> network) {
@@ -82,22 +65,24 @@ public:
   AbstractNetwork *network() { return _network.get(); }
 
   void set_random_seed(const block &seed, size_t idx) {
-    if (idx >= 3) {
-      // exception handling
-    }
+    PADDLE_ENFORCE_LE(idx, _num_party,
+                     "prng idx should be less and equal to %d.",
+                     _num_party);
     _prng[idx].set_seed(seed);
   }
 
   size_t party() const { return _party; }
 
-  size_t pre_party() const { return (_party + 3 - 1) % 3; }
+  size_t pre_party() const { return (_party + _num_party - 1) % _num_party; }
 
-  size_t next_party() const { return (_party + 1) % 3; }
+  size_t next_party() const { return (_party + 1) % _num_party; }
 
   template <typename T> T gen_random(bool next) { return _prng[next].get<T>(); }
 
   template <typename T, template <typename> class Tensor>
   void gen_random(Tensor<T> &tensor, bool next) {
+    PADDLE_ENFORCE_EQ(_num_party, 3,
+                     "`gen_random` API is for 3 party protocol.");
     std::for_each(
         tensor.data(), tensor.data() + tensor.numel(),
         [this, next](T &val) { val = this->template gen_random<T>(next); });
@@ -113,11 +98,15 @@ public:
   }
 
   template <typename T> T gen_zero_sharing_arithmetic() {
+    PADDLE_ENFORCE_EQ(_num_party, 3,
+                     "`gen_zero_sharing_arithmetic` API is for 3 party protocol.");
     return _prng[0].get<T>() - _prng[1].get<T>();
   }
 
   template <typename T, template <typename> class Tensor>
   void gen_zero_sharing_arithmetic(Tensor<T> &tensor) {
+    PADDLE_ENFORCE_EQ(_num_party, 3,
+                     "`gen_zero_sharing_arithmetic` API is for 3 party protocol.");
     std::for_each(tensor.data(), tensor.data() + tensor.numel(),
                   [this](T &val) {
                     val = this->template gen_zero_sharing_arithmetic<T>();
@@ -125,11 +114,15 @@ public:
   }
 
   template <typename T> T gen_zero_sharing_boolean() {
+    PADDLE_ENFORCE_EQ(_num_party, 3,
+                     "`gen_zero_sharing_boolean` API is for 3 party protocol.");
     return _prng[0].get<T>() ^ _prng[1].get<T>();
   }
 
   template <typename T, template <typename> class Tensor>
   void gen_zero_sharing_boolean(Tensor<T> &tensor) {
+    PADDLE_ENFORCE_EQ(_num_party, 3,
+                     "`gen_zero_sharing_boolean` API is for 3 party protocol.");
     std::for_each(
         tensor.data(), tensor.data() + tensor.numel(),
         [this](T &val) { val = this->template gen_zero_sharing_boolean<T>(); });
@@ -140,6 +133,8 @@ public:
           const Tensor<T> *choice, const Tensor<T> *m[2], Tensor<T> *buffer[2],
           Tensor<T> *ret) {
     // TODO: check tensor shape equals
+    PADDLE_ENFORCE_EQ(_num_party, 3,
+                     "`ot` API is for 3 party protocol.");
     const size_t numel = buffer[0]->numel();
     if (party() == sender) {
       bool common = helper == next_party();
@@ -180,6 +175,7 @@ public:
   }
 
 private:
+  size_t _num_party;
   size_t _party;
 
   std::shared_ptr<AbstractNetwork> _network;
@@ -187,4 +183,6 @@ private:
   PseudorandomNumberGenerator _prng[3];
 };
 
-} // namespace aby3
+} // namespace mpc
+
+} //namespace paddle

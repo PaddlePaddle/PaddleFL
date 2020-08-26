@@ -19,7 +19,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/operator.h"
 #include "core/paddlefl_mpc/mpc_protocol/mpc_instance.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "core/privc3/circuit_context.h"
+#include "core/paddlefl_mpc/mpc_protocol/abstract_context.h"
 
 namespace paddle {
 namespace operators {
@@ -32,7 +32,7 @@ public:
         PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_instance()->mpc_protocol(),
                                 "Mpc protocol is not yet initialized in executor");
 
-        std::shared_ptr<aby3::CircuitContext> mpc_ctx(mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_context());
+        std::shared_ptr<mpc::AbstractContext> mpc_ctx(mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_context());
         mpc::ContextHolder::template run_with_context<>(&ctx, mpc_ctx,
                 [&] { ComputeImpl(ctx); });
     }
