@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <algorithm>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 #include "prng_utils.h"
@@ -81,7 +80,6 @@ public:
     void set_network(std::shared_ptr<AbstractNetwork> network) {
         _network = network;
     }
-<<<<<<< HEAD
 
     AbstractNetwork* network() {
         return _network.get();
@@ -159,85 +157,6 @@ public:
     }
 
     template<typename T, template <typename> class Tensor>
-=======
-
-    AbstractNetwork* network() {
-        return _network.get();
-    }
-
-    void set_random_seed(const block& seed, size_t idx) {
-        if (idx >= 3) {
-            // exception handling
-        }
-        _prng[idx].set_seed(seed);
-    }
-
-    size_t party() const {
-        return _party;
-    }
-
-    size_t pre_party() const {
-        return (_party + 3 - 1) % 3;
-    }
-
-    size_t next_party() const {
-        return (_party + 1) % 3;
-    }
-
-    template <typename T>
-    T gen_random(bool next) {
-        return _prng[next].get<T>();
-    }
-
-    template<typename T, template <typename> class Tensor>
-    void gen_random(Tensor<T>& tensor, bool next) {
-        std::for_each(tensor.data(), tensor.data() + tensor.numel(),
-                      [this, next](T& val) {
-                          val = this->template gen_random<T>(next);
-                      });
-    }
-
-    template <typename T>
-    T gen_random_private() {
-        return _prng[2].get<T>();
-    }
-
-    template<typename T, template <typename> class Tensor>
-    void gen_random_private(Tensor<T>& tensor) {
-        std::for_each(tensor.data(), tensor.data() + tensor.numel(),
-                      [this](T& val) {
-                          val = this->template gen_random_private<T>();
-                      });
-    }
-
-    template <typename T>
-    T gen_zero_sharing_arithmetic() {
-        return _prng[0].get<T>() - _prng[1].get<T>();
-    }
-
-    template<typename T, template <typename> class Tensor>
-    void gen_zero_sharing_arithmetic(Tensor<T>& tensor) {
-        std::for_each(tensor.data(), tensor.data() + tensor.numel(),
-                      [this](T& val) {
-                          val = this->template gen_zero_sharing_arithmetic<T>();
-                      });
-    }
-
-    template <typename T>
-    T gen_zero_sharing_boolean() {
-        return _prng[0].get<T>() ^ _prng[1].get<T>();
-    }
-
-    template<typename T, template <typename> class Tensor>
-    void gen_zero_sharing_boolean(Tensor<T>& tensor) {
-        std::for_each(tensor.data(), tensor.data() + tensor.numel(),
-                      [this](T& val) {
-                          val = this->template gen_zero_sharing_boolean<T>();
-                      });
-    }
-
-    template<typename T, template <typename> class Tensor>
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     void ot(size_t sender, size_t receiver, size_t helper,
             const Tensor<T>* choice, const Tensor<T>* m[2],
             Tensor<T>* buffer[2], Tensor<T>* ret) {

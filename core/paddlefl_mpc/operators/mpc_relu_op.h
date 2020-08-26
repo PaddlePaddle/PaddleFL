@@ -25,11 +25,7 @@ class MpcReluKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext& ctx) const override {
         const Tensor* in_t = ctx.Input<Tensor>("X");
-<<<<<<< HEAD
         Tensor* out_t = ctx.Output<Tensor>("Out");
-=======
-        Tensor* out_t = ctx.Output<Tensor>("Y");
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         Tensor* der_t = ctx.Output<Tensor>("Derivative");
         auto x = in_t->data<T>();
         auto y = out_t->mutable_data<T>(ctx.GetPlace());
@@ -45,13 +41,8 @@ template <typename DeviceContext, typename T>
 class MpcReluGradKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext& ctx) const override {
-<<<<<<< HEAD
         auto* dy_t = ctx.Input<Tensor>(framework::GradVarName("Out"));
         auto* y_t = ctx.Input<Tensor>("Out");
-=======
-        auto* dy_t = ctx.Input<Tensor>(framework::GradVarName("Y"));
-        auto* y_t = ctx.Input<Tensor>("Y");
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         auto* der_t = ctx.Input<Tensor>("Derivative");
         auto* dx_t = ctx.Output<Tensor>(framework::GradVarName("X"));
         auto dx = dx_t->mutable_data<T>(ctx.GetPlace());
