@@ -1,4 +1,4 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import six
 import paddle
 import paddle.fluid as fluid
 import mpc_data_utils as mdu
+from ..layers import __all__ as all_ops
 
 __all__ = [
     'encrypt',
@@ -35,12 +36,22 @@ __all__ = [
     'decrypt_model',
 ]
 
+# operators that should be skipped when encrypt and decrypt
+op_to_skip = ['feed', 'fetch', 'scale', 'mpc_init']
+# operators that are supported currently for model encryption and decryption
+supported_mpc_ops = all_ops + ['fill_constant', 'sgd'] + op_to_skip
+# variables that used as plain variables and need no encryption
+plain_vars = ['learning_rate_0']
+
 SHARE_NUM = 3
 ABY3_SHARE_DIM = 2
 ABY3_MODEL_NAME = "__model__.aby3"
 MODEL_NAME = "__model__"
 MODEL_SHARE_DIR = "model_share"
 MPC_OP_PREFIX = "mpc_"
+# the MPC value of plain value 1, which is used for
+# default value of fill_constant OP
+MPC_ONE_SHARE = mdu.mpc_one_share
 
 
 def encrypt(number):
@@ -74,7 +85,7 @@ def decrypt(shares):
 def make_shares(num_array):
     """
     Create raw shares for an array.
-    
+
     Args:
         num_array: the input data array
     Returns:
@@ -252,57 +263,144 @@ def batch(reader, batch_size, drop_last=False):
     return reshaped_batch_reader
 
 
-def encrypt_model(plain_model, mpc_model_dir, model_filename=None):
+def transpile(program=None):
     """
-    Encrypts model, and save to files for mpc inference.
+    Transpile Paddle program into MPC program.
 
     Args:
-        plain_model: The directory of paddle model.
-        mpc_model_dir: The directory that save mpc model shares.
-        model_filename: The name of model file.
+        program: The plain Paddle model program, default to
+        default_main_program.
+
+    Returns: The MPC program.
     """
+    if program is None:
+        program = fluid.default_main_program()
+
     place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
-    [main_prog, _, _] = fluid.io.load_inference_model(
-        dirname=plain_model, executor=exe, model_filename=model_filename)
-    # TODO(xukun): support more blocks. Tips: may be just adding "for loop" for all blocks.
-    if main_prog.num_blocks > 1:
+    if program.num_blocks > 1:
         raise NotImplementedError(
             "The number of blocks in current main program"
             "is {}, which is not supported in this version."
-            .format(main_prog.num_blocks()))
-    global_block = main_prog.global_block()
+            .format(program.num_blocks()))
+
+    global_block = program.global_block()
     g_scope = fluid.global_scope()
-    for op in global_block.ops:
-        if op.type != "feed" and op.type != "fetch":
-            # TODO: needs to check if the mpc op exists
-            op.desc.set_type(MPC_OP_PREFIX + op.type)
 
-        for input_arg_name in op.input_arg_names:
-            var = global_block.var(input_arg_name)
-            if var.name != "feed" and var.name != "fetch":
-                # set mpc param shape = [2, old_shape]
-                encrypted_var_shape = (ABY3_SHARE_DIM, ) + var.shape
-                var.desc.set_shape(encrypted_var_shape)
+    mpc_vars_names = _transpile_type_and_shape(block=global_block)
 
-                if g_scope.find_var(input_arg_name) is not None:
-                    param = g_scope.find_var(input_arg_name)
-                    param_tensor_shares = make_shares(
-                        np.array(param.get_tensor()))
+    # encrypt tensor values for each variable in mpc_var_names
+    for mpc_var_name in mpc_vars_names:
+        if g_scope.find_var(mpc_var_name) is not None:
+            param = g_scope.find_var(mpc_var_name)
+            param_tensor = np.array(param.get_tensor())
+            mpc_var = global_block.var(mpc_var_name)
+            if mpc_var_name not in plain_vars:
+                param.get_tensor()._set_dims(mpc_var.shape)
+                # process initialized params that should be 0
+                set_tensor_value = np.array([param_tensor, param_tensor]).astype(np.int64)
+                param.get_tensor().set(set_tensor_value, place)
+            else:
+                param.get_tensor().set(np.array(param.get_tensor()).astype('float64'), place)
 
-                    for idx in six.moves.range(SHARE_NUM):
-                        param.get_tensor()._set_dims(encrypted_var_shape)
-                        param.get_tensor().set(
-                            get_aby3_shares(param_tensor_shares, idx), place)
+    # trigger sync to replace old ops.
+    op_num = global_block.desc.op_size()
+    _ = global_block.desc.append_op()
+    global_block.desc._remove_op(op_num, op_num + 1)
+    return program
 
-                        param_share_dir = os.path.join(
-                            mpc_model_dir, MODEL_SHARE_DIR + "_" + str(idx))
-                        fluid.io.save_vars(
-                            executor=exe,
-                            dirname=param_share_dir,
-                            vars=[var],
-                            filename=input_arg_name)
-    # trigger sync to replace old ops
+
+def _transpile_type_and_shape(block):
+    """
+    Transpile dtype and shape of plain variables into MPC dtype and shape.
+    And transpile op type into MPC type.
+
+    Args:
+        block: The block in Paddle program.
+
+    Returns: A set of variable names to encrypt.
+    """
+    mpc_vars_names = set()
+
+    # store variable name in mpc_vars_names, and encrypt dtype and shape
+    for var_name in block.vars:
+        var = block.var(var_name)
+        if var.name != "feed" and var.name != "fetch":
+            mpc_vars_names.add(var.name)
+            if var_name in plain_vars:
+                var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float64))
+                continue
+            # set mpc param shape = [2, old_shape]
+            encrypted_var_shape = (ABY3_SHARE_DIM,) + var.shape
+            var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.int64))
+            var.desc.set_shape(encrypted_var_shape)
+
+    # encrypt op type, or other attrs if needed
+    for op in block.ops:
+        if _is_supported_op(op.type):
+            if op.type == 'fill_constant':
+                op._set_attr(name='shape', val=(2L, 1L))
+                # set default MPC value for fill_constant OP
+                op._set_attr(name='value', val=MPC_ONE_SHARE)
+                op._set_attr(name='dtype', val=3)
+            elif op.type in op_to_skip:
+                pass
+            else:
+                op.desc.set_type(MPC_OP_PREFIX + op.type)
+        else:
+            raise NotImplementedError('Operator {} is unsupported.'
+                                      .format(op.type))
+    return mpc_vars_names
+
+
+def encrypt_model(program, mpc_model_dir=None, model_filename=None):
+    """
+    Encrypt model, and save encrypted model (i.e., MPC model shares) into
+    files for MPC training, updating, or inference.
+
+    Args:
+        program: The loaded program of paddle model.
+        mpc_model_dir: The directory that save MPC model shares.
+        model_filename: The name of MPC model file, default is __model__.aby3.
+    """
+    place = fluid.CPUPlace()
+    exe = fluid.Executor(place)
+
+    # TODO(xukun): support more blocks. Tips: may just adding "for loop" for all blocks.
+    if program.num_blocks > 1:
+        raise NotImplementedError(
+            "The number of blocks in current main program"
+            "is {}, which is not supported in this version."
+            .format(program.num_blocks()))
+
+    global_block = program.global_block()
+    g_scope = fluid.global_scope()
+
+    mpc_vars_names = _transpile_type_and_shape(global_block)
+
+    # encrypt tensor values for each variable in mpc_var_names
+    for mpc_var_name in mpc_vars_names:
+        if g_scope.find_var(mpc_var_name) is not None:
+            param = g_scope.find_var(mpc_var_name)
+            param_tensor = np.array(param.get_tensor())
+            param_tensor_shares = make_shares(param_tensor)
+            mpc_var = global_block.var(mpc_var_name)
+            for idx in six.moves.range(SHARE_NUM):
+                if mpc_var_name not in plain_vars:
+                    param.get_tensor()._set_dims(mpc_var.shape)
+                    set_tensor_value = get_aby3_shares(param_tensor_shares, idx)
+                    param.get_tensor().set(set_tensor_value, place)
+                else:
+                    param.get_tensor().set(np.array(param.get_tensor()).astype('float64'), place)
+
+                param_share_dir = os.path.join(
+                    mpc_model_dir, MODEL_SHARE_DIR + "_" + str(idx))
+                fluid.io.save_vars(
+                    executor=exe,
+                    dirname=param_share_dir,
+                    vars=[mpc_var],
+                    filename=mpc_var_name)
+
+    # trigger sync to replace old ops.
     op_num = global_block.desc.op_size()
     _ = global_block.desc.append_op()
     global_block.desc._remove_op(op_num, op_num + 1)
@@ -317,17 +415,19 @@ def encrypt_model(plain_model, mpc_model_dir, model_filename=None):
             os.makedirs(model_share_dir)
         model_name = os.path.join(model_share_dir, model_basename)
         with open(model_name, "wb") as f:
-            f.write(main_prog.desc.serialize_to_string())
+            f.write(program.desc.serialize_to_string())
 
 
-def decrypt_model(mpc_model_dir, plain_model_path, model_filename=None):
+def decrypt_model(mpc_model_dir, plain_model_path, mpc_model_filename=None, plain_model_filename=None):
     """
-    Reveal a paddle model.
+    Reveal a paddle model. Load encrypted model (i.e., MPC model shares) from files and decrypt it
+    into paddle model.
 
-    Args:    
+    Args:
         mpc_model_dir: The directory of all model shares.
         plain_model_path: The directory to save revealed paddle model.
-        model_filename: The name of model file.
+        mpc_model_filename: The name of encrypted model file.
+        plain_model_filename: The name of decrypted model file.
     """
     share_dirs = []
     for sub_dir in os.listdir(mpc_model_dir):
@@ -337,7 +437,7 @@ def decrypt_model(mpc_model_dir, plain_model_path, model_filename=None):
     place = fluid.CPUPlace()
     exe = fluid.Executor(place=place)
     mpc_model_basename = os.path.basename(
-        model_filename) if model_filename is not None else ABY3_MODEL_NAME
+        mpc_model_filename) if mpc_model_filename is not None else ABY3_MODEL_NAME
 
     [main_prog, _, _] = fluid.io.load_inference_model(
         dirname=share_dirs[0], executor=exe, model_filename=mpc_model_basename)
@@ -349,38 +449,65 @@ def decrypt_model(mpc_model_dir, plain_model_path, model_filename=None):
 
     global_block = main_prog.global_block()
     g_scope = fluid.global_scope()
-    for op in global_block.ops:
+
+    # a set storing unique variables to decrypt
+    vars_set = set()
+
+    # store variable name in vars_set, and decrypt dtype and shape
+    for mpc_var_name in global_block.vars:
+        mpc_var = global_block.var(mpc_var_name)
+        if mpc_var.name != "feed" and mpc_var.name != "fetch":
+            vars_set.add(mpc_var.name)
+            if mpc_var_name in plain_vars:
+                # var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float64))
+                continue
+            elif mpc_var.shape[0] != ABY3_SHARE_DIM:
+                raise ValueError(
+                    "Variable:{} shape: {} in saved model should start with 2."
+                        .format(mpc_var.name, mpc_var.shape))
+            else:
+                plain_var_shape = mpc_var.shape[1:]
+                mpc_var.desc.set_shape(plain_var_shape)
+                mpc_var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float32))
+
+    # remove init op
+    first_mpc_op = global_block.ops[0]
+    if first_mpc_op.type == 'mpc_init':
+        global_block._remove_op(0)
+
+    # decrypt op type, or other attrs if needed
+    for mpc_op in global_block.ops:
         # rename ops
-        if str(op.type).startswith(MPC_OP_PREFIX):
-            new_type = str(op.type)[len(MPC_OP_PREFIX):]
-            op.desc.set_type(new_type)
+        if str(mpc_op.type).startswith(MPC_OP_PREFIX):
+            new_type = str(mpc_op.type)[len(MPC_OP_PREFIX):]
+            mpc_op.desc.set_type(new_type)
+        elif mpc_op.type == 'fill_constant':
+            mpc_op._set_attr(name='shape', val=(1L))
+            mpc_op._set_attr(name='value', val=1.0)
+            mpc_op._set_attr(name='dtype', val=5)
 
-        for input_arg_name in op.input_arg_names:
-            var = global_block.var(input_arg_name)
-            if var.name != "feed" and var.name != "fetch":
-                if var.shape[0] != ABY3_SHARE_DIM:
-                    raise ValueError(
-                        "Variable:{} shape: {} in saved model should start with 2."
-                        .format(var.name, var.shape))
-                plain_var_shape = var.shape[1:]
-                old_var_shape = var.shape
-                var.desc.set_shape(plain_var_shape)
+    # decrypt tensor values for each variable in vars_set
+    for var_name in vars_set:
+        var = global_block.var(var_name)
+        if g_scope.find_var(var_name) is not None:
+            param = g_scope.find_var(var_name)
+            if var_name in plain_vars:
+                pass
+            else:
+                # reconstruct plaintext
+                param_tensor_shares = _get_param_all_shares(
+                    var_name, share_dirs, mpc_model_basename)
+                param_tensor = reconstruct(
+                    param_tensor_shares, type=np.float32)
+                param.get_tensor()._set_dims(var.shape)
+                param.get_tensor().set(param_tensor, place)
 
-                if g_scope.find_var(input_arg_name) is not None:
-                    param = g_scope.find_var(input_arg_name)
-                    # reconstruct plaintext
-                    param_tensor_shares = _get_param_all_shares(
-                        input_arg_name, share_dirs, mpc_model_basename)
-                    param_tensor = reconstruct(
-                        param_tensor_shares, type=np.float32)
-                    param.get_tensor()._set_dims(plain_var_shape)
-                    param.get_tensor().set(param_tensor, place)
+            fluid.io.save_vars(
+                executor=exe,
+                dirname=plain_model_path,
+                vars=[var],
+                filename=var_name)
 
-                    fluid.io.save_vars(
-                        executor=exe,
-                        dirname=plain_model_path,
-                        vars=[var],
-                        filename=input_arg_name)
     # trigger sync to replace old ops
     op_num = global_block.desc.op_size()
     _ = global_block.desc.append_op()
@@ -388,7 +515,7 @@ def decrypt_model(mpc_model_dir, plain_model_path, model_filename=None):
 
     # save plaintext model file.
     model_basename = os.path.basename(
-        model_filename) if model_filename is not None else MODEL_NAME
+        plain_model_filename) if plain_model_filename is not None else MODEL_NAME
     if not os.path.exists(plain_model_path):
         os.makedirs(plain_model_path)
     model_name = os.path.join(plain_model_path, model_basename)
@@ -404,7 +531,9 @@ def _get_param_all_shares(param_name, share_dirs, model_file):
         param_name: The name of parameter.
         share_dirs: The directories which storing model shares.
         model_file: The name of model file.
-    :return:
+
+    Returns:
+        ndarray. The loaded shares.
     """
     exe = fluid.Executor(place=fluid.CPUPlace())
     param_shares = []
@@ -416,3 +545,152 @@ def _get_param_all_shares(param_name, share_dirs, model_file):
         param_tensor = np.array(param.get_tensor())
         param_shares.append(param_tensor)
     return np.array(param_shares, dtype=np.int64)
+
+
+def _is_supported_op(op_name):
+    """
+    Check if op is supported for encryption and decryption.
+
+    Args:
+        op_name: The name of op.
+
+    Returns:
+        True if supported.
+    """
+    if op_name not in supported_mpc_ops:
+        if str(op_name).endswith('_grad'):
+            _is_supported_op(str(op_name)[:-5])
+        else:
+            return False
+    return True
+
+
+def load_mpc_model(exe, mpc_model_dir, mpc_model_filename, inference=False):
+    """
+    Load MPC model from files. The loaded program of the model would be inserted
+    init OP and then switched to default_main_program for further MPC procedure.
+
+    Args:
+        exe: The executor used for loading.
+        mpc_model_dir: The directory of MPC model.
+        mpc_model_filename: The filename of MPC model.
+        inference: Whether the model to load is used for inference. If true, the
+        model to load should be an inference model, and feed_name, fetch_targets
+        would be returned with the loaded program after inserting init OP. Otherwise,
+        after inserting init OP, the loaded program would be switched to
+        default_main_program and returned. Default value is False.
+
+    Returns:
+        default_main_program if inference is False. Otherwise, default_main_program,
+        feed_name, and fetch_targets would be returned.
+    """
+    mpc_program, feed_names, fetch_targets = fluid.io.load_inference_model(executor=exe,
+                                  dirname=mpc_model_dir,
+                                  model_filename=mpc_model_filename)
+    # find init OP
+    global_block = fluid.default_main_program().global_block()
+    init_op_idx = _find_init_op_idx(global_block)
+    if init_op_idx < 0:
+        raise RuntimeError('No mpc_init op in global block, '
+                           'maybe you should use paddle_fl.mpc.init() first.')
+    init_op = global_block.ops[init_op_idx]
+    # find the last feed OP for inserting init OP
+    last_feed_op_idx = _find_last_feed_op_idx(mpc_program.global_block())
+    # insert init OP as the first OP of MPC program if no feed OP,
+    # otherwise, insert it after the last feed OP.
+    insert_idx = 0 if last_feed_op_idx < 0 else last_feed_op_idx + 1
+    loaded_mpc_program = _insert_init_op(main_prog=mpc_program,
+                                         init_op=init_op,
+                                         index=insert_idx)
+    if inference:
+        return loaded_mpc_program, feed_names, fetch_targets
+    else:
+        # switch loaded_mpc_program to default_main_program
+        fluid.framework.switch_main_program(loaded_mpc_program)
+        return fluid.default_main_program()
+
+
+def _find_init_op_idx(block):
+    """
+    Find the index of mpc_init op.
+
+    Args:
+        block: The block of program.
+
+    Returns:
+        The index of mpc_init op.
+    """
+    for idx, op in enumerate(block.ops):
+        if op.type == 'mpc_init':
+            return idx
+    return -1
+
+
+def _find_last_feed_op_idx(block):
+    """
+    Find the index of the last feed OP.
+
+    Args:
+        block: The block of program.
+
+    Returns:
+        The index of the last feed OP.
+    """
+    feed_idx = -1
+    for idx, op in enumerate(block.ops):
+        if op.type == 'feed':
+            feed_idx = idx
+    return feed_idx
+
+
+def save_trainable_model(exe, model_dir, model_filename=None, program=None):
+    """
+    Save trainable model, which includes saving program and
+    persistable parameters into files. The saved model can be
+    loaded by fluid.io.load_inference_model for further training
+    or updating.
+
+    Args:
+        exe: The executor used for saving.
+        model_dir: The directory of model to save.
+        model_filename: The filename of model to save.
+        program: The program to save, default to default_main_program.
+
+    TODO: can move this to paddle_mpc/python/paddle_fl/mpc/io.py
+    """
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    model_basename = os.path.basename(
+        model_filename) if model_filename is not None else ABY3_MODEL_NAME
+    # save program
+    model_name = os.path.join(model_dir, model_basename)
+    if program is None:
+        program = fluid.default_main_program()
+    with open(model_name, "wb") as f:
+        f.write(program.desc.serialize_to_string())
+    # save parameters
+    fluid.io.save_persistables(executor=exe,
+                               dirname=model_dir,
+                               main_program=program)
+
+
+def _insert_init_op(main_prog, init_op, index):
+    """
+    Insert init OP into main_prog according to the index.
+
+    Args:
+        main_prog: The program to insert init OP.
+        init_op: The init OP for MPC running.
+        index: The place that the init_op to insert.
+
+    Returns:
+        The program after inserting init OP.
+    """
+    main_prog.global_block()._sync_with_cpp()
+    op_desc = main_prog.global_block().desc._insert_op(index)
+    mpc_init_op = fluid.framework.Operator(block=main_prog.global_block(),
+                                           desc=op_desc,
+                                           type=init_op.type,
+                                           attrs=init_op.all_attrs())
+    main_prog.global_block().ops.insert(index, mpc_init_op)
+    return main_prog

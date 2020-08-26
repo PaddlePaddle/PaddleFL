@@ -150,6 +150,7 @@ public:
 
         if (dx) {
             dx->mutable_data<T>(ctx.GetPlace());
+            auto dx_dim = dx->dims();
             if (dx->dims().size() > 3) {
                 dx->Resize({2, x_mat_width, x_mat_height});
             }
@@ -160,7 +161,6 @@ public:
             // dx = dout * y'. dx: M x K, dout : M x N, y : K x N
             mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
                 &dout_matrix, &y_matrix_trans, dx);  
-            auto dx_dim = dx->dims();
             if (dx_dim.size() > 3) {
                 dx->Resize(dx_dim);
             }
@@ -168,6 +168,7 @@ public:
 
         if (dy) {
             dy->mutable_data<T>(ctx.GetPlace());
+            auto dy_dim = dy->dims();
             if (dy->dims().size() > 3) {
                 dy->Resize({2, y_mat_width, y_mat_height});
             }
@@ -179,7 +180,6 @@ public:
             // dy = x' * dout. dy K x N, dout : M x N, x : M x K
             mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
                 &x_matrix_trans, &dout_matrix, dy);  
-            auto dy_dim = dy->dims();
             if (dy_dim.size() > 3) {
                 dy->Resize(dy_dim);
             }

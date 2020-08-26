@@ -16,31 +16,39 @@
 
 #include <emmintrin.h>
 
+#ifndef USE_AES_NI
+#include <openssl/aes.h>
+#endif
+
 namespace psi {
 
 using block = __m128i;
 
 class AES {
 public:
-  AES() {}
+    AES() {}
 
-  AES(const block &user_key);
+    AES(const block& user_key);
 
-  AES(const AES &other) = delete;
+    AES(const AES& other) = delete;
 
-  AES &operator=(const AES &other) = delete;
+    AES& operator=(const AES& other) = delete;
 
-  void set_key(const block &user_key);
+    void set_key(const block& user_key);
 
-  void ecb_enc_block(const block &plaintext, block &cyphertext) const;
+    void ecb_enc_block(const block& plaintext, block& cyphertext) const;
 
-  block ecb_enc_block(const block &plaintext) const;
+    block ecb_enc_block(const block& plaintext) const;
 
-  void ecb_enc_blocks(const block *plaintexts, size_t block_num,
-                      block *ciphertext) const;
-
+    void ecb_enc_blocks(const block* plaintexts, size_t block_num,
+                        block* ciphertext) const;
 private:
-  block _round_key[11];
+#ifdef USE_AES_NI
+    block _round_key[11];
+#else
+    AES_KEY _aes_key;
+#endif
 };
 
 } // namespace psi
+

@@ -29,7 +29,7 @@ from paddle.fluid.initializer import ConstantInitializer
 
 # mpc_paddle module
 from .framework import MpcVariable, MpcParameter, create_mpc_parameter, create_mpc_var
-
+from .initializer import XavierInitializer
 
 class MpcLayerHelper(LayerHelper):
     """
@@ -100,7 +100,7 @@ class MpcLayerHelper(LayerHelper):
             if is_bias:
                 attr._set_default_bias_initializer()
             else:
-                attr._set_default_initializer(ConstantInitializer(0))
+                attr._set_default_initializer(XavierInitializer(seed=65536))
         else:
             attr._set_default_initializer(default_initializer)
 
@@ -215,11 +215,18 @@ class MpcLayerHelper(LayerHelper):
 
         tmp = self.create_mpc_variable_for_type_inference(
             dtype=input_var.dtype)
+        derivative = self.create_mpc_variable_for_type_inference(
+            dtype=input_var.dtype)
         # add "mpc_" as prefix of mpc activation
         self.append_op(
             type="mpc_" + act_type,
             inputs={"X": [input_var]},
-            outputs={"Out": [tmp]},
+<<<<<<< HEAD
+            outputs={"Out": [tmp],
+=======
+            outputs={"Y": [tmp],
+>>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
+                     "Derivative": [derivative]},
             attrs=act)
         return tmp
 

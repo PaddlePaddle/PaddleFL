@@ -1214,9 +1214,9 @@ TEST_F(BooleanTensorTest, abmul_test) {
                                                         gen1(), gen1(), gen1()};
 
     // lhs = 1
-    sl[0]->data()[0] = 1;
-    sl[1]->data()[0] = 0;
-    sl[2]->data()[0] = 0;
+    sl[0]->data()[0] = -1;
+    sl[1]->data()[0] = -3;
+    sl[2]->data()[0] = 3;
 
     BTensor b0(sl[0].get(), sl[1].get());
     BTensor b1(sl[1].get(), sl[2].get());
@@ -1273,9 +1273,9 @@ TEST_F(BooleanTensorTest, abmul2_test) {
                                                         gen1(), gen1(), gen1()};
 
     // lhs = 1
-    sl[0]->data()[0] = 1;
-    sl[1]->data()[0] = 0;
-    sl[2]->data()[0] = 0;
+    sl[0]->data()[0] = -3;
+    sl[1]->data()[0] = -1;
+    sl[2]->data()[0] = 3;
 
     // rhs = 12 = 3 + 4 + 5
     sr[0]->data()[0] = 3;
@@ -1329,5 +1329,198 @@ TEST_F(BooleanTensorTest, abmul2_test) {
         t.join();
     }
     EXPECT_EQ(1 * 12, p->data()[0]);
+}
+
+TEST_F(BooleanTensorTest, abmul3_test) {
+    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen1(), gen1(), gen1() };
+    std::shared_ptr<TensorAdapter<int64_t>> sr[3] = { gen1(), gen1(), gen1() };
+    std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen1(), gen1(), gen1(),
+                                                        gen1(), gen1(), gen1()};
+
+
+    // lhs = 0
+    sl[0]->data()[0] = 373964488827046757;
+    sl[1]->data()[0] = -2697357730885869060;
+    sl[2]->data()[0] = -2332413979122373991;
+
+    // rhs = -1
+    sr[0]->data()[0] = 8388121746490115866;
+    sr[1]->data()[0] = 5851959018403668595;
+    sr[2]->data()[0] = 4206663308815767154;
+
+    BTensor bl0(sl[0].get(), sl[1].get());
+    BTensor bl1(sl[1].get(), sl[2].get());
+    BTensor bl2(sl[2].get(), sl[0].get());
+
+    FTensor fr0(sr[0].get(), sr[1].get());
+    FTensor fr1(sr[1].get(), sr[2].get());
+    FTensor fr2(sr[2].get(), sr[0].get());
+
+    FTensor fout0(sout[0].get(), sout[1].get());
+    FTensor fout1(sout[2].get(), sout[3].get());
+    FTensor fout2(sout[4].get(), sout[5].get());
+
+    auto p = gen1();
+
+    _t[0] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                bl0.mul(&fr0, &fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+
+    _t[1] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                bl1.mul(&fr1, &fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+
+    _t[2] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[2], [&](){
+                bl2.mul(&fr2, &fout2);
+                fout2.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_EQ(0, p->data()[0]);
+}
+
+TEST_F(BooleanTensorTest, abmul4_test) {
+    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen1(), gen1(), gen1() };
+    std::shared_ptr<TensorAdapter<int64_t>> sr[3] = { gen1(), gen1(), gen1() };
+    std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen1(), gen1(), gen1(),
+                                                        gen1(), gen1(), gen1()};
+
+
+    // lhs = 1
+    sl[0]->data()[0] = 373964488827046757;
+    sl[1]->data()[0] = -2697357730885869060;
+    sl[2]->data()[0] = -2332413979122373992;
+
+    // rhs = -1
+    sr[0]->data()[0] = 8388121746490115866;
+    sr[1]->data()[0] = 5851959018403668595;
+    sr[2]->data()[0] = 4206663308815767154;
+
+    BTensor bl0(sl[0].get(), sl[1].get());
+    BTensor bl1(sl[1].get(), sl[2].get());
+    BTensor bl2(sl[2].get(), sl[0].get());
+
+    FTensor fr0(sr[0].get(), sr[1].get());
+    FTensor fr1(sr[1].get(), sr[2].get());
+    FTensor fr2(sr[2].get(), sr[0].get());
+
+    FTensor fout0(sout[0].get(), sout[1].get());
+    FTensor fout1(sout[2].get(), sout[3].get());
+    FTensor fout2(sout[4].get(), sout[5].get());
+
+    auto p = gen1();
+
+    _t[0] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                bl0.mul(&fr0, &fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+
+    _t[1] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                bl1.mul(&fr1, &fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+
+    _t[2] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[2], [&](){
+                bl2.mul(&fr2, &fout2);
+                fout2.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_EQ(-1, p->data()[0]);
+}
+
+TEST_F(BooleanTensorTest, onehot_from_cmp_test) {
+    std::vector<size_t> shape = {4, 1};
+    std::shared_ptr<TensorAdapter<int64_t>> sout[6] =
+    { gen(shape), gen(shape), gen(shape), gen(shape), gen(shape), gen(shape)};
+
+    for (auto& ptr: sout) {
+        assign_to_tensor(ptr.get(), 0l);
+    }
+
+    sout[0].get()->data()[0] = 1;
+    sout[0].get()->data()[2] = 1;
+
+    sout[5].get()->data()[0] = 1;
+    sout[5].get()->data()[2] = 1;
+
+    // input plaintext [1010]
+
+    BTensor bout0(sout[0].get(), sout[1].get());
+    BTensor bout1(sout[2].get(), sout[3].get());
+    BTensor bout2(sout[4].get(), sout[5].get());
+
+    auto p = gen(shape);
+
+    _t[0] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                bout0.onehot_from_cmp();
+                bout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+
+    _t[1] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                bout1.onehot_from_cmp();
+                bout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+
+    _t[2] = std::thread(
+        [&] () {
+        ContextHolder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[2], [&](){
+                bout2.onehot_from_cmp();
+                bout2.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_EQ(0, p->data()[0]);
+    EXPECT_EQ(0, p->data()[1]);
+    EXPECT_EQ(1, p->data()[2]);
+    EXPECT_EQ(0, p->data()[3]);
 }
 } // namespace aby3

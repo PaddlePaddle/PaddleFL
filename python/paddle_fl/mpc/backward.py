@@ -30,6 +30,7 @@ from paddle.fluid import log_helper
 import paddle.fluid
 import paddle.fluid.backward as backward
 from .framework import is_mpc_parameter
+import mpc_data_utils as mdu
 
 _logger = log_helper.get_logger(
     __name__, logging.INFO, fmt='%(asctime)s-%(levelname)s: %(message)s')
@@ -40,7 +41,7 @@ def _create_loss_op_desc_(loss):
         "fill_constant", {},
         {"Out": [backward._append_grad_suffix_(loss.name)]}, {
             "shape": [2, 1],
-            "value": 21845,
+            "value": mdu.mpc_one_share,
             "dtype": loss.dtype,
             "force_cpu": False,
             core.op_proto_and_checker_maker.kOpRoleAttrName():

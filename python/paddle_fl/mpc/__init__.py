@@ -67,5 +67,7 @@ from . import data_utils
 from .io import *
 from .version import version
 from .layers import mpc_math_op_patch
+from . import input
+from . import initializer
 
 mpc_math_op_patch.monkey_patch_mpc_variable()

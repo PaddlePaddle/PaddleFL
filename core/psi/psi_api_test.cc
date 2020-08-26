@@ -22,44 +22,53 @@ namespace psi {
 
 class PsiAPITest : public ::testing::Test {
 public:
-  std::set<std::string> _input;
+    std::set<std::string> _input;
 
-  int _port;
+    int _port;
 
-  static const int _s_test_size = 1e3;
-
+    static const int _s_test_size = 1e3;
 public:
-  PsiAPITest() {
-    for (int i = 0; i < _s_test_size; ++i) {
-      _input.emplace(std::to_string(i));
+    PsiAPITest() {
+        for (int i = 0; i < _s_test_size; ++i) {
+            _input.emplace(std::to_string(i));
+        }
+        _port = 45818;
     }
-    _port = 45818;
-  }
 
-  ~PsiAPITest() {}
+    ~PsiAPITest() {}
 };
 
 TEST_F(PsiAPITest, full_test) {
-  auto test_send = [this]() {
-    // find valid port
-    for (int ret = SOCKET_ERROR; ret == SOCKET_ERROR; ++_port) {
-      ret = psi_send(_port, _input, nullptr);
+    auto test_send = [this]() {
+        // find valid port
+        for (;; ++_port) {
+            try {
+                psi_send(_port, _input, nullptr);
+                break;
+            } catch (const std::exception& e){
+                std::string s(e.what());
+                if (s.find("socket error") != std::string::npos) {
+                    continue;
+                } else {
+                    throw;
+                }
+            }
+        }
+    };
+    auto t_send = std::thread(test_send);
+
+    std::vector<std::string> output;
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    psi_recv("127.0.0.1", _port, _input, &output, nullptr);
+
+    t_send.join();
+
+    std::set<std::string> out_set;
+    for (auto& x: output) {
+        out_set.emplace(x);
     }
-  };
-  auto t_send = std::thread(test_send);
-
-  std::vector<std::string> output;
-
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  psi_recv("127.0.0.1", _port, _input, &output, nullptr);
-
-  t_send.join();
-
-  std::set<std::string> out_set;
-  for (auto &x : output) {
-    out_set.emplace(x);
-  }
-  ASSERT_EQ(out_set, _input);
+    ASSERT_EQ(out_set, _input);
 }
 
 } // namespace psi

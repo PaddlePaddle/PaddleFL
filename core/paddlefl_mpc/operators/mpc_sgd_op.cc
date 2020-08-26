@@ -72,12 +72,6 @@ public:
                      " but the received var(%s)'s type is %s",
                      ctx->InputVarName("Param"), in_var_type);
       ctx->SetOutputType("ParamOut", in_var_type);
-
-      //for (auto &out_var_n : framework::StaticGraphVarTypeInference::Output(ctx, "ParamOut")) {
-      //  if (ctx->GetVarType(out_var_n) != in_var_type) {
-      //    ctx->SetType(out_var_n, in_var_type);
-      //}
-      //}
   }
 };
 
@@ -111,4 +105,4 @@ REGISTER_OPERATOR(
     ops::MpcSGDOpInferVarType);
 REGISTER_OP_CPU_KERNEL(
     mpc_sgd,
-    ops::MpcSGDOpKernel<paddle::platform::CPUDeviceContext, int64_t>);
+    ops::MpcSGDOpKernel<paddle::platform::CPUDeviceContext, int64_t, float>);

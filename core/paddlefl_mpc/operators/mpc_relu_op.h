@@ -25,11 +25,18 @@ class MpcReluKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext& ctx) const override {
         const Tensor* in_t = ctx.Input<Tensor>("X");
+<<<<<<< HEAD
+        Tensor* out_t = ctx.Output<Tensor>("Out");
+=======
         Tensor* out_t = ctx.Output<Tensor>("Y");
+>>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
+        Tensor* der_t = ctx.Output<Tensor>("Derivative");
         auto x = in_t->data<T>();
         auto y = out_t->mutable_data<T>(ctx.GetPlace());
+        auto der = der_t->mutable_data<T>(ctx.GetPlace());
         PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_protocol, "Protocol %s is not yet created in MPC Protocol.");
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->relu(in_t,out_t);
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()
+            ->relu_with_derivative(in_t,out_t, der_t);
   }
 };
 
@@ -38,11 +45,17 @@ template <typename DeviceContext, typename T>
 class MpcReluGradKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext& ctx) const override {
+<<<<<<< HEAD
+        auto* dy_t = ctx.Input<Tensor>(framework::GradVarName("Out"));
+        auto* y_t = ctx.Input<Tensor>("Out");
+=======
         auto* dy_t = ctx.Input<Tensor>(framework::GradVarName("Y"));
         auto* y_t = ctx.Input<Tensor>("Y");
+>>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
+        auto* der_t = ctx.Input<Tensor>("Derivative");
         auto* dx_t = ctx.Output<Tensor>(framework::GradVarName("X"));
         auto dx = dx_t->mutable_data<T>(ctx.GetPlace());
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->relu_grad(y_t, dy_t, dx_t, 0.0);
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->arith_bool_mul(dy_t, der_t, dx_t);
     }
 };
 

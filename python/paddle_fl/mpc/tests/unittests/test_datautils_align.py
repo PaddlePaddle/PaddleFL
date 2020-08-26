@@ -53,10 +53,10 @@ class TestDataUtilsAlign(unittest.TestCase):
         party_1 = Process(target=self.run_align, args=(set_1, 1, endpoints, False))
         party_2 = Process(target=self.run_align, args=(set_2, 2, endpoints, False))
 
-        party_0.start()
         party_1.start()
         party_2.start()
-        party_2.join()
+        party_0.start()
+        party_0.join()
 
 
 if __name__ == '__main__':

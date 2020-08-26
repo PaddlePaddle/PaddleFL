@@ -30,6 +30,10 @@ from . import ml
 from .ml import *
 from . import compare
 from .compare import *
+from . import conv
+from .conv import conv2d
+from . import rnn
+from .rnn import *
 
 __all__ = []
 __all__ += basic.__all__
@@ -37,3 +41,4 @@ __all__ += math.__all__
 __all__ += matrix.__all__
 __all__ += ml.__all__
 __all__ += compare.__all__
+__all__ += conv.__all__

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(PaddleEncrypted)
 
-add_compile_options(-msse4.2 -maes -fPIC -DPADDLE_WITH_MKLDNN)
+add_compile_options(-msse4.2 -fPIC -DPADDLE_WITH_MKLDNN -O2)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 11)
@@ -57,6 +57,10 @@ option(WITH_TESTING "Compile with unit testing" ON)
 
 option(WITH_PSI "Compile with psi lib" ON)
 
+option(USE_AES_NI "Compile with AES NI" ON)
+
+option(USE_OPENMP "Compile with OpenMP" ON)
+
 ########################### the project build part ###############################
 message(STATUS "Using paddlepaddle installation of ${paddle_version}")
 message(STATUS "paddlepaddle include directory: ${PADDLE_INCLUDE}")
@@ -70,6 +74,15 @@ include_directories(.)
 include_directories(${PADDLE_INCLUDE})
 include_directories(${PADDLE_INCLUDE}/third_party)
 
+if (USE_AES_NI)
+    add_compile_definitions(USE_AES_NI)
+    add_compile_options(-maes)
+endif (USE_AES_NI)
+
+if (USE_OPENMP)
+    add_compile_options(-fopenmp)
+    find_package(OpenMP REQUIRED)
+endif(USE_OPENMP)
 
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)

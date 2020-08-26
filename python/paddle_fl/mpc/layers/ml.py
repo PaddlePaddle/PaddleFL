@@ -14,19 +14,27 @@
 """
 mpc ml op layers.
 """
-from functools import reduce
-
-from paddle.fluid.data_feeder import check_type, check_dtype
+import os
 import numpy
+from functools import reduce
+import mpc_data_utils as mdu
+from paddle.fluid.data_feeder import check_type, check_dtype
+import paddle.fluid.layers.utils as utils
+from paddle.fluid.initializer import Constant
+from paddle.fluid.param_attr import ParamAttr
+from paddle.fluid.framework import Variable
 from ..framework import MpcVariable
 from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
 
 __all__ = [
-    'fc', 
-    'relu', 
+    'fc',
+    'relu',
     'softmax',
     'sigmoid_cross_entropy_with_logits',
+    'softmax_with_cross_entropy',
+    'pool2d',
+    'batch_norm',
 ]
 
 
@@ -162,7 +170,7 @@ def softmax(input, use_cudnn=False, name=None, axis=-1):
     """
     This operator implements the softmax layer. The calculation process is as follows:
     1. The dimension :attr:`axis` of the ``input`` will be permuted to the last.
-    
+
     2. Then the input tensor will be logically flattened to a 2-D matrix. The matrix's
     second dimension(row length) is the same as the dimension :attr:`axis` of the input
     tensor, and the first dimension(column length) is the product of all other
@@ -170,7 +178,7 @@ def softmax(input, use_cudnn=False, name=None, axis=-1):
     squashes the K-dimensional(K is the width of the matrix, which is also the size
     of the input tensor's dimension :attr:`axis`) vector of arbitrary real values to a
     K-dimensional vector of real values in the range [0, 1] that add up to 1.
-    3. After the softmax operation is completed, the inverse operations of steps 1 and 2 
+    3. After the softmax operation is completed, the inverse operations of steps 1 and 2
     are performed to restore the two-dimensional matrix to the same dimension as the ``input``.
     It computes the exponential of the given dimension and the sum of exponential
     values of all the other dimensions in the K-dimensional vector input.
@@ -221,10 +229,18 @@ def relu(input, name=None):
     helper = MpcLayerHelper('relu', **locals())
     dtype = helper.input_dtype(input_param_name='input')
     out = helper.create_mpc_variable_for_type_inference(dtype)
+    derivative = helper.create_mpc_variable_for_type_inference(dtype)
     helper.append_op(
-        type="mpc_relu", 
-        inputs={"X": input}, 
-        outputs={"Y": out})
+        type="mpc_relu",
+        inputs={"X": input},
+        outputs={
+<<<<<<< HEAD
+            "Out": out,
+=======
+            "Y": out,
+>>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
+            "Derivative": derivative}
+        )
     return out
 
 
@@ -258,4 +274,283 @@ def sigmoid_cross_entropy_with_logits(x,
         inputs={"X": x,
                 "Label": label},
         outputs={"Out": out})
-    return out 
+    return out
+
+
+def softmax_with_cross_entropy(logits,
+                               label,
+                               soft_label=False,
+                               return_softmax=False,
+                               axis=-1,
+                               use_relu=False,
+                               use_long_div=True):
+    """
+    forward: out = softmax(x). todo: add cross_entropy
+    backward: dx = dout.expand * (softmax(x) - label)
+
+    use_relu: False(default): output = exp(x_i) / sum(exp(x_i))
+              True: output = relu(x_i) / sum(relu(x_i))
+    use_long_div: True(default): long division implemented by boolean circuit.
+                                 slow with high precision.
+                                 range of quotient: [0, 2^20).
+                  False: find inverse of divisor by Newton's method.
+                         fast with low precision.
+                         range of divisor: (0, 2^15).
+    """
+
+    attrs = {
+        'soft_label': soft_label,
+        'axis': axis,
+        'use_relu': use_relu,
+        'use_long_div': use_long_div
+    }
+
+    helper = MpcLayerHelper('softmax_with_cross_entropy', **locals())
+    softmax = helper.create_variable_for_type_inference(dtype=logits.dtype)
+    loss = helper.create_variable_for_type_inference(dtype=logits.dtype)
+    helper.append_op(
+        type='mpc_softmax_with_cross_entropy',
+        inputs={'Logits': logits,
+                'Label': label},
+        outputs={'Softmax': softmax,
+                 'Loss': loss},
+        attrs=attrs)
+    if return_softmax:
+        return loss, softmax
+    else:
+        raise NotImplementedError("'return_softmax' should be true. Loss is NULL, only for backward.")
+
+
+def pool2d(input,
+           pool_size=-1,
+           pool_type="max",
+           pool_stride=1,
+           pool_padding=0,
+           global_pooling=False,
+           ceil_mode=False,
+           name=None,
+           exclusive=True,
+           data_format="NCHW"):
+    """
+    pool2d
+    """
+    if pool_type not in ["max"]:
+        raise ValueError(
+            "Unknown Attr(pool_type): '%s'. It can only be 'max'.",
+            str(pool_type))
+
+    if global_pooling is False and pool_size == -1:
+        raise ValueError(
+            "When Attr(global_pooling) is False, Attr(pool_size) must be passed "
+            "and be a valid value. Received pool_size: %s." % str(pool_size))
+
+    if data_format not in ["NCHW"]:
+        raise ValueError(
+            "Attr(data_format) should be 'NCHW'. Received "
+            "Attr(data_format): %s." % str(data_format))
+
+    pool_size = utils.convert_to_list(pool_size, 2, 'pool_size')
+    pool_stride = utils.convert_to_list(pool_stride, 2, 'pool_stride')
+
+    def update_padding(padding, data_format):
+        """
+        update_padding: convert to 2-dimension padding
+        """
+        def is_list_or_tuple(ele):
+            """
+            return true if ele is list or tuple.
+            """
+            if isinstance(ele, list) or isinstance(ele, tuple):
+                return True
+            return False
+
+        # covert padding size to 2 (H, W)
+        if is_list_or_tuple(padding) and len(padding) == 4:
+            if is_list_or_tuple(padding[0]):
+                if not (padding[0] == [0, 0] and padding[1] == [0, 0]):
+                    raise ValueError(
+                        "Non-zero pool_padding(%s) in the batch or channel dimensions "
+                        "is not supported." % str(padding))
+                padding = padding[2:4] # data_format == "NCHW":
+                padding = [ele for a_list in padding for ele in a_list]
+            padding = utils.convert_to_list(padding, 4, 'padding')
+
+            if utils._is_symmetric_padding(padding, 2):
+                padding = [padding[0], padding[2]]
+        else:
+            padding = utils.convert_to_list(padding, 2, 'padding')
+
+        return padding
+
+    padding_algorithm = "EXPLICIT"
+    if isinstance(pool_padding, str):
+        pool_padding = pool_padding.upper()
+        if pool_padding not in ["SAME", "VALID"]:
+            raise ValueError(
+                "Unknown Attr(pool_padding): '%s'. It can only be 'SAME' or 'VALID'."
+                % str(pool_padding))
+        if pool_padding == "VALID":
+            padding_algorithm = "VALID"
+            pool_padding = [0, 0]
+            if ceil_mode != False:
+                raise ValueError(
+                    "When Attr(pool_padding) is \"VALID\", Attr(ceil_mode) must be False. "
+                    "Received ceil_mode: True.")
+        elif pool_padding == "SAME":
+            padding_algorithm = "SAME"
+            pool_padding = [0, 0]
+
+    pool_padding = update_padding(pool_padding, data_format) # [h, w]
+
+    op_type = 'pool2d'
+    helper = MpcLayerHelper(op_type, **locals())
+    dtype = helper.input_dtype()
+    pool_out = helper.create_mpc_variable_for_type_inference(dtype)
+    one_hot_tensor = helper.create_variable_for_type_inference(dtype=input.dtype)
+
+    helper.append_op(
+        type='mpc_' + op_type,
+        inputs={"X": input},
+        outputs={"Out": pool_out,
+                 "One_hot_tensor": one_hot_tensor},
+        attrs={
+            "pooling_type": pool_type,
+            "ksize": pool_size,
+            "global_pooling": global_pooling,
+            "strides": pool_stride,
+            "paddings": pool_padding,
+            "padding_algorithm": padding_algorithm,
+            "ceil_mode": ceil_mode,
+            "exclusive": exclusive,
+            "data_format": data_format,
+        })
+
+    return pool_out
+
+
+def batch_norm(input,
+               act=None,
+               is_test=False,
+               momentum=0.9,
+               epsilon=1e-05,
+               param_attr=None,
+               bias_attr=None,
+               data_layout='NCHW',
+               in_place=False,
+               name=None,
+               moving_mean_name=None,
+               moving_variance_name=None,
+               do_model_average_for_mean_and_var=True,
+               use_global_stats=False):
+    """
+    **Batch Normalization Layer**
+    """
+    assert bias_attr is not False, "bias_attr should not be False in batch_norm."
+    helper = MpcLayerHelper('batch_norm', **locals())
+
+    check_mpc_variable_and_dtype(input, 'input', ['int64'], 'batch_norm')
+    dtype = helper.input_dtype()
+
+    has_reserve_space = False
+    if data_layout == 'NHWC':
+        flag = os.environ.get('FLAGS_cudnn_batchnorm_spatial_persistent')
+        if flag is not None and flag.lower() in ['true', '1']:
+            has_reserve_space = True
+
+        # plaintext_dtype = core.VarDesc.VarType.FP32
+
+    input_shape = input.shape
+    if data_layout == 'NCHW':
+        channel_num = input_shape[2]
+    else:
+        if data_layout == 'NHWC':
+            channel_num = input_shape[-1]
+        else:
+            raise ValueError("unsupported data layout:" + data_layout)
+
+    param_shape = [channel_num]
+    mpc_param_shape = [2, channel_num]
+
+    # create parameter
+    scale = helper.create_mpc_parameter(
+        attr=helper.param_attr,
+        shape=param_shape,
+        dtype=dtype,
+        default_initializer=Constant(mdu.mpc_one_share))
+    bias = helper.create_mpc_parameter(
+        attr=helper.bias_attr, shape=param_shape, dtype=dtype, is_bias=True)
+
+    mean = helper.create_mpc_parameter(
+        attr=ParamAttr(
+            name=moving_mean_name,
+            initializer=Constant(0),
+            trainable=False,
+            do_model_average=do_model_average_for_mean_and_var),
+        shape=param_shape,
+        dtype=dtype)
+    mean.stop_gradient = True
+
+
+    variance = helper.create_mpc_parameter(
+        attr=ParamAttr(
+            name=moving_variance_name,
+            initializer=Constant(mdu.mpc_one_share), # plaintext: 1
+            trainable=False,
+            do_model_average=do_model_average_for_mean_and_var),
+        shape=param_shape,
+        dtype=dtype)
+    variance.stop_gradient = True
+
+    # create output
+    # mean and mean_out share the same memory
+    mean_out = mean
+    # variance and variance out share the same memory
+    variance_out = variance
+    saved_mean = helper.create_mpc_variable_for_type_inference(
+        dtype=dtype, stop_gradient=True)
+    saved_variance = helper.create_mpc_variable_for_type_inference(
+        dtype=dtype, stop_gradient=True)
+
+
+    #reserve_space = None
+    #if has_reserve_space:
+    #    reserve_space = helper.create_variable_for_type_inference(
+    #        dtype=core.VarDesc.VarType.FP16, stop_gradient=True)
+
+    batch_norm_out = input if in_place else \
+            helper.create_mpc_variable_for_type_inference(dtype)
+
+    inputs = {
+        "X": input,
+        "Scale": scale,
+        "Bias": bias,
+        "Mean": mean,
+        "Variance": variance
+    }
+    attrs = {
+        "epsilon": epsilon,
+        "is_test": is_test,
+        "data_layout": data_layout,
+        "use_mkldnn": False,
+        "fuse_with_relu": False,
+        "use_global_stats": use_global_stats
+    }
+    if isinstance(momentum, Variable):
+        inputs['MomemtumTensor'] = momentum
+    else:
+        attrs['momentum'] = momentum
+
+    outputs = {
+        "Y": batch_norm_out,
+        "MeanOut": mean_out,
+        "VarianceOut": variance_out,
+        "SavedMean": saved_mean,
+        "SavedVariance": saved_variance
+    }
+    #if reserve_space is not None:
+    #    outputs["ReserveSpace"] = reserve_space
+
+    helper.append_op(
+        type="mpc_batch_norm", inputs=inputs, outputs=outputs, attrs=attrs)
+
+    return helper.append_activation(batch_norm_out)
