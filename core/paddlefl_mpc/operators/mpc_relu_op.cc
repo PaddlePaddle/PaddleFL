@@ -25,16 +25,18 @@ class MpcReluOp : public framework::OperatorWithKernel {
 
   void InferShape(framework::InferShapeContext* ctx) const override {
     auto in_dims = ctx->GetInputDim("X");
-    ctx->SetOutputDim("Y", in_dims);
+    ctx->SetOutputDim("Out", in_dims);
+    ctx->SetOutputDim("Derivative", in_dims);
   }
 };
 
-//forward input & output defination 
+//forward input & output defination
 class MpcReluOpMaker : public framework::OpProtoAndCheckerMaker {
  public:
   void Make() override {
     AddInput("X", "The input tensor.");
-    AddOutput("Y", "Output of relu_op");
+    AddOutput("Out", "Output of relu_op");
+    AddOutput("Derivative", "Derivative of relu_op");
     AddComment(R"DOC(
 Mpc Relu Operator.
 )DOC");
@@ -47,7 +49,7 @@ class MpcReluGradOp : public framework::OperatorWithKernel {
   using framework::OperatorWithKernel::OperatorWithKernel;
 
   void InferShape(framework::InferShapeContext* ctx) const override {
-    auto in_dims = ctx->GetInputDim(framework::GradVarName("Y"));
+    auto in_dims = ctx->GetInputDim(framework::GradVarName("Out"));
     ctx->SetOutputDim(framework::GradVarName("X"), in_dims);
   }
 };
@@ -61,8 +63,9 @@ public:
 protected:
     void Apply(GradOpPtr<T> grad) const override {
         grad->SetType("mpc_relu_grad");
-        grad->SetInput("Y", this->Output("Y"));
-        grad->SetInput(framework::GradVarName("Y"), this->OutputGrad("Y"));
+        grad->SetInput("Out", this->Output("Out"));
+        grad->SetInput("Derivative", this->Output("Derivative"));
+        grad->SetInput(framework::GradVarName("Out"), this->OutputGrad("Out"));
         grad->SetAttrMap(this->Attrs());
         grad->SetOutput(framework::GradVarName("X"), this->InputGrad("X"));
     }

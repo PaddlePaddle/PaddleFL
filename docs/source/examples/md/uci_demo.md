@@ -1,7 +1,5 @@
 ## Instructions for PaddleFL-MPC UCI Housing Demo
 
-([简体中文](./README_CN.md)|English)
-
 This document introduces how to run UCI Housing demo based on Paddle-MPC, which has two ways of running, i.e., single machine and multi machines.
 
 ### 1. Running on Single Machine

@@ -1,5 +1,3 @@
-add_compile_options(-msse4.2 -maes)
-
 set(PSI_SRCS
     "./aes.cc"
     "./cuckoo_hash.cc"
@@ -16,7 +14,11 @@ add_dependencies(psi_o crypto)
 
 add_library(psi SHARED $<TARGET_OBJECTS:psi_o>)
 
-target_link_libraries(psi crypto)
+if (USE_OPENMP)
+    target_link_libraries(psi OpenMP::OpenMP_CXX OpenMP::OpenMP_C crypto)
+else()
+    target_link_libraries(psi crypto)
+endif (USE_OPENMP)
 
 cc_test(aes_test SRCS aes_test.cc DEPS psi)
 cc_test(ot_test SRCS ot_test.cc DEPS psi)

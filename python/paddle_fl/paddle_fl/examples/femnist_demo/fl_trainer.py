@@ -21,6 +21,7 @@ import paddle
 import paddle.fluid as fluid
 import logging
 import math
+import time
 
 logging.basicConfig(
     filename="test.log",
@@ -60,7 +61,7 @@ def train_test(train_test_program, train_test_feed, train_test_reader):
 
 epoch_id = 0
 step = 0
-epoch = 3000
+epoch = 10
 count_by_step = False
 if count_by_step:
     output_folder = "model_node%d" % trainer_id
@@ -72,7 +73,7 @@ while not trainer.stop():
     epoch_id += 1
     if epoch_id > epoch:
         break
-    print("epoch %d start train" % (epoch_id))
+    print("{} Epoch {} start train".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), epoch_id))
     #train_data,test_data= data_generater(trainer_id,inner_step=trainer._step,batch_size=64,count_by_step=count_by_step)
     train_reader = paddle.batch(
         paddle.reader.shuffle(
@@ -97,7 +98,6 @@ while not trainer.stop():
             acc = trainer.run(feeder.feed(data), fetch=["accuracy_0.tmp_0"])
             step += 1
             count += 1
-            print(count)
             if count % trainer._step == 0:
                 break
     # print("acc:%.3f" % (acc[0]))

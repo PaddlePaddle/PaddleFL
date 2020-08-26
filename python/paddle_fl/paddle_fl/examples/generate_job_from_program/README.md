@@ -17,6 +17,10 @@ pip install paddle_fl
 
 #### How to save a program
 
+```sh
+python program_saver.py
+```
+
 In program_saver.py, you can defind a model. And save the program in to 'load_file'
 
 ```python

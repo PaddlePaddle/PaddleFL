@@ -1,15 +1,14 @@
 #!/bin/bash
 
 # set redis server ip and port for test
-export TEST_REDIS_IP="test_redis_server_ip"
-export TEST_REDIS_PORT="test_redis_port"
+export TEST_REDIS_IP=${LOCALHOST}
+export TEST_REDIS_PORT=${REDIS_PORT}
 
 # unittest command
 PYTHON_TEST="python -m unittest"
 
 # add the modules to test
 TEST_MODULES=("test_datautils_aby3"
-"test_model_encryption"
 "test_datautils_align"
 "test_op_add"
 "test_op_sub"
@@ -21,6 +20,11 @@ TEST_MODULES=("test_datautils_aby3"
 "test_op_fc"
 "test_op_relu"
 "test_op_compare"
+"test_input_embedding"
+"test_op_softmax_with_cross_entropy"
+"test_op_batch_norm"
+"test_op_conv"
+"test_op_pool"
 )
 
 # run unittest

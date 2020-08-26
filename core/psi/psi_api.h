@@ -21,15 +21,6 @@
 
 namespace psi {
 
-enum PsiReturnCode {
-  PSI_OK = 0,
-  INTERNAL_ERROR = -1,
-  OPENSSL_ERROR = -2,
-  SOCKET_ERROR = -3,
-  SOCKET_TIMEOUT = -4,
-  UNKNOWN_ERROR = -5
-};
-
 int psi_send(int port, const std::set<std::string> &in,
              std::atomic<int> *psi_progress = nullptr);
 

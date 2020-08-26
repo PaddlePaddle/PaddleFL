@@ -14,7 +14,6 @@
 #pragma once
 
 #include <algorithm>
-#include <algorithm>
 #include <memory>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
@@ -30,13 +29,6 @@ using PseudorandomNumberGenerator = psi::PseudorandomNumberGenerator;
 
 class AbstractContext {
 public:
-/*
-  AbstractContext(size_t party, std::shared_ptr<AbstractNetwork> network,
-                 const block &seed = psi::g_zero_block,
-                 const block &seed2 = psi::g_zero_block) {
-    init(party, network, seed, seed2);
-  }
-*/
   AbstractContext() = default;
   AbstractContext(const AbstractContext &other) = delete;
 
@@ -53,7 +45,7 @@ public:
   }
 
   void set_num_party(size_t num_party) {
-    PADDLE_ENFORCE_TRUE(num_party == 2 || num_party == 3,
+    PADDLE_ENFORCE_EQ(num_party == 2 || num_party == 3, true,
                      "2 or 3 party protocol is supported.");
     _num_party = num_party;
   }
@@ -177,10 +169,9 @@ public:
 private:
   size_t _num_party;
   size_t _party;
-
   std::shared_ptr<AbstractNetwork> _network;
-
   PseudorandomNumberGenerator _prng[3];
+
 };
 
 } // namespace mpc

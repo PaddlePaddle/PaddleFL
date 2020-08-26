@@ -39,9 +39,9 @@ public:
 
   void init(size_t party, std::shared_ptr<AbstractNetwork> network, block seed,
             block seed2) override {
+    set_num_party(2);
     set_party(party);
     set_network(network);
-    set_num_party(2);
 
     if (psi::equals(seed2, psi::g_zero_block)) {
       seed2 = psi::block_from_dev_urandom();

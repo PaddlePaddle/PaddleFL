@@ -84,21 +84,16 @@ def train_test(train_test_program, train_test_feed, train_test_reader):
 
 
 # for test
-
 while not trainer.stop():
     epoch_id += 1
-    print("epoch %d start train" % (epoch_id))
-
     for data in train_reader():
         step_i += 1
         trainer.step_id = step_i
         accuracy, = trainer.run(feed=feeder.feed(data),
                                 fetch=["accuracy_0.tmp_0"])
         if step_i % 100 == 0:
-            print("Epoch: {0}, step: {1}, accuracy: {2}".format(
+            print("{} Epoch {} start train, step: {}, accuracy: {}".format(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())), 
                 epoch_id, step_i, accuracy[0]))
-
-    print(step_i)
     avg_loss_val, acc_val = train_test(
         train_test_program=test_program,
         train_test_reader=test_reader,
@@ -106,7 +101,7 @@ while not trainer.stop():
     print("Test with Epoch %d, avg_cost: %s, acc: %s" %
           (epoch_id, avg_loss_val, acc_val))
 
-    if epoch_id > 40:
+    if epoch_id > 5:
         break
     if epoch_id % 5 == 0:
         trainer.save_inference_program(output_folder)
