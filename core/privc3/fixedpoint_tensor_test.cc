@@ -1223,10 +1223,7 @@ TEST_F(FixedTensorTest, mulfixed) {
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
     std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {2.0, 2.0, 2.0, 2.0};
-<<<<<<< HEAD
 
-=======
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -1270,7 +1267,6 @@ TEST_F(FixedTensorTest, mulfixed) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
 
-<<<<<<< HEAD
 TEST_F(FixedTensorTest, mulfixed_multi_times) {
 
     std::vector<size_t> shape = {100000, 1};
@@ -1289,7 +1285,49 @@ TEST_F(FixedTensorTest, mulfixed_multi_times) {
                         [] (double& a, double& b){ return a * b;});
         };
     fill_mul_data();
-=======
+    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
+                            {gen(shape), gen(shape)};
+
+    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
+                                shape, _cpu_ctx).copy(in[0].get());
+    test_fixedt_gen_paddle_tensor<int64_t, 16>(in1_val,
+                                shape, _cpu_ctx).copy(in[1].get());
+
+    auto out0 = _s_tensor_factory->create<int64_t>(shape);
+    auto out1 = _s_tensor_factory->create<int64_t>(shape);
+    auto out2 = _s_tensor_factory->create<int64_t>(shape);
+
+    PaddleTensor<int64_t> result =
+            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
+
+    _t[0] = std::thread([this, in, out0]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
+            test_fixedt_mul_fixed(0, in, out0.get());
+        });
+
+    });
+    _t[1] = std::thread([this, in, out1]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
+            test_fixedt_mul_fixed(1, in, out1.get());
+        });
+
+    });
+    _t[2] = std::thread([this, in, out2]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
+            test_fixedt_mul_fixed(2, in, out2.get());
+        });
+
+    });
+
+    _t[0].join();
+    _t[1].join();
+    _t[2].join();
+
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
+}
+
 TEST_F(FixedTensorTest, mulfixed_overflow) {
 
     std::vector<size_t> shape = {1};
@@ -1400,7 +1438,6 @@ TEST_F(FixedTensorTest, mulfixed_low_bound) {
     std::vector<double> in0_val = {1.0};
     std::vector<double> in1_val = {0x1p-16};
     std::vector<double> res_val = {0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -1444,210 +1481,12 @@ TEST_F(FixedTensorTest, mulfixed_low_bound) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
 
-TEST_F(FixedTensorTest, mulfixed_overflow) {
-
-<<<<<<< HEAD
-    std::vector<size_t> shape = {1};
-    // result greater than 2^32 is overflow
-    // notice: multiplier larger than 2^20 may lead to error result
-    // as 2^l << 2^k [ stated in ABY3]
-    std::vector<double> in0_val = {0x1p16};
-    std::vector<double> in1_val = {0x1p16};
-    std::vector<double> res_val = {0};
-=======
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
-    std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {2.0, 2.0, 2.0, 2.0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
-                            {gen(shape), gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in1_val,
-                                shape, _cpu_ctx).copy(in[1].get());
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_mul_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_mul_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_mul_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
-}
-
-TEST_F(FixedTensorTest, mulfixed_upper_bound) {
-
-<<<<<<< HEAD
-    std::vector<size_t> shape = {1, 2};
-    // recommend each input less than 2^20
-    // larger than 2^20 may lead to error result
-    // as 2^l << 2^k [stated in ABY3]
-    std::vector<double> in0_val = {1.0, 1.0};
-    std::vector<double> in1_val = {0x1p20, -0x1p20};
-    std::vector<double> res_val = {0x1p20, -0x1p20};
-=======
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
-    std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {0.5, 0.5, 0.5, 0.5};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
-                            {gen(shape), gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in1_val,
-                                shape, _cpu_ctx).copy(in[1].get());
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_mul_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_mul_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_mul_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
-}
-
-<<<<<<< HEAD
-TEST_F(FixedTensorTest, mulfixed_low_bound) {
-
-    std::vector<size_t> shape = {1};
-    std::vector<double> in0_val = {1.0};
-    std::vector<double> in1_val = {0x1p-16};
-    std::vector<double> res_val = {0};
-=======
-TEST_F(FixedTensorTest, divfixed) {
-
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
-    std::vector<double> in1_val = {1.0, 10.0, 1000.0, 700.0};
-    std::vector<double> res_val = {1.0, 0.1, 0.001, 1.0 / 700};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
-                            {gen(shape), gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in1_val,
-                                shape, _cpu_ctx).copy(in[1].get());
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-<<<<<<< HEAD
-            test_fixedt_mul_fixed(0, in, out0.get());
-=======
-            test_fixedt_div_fixed(0, in, out0.get());
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-<<<<<<< HEAD
-            test_fixedt_mul_fixed(1, in, out1.get());
-=======
-            test_fixedt_div_fixed(1, in, out1.get());
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-<<<<<<< HEAD
-            test_fixedt_mul_fixed(2, in, out2.get());
-=======
-            test_fixedt_div_fixed(2, in, out2.get());
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.2, true));
-}
-
-<<<<<<< HEAD
 TEST_F(FixedTensorTest, mulplain) {
 
     std::vector<size_t> shape = {2, 2};
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
     std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {2.0, 2.0, 2.0, 2.0};
-=======
-TEST_F(FixedTensorTest, divfixed_low_bound) {
-
-    std::vector<size_t> shape = {1};
-    std::vector<double> in0_val = {1.0};
-    // divisor > 1/x0, default x0 = 2^-15
-    std::vector<double> in1_val = {0x1p15};
-    std::vector<double> res_val = {0x1p-15};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -1669,83 +1508,19 @@ TEST_F(FixedTensorTest, divfixed_low_bound) {
 
     _t[0] = std::thread([this, in, out0]() mutable {
         g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-<<<<<<< HEAD
             test_fixedt_mul_plain(0, in, out0.get());
-=======
-            test_fixedt_div_fixed(0, in, out0.get());
         });
 
     });
     _t[1] = std::thread([this, in, out1]() mutable {
         g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_div_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_div_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.0001, true));
-}
-
-TEST_F(FixedTensorTest, sum) {
-
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
-    //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {4.0};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    std::vector<size_t> ret_shape = {1};
-    auto out0 = _s_tensor_factory->create<int64_t>(ret_shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(ret_shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(ret_shape);
-
-
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, ret_shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_sum_fixed(0, in, out0.get());
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-<<<<<<< HEAD
             test_fixedt_mul_plain(1, in, out1.get());
-=======
-            test_fixedt_sum_fixed(1, in, out1.get());
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         });
 
     });
     _t[2] = std::thread([this, in, out2]() mutable {
         g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-<<<<<<< HEAD
             test_fixedt_mul_plain(2, in, out2.get());
-=======
-            test_fixedt_sum_fixed(2, in, out2.get());
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         });
 
     });
@@ -1764,11 +1539,7 @@ TEST_F(FixedTensorTest, divplain) {
     std::vector<size_t> shape = {2, 2};
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
     std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-<<<<<<< HEAD
     std::vector<double> res_val = {0.5, 0.5, 0.5, 0.5};
-=======
-    std::vector<double> res_val = {4.0, 4.0, 4.0, 4.0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -1820,13 +1591,8 @@ TEST_F(FixedTensorTest, divfixed) {
 
     std::vector<size_t> shape = {2, 2};
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
-<<<<<<< HEAD
     std::vector<double> in1_val = {1.0, 10.0, 1000.0, 700.0};
     std::vector<double> res_val = {1.0, 0.1, 0.001, 1.0 / 700};
-=======
-    std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {8.0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -1872,18 +1638,11 @@ TEST_F(FixedTensorTest, divfixed) {
 
 TEST_F(FixedTensorTest, divfixed_low_bound) {
 
-<<<<<<< HEAD
     std::vector<size_t> shape = {1};
     std::vector<double> in0_val = {1.0};
     // divisor > 1/x0, default x0 = 2^-15
     std::vector<double> in1_val = {0x1p15};
     std::vector<double> res_val = {0x1p-15};
-=======
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
-    std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {8.0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -1930,18 +1689,10 @@ TEST_F(FixedTensorTest, divfixed_low_bound) {
 TEST_F(FixedTensorTest, sum) {
 
     std::vector<size_t> shape = {2, 2};
-<<<<<<< HEAD
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
     //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {4.0};
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-=======
-    std::vector<double> in0_val = {3.0, 3.0, 3.0, 3.0};
-    std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {1 / pow(2, 16), 1 / pow(2, 16), 1 / pow(2, 16), 1 / pow(2, 16)};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
-                            {gen(shape), gen(shape)};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
 
     test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
                                 shape, _cpu_ctx).copy(in[0].get());
@@ -1990,15 +1741,9 @@ TEST_F(FixedTensorTest, sum) {
 TEST_F(FixedTensorTest, mat_mulplain) {
 
     std::vector<size_t> shape = {2, 2};
-<<<<<<< HEAD
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
     std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {4.0, 4.0, 4.0, 4.0};
-=======
-    std::vector<double> in0_val = {3.0, 3.0, 3.0, 3.0};
-    std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {1 / pow(2, 16), 1 / pow(2, 16), 1 / pow(2, 16), 1 / pow(2, 16)};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -2049,15 +1794,9 @@ TEST_F(FixedTensorTest, mat_mulplain) {
 TEST_F(FixedTensorTest, dot_mul_fixed) {
 
     std::vector<size_t> shape = {2, 2};
-<<<<<<< HEAD
     std::vector<double> in0_val = {1.0, 1.0, 1.0, 1.0};
     std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {8.0};
-=======
-    std::vector<double> in0_val = {2.0, 2.0, 3.0, 3.0};
-    std::vector<double> in1_val = {3.0, 3.0, 2.0, 2.0};
-    std::vector<double> res_val = {1 / pow(2, 16), 1 / pow(2, 16), 0, 0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
                             {gen(shape), gen(shape)};
 
@@ -2856,8 +2595,6 @@ TEST_F(FixedTensorTest, exp_fixed_low_bound) {
     // exp(-511) = exp(-1), exp(-256) = 0
     std::vector<double> in0_val = {-512, -511, -256};
     std::vector<double> res_val = {1, 0.367879, 0};
-<<<<<<< HEAD
-=======
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
 
     test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
@@ -2955,216 +2692,6 @@ TEST_F(FixedTensorTest, polynomial) {
     std::vector<double> in0_val = {-1.0, 2.0, 2.0, 2.0};
     //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {0.0, 3.0, 3.0, 3.0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_exp_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_exp_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_exp_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.01, true));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.01, true));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.01, true));
-}
-
-<<<<<<< HEAD
-TEST_F(FixedTensorTest, exp_fixed_upper_bound) {
-    std::vector<size_t> shape = {1};
-    // input large than 15 may get error result because of multiplication error
-    std::vector<double> in0_val = {15};
-    std::vector<double> res_val = {3269017.37};
-=======
-TEST_F(FixedTensorTest, polynomial_wise) {
-    // y = x + 1 (x >= 0)
-    // y = 1 (x < 0)
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {-1.0, 1.0, 2.0, 2.0};
-    //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {1.0, 2.0, 3.0, 3.0};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_exp_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_exp_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_exp_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.4, true));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.4, true));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.4, true));
-}
-
-TEST_F(FixedTensorTest, polynomial) {
-    // y = 1 + x
-    std::vector<size_t> shape = {2, 2};
-<<<<<<< HEAD
-    std::vector<double> in0_val = {-1.0, 2.0, 2.0, 2.0};
-    //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {0.0, 3.0, 3.0, 3.0};
-=======
-    std::vector<double> in0_val = {1.0, -1.0, -2, 2};
-    //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {1.0, 0.0, 0.0, 2};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_relu_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_relu_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_relu_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
-}
-
-TEST_F(FixedTensorTest, relu_low_bound) {
-
-    std::vector<size_t> shape = {1};
-    std::vector<double> in0_val = {-0x1p-20};
-    std::vector<double> res_val = {0.0};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_relu_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_relu_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_relu_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
-}
-
-TEST_F(FixedTensorTest, relu_upper_bound) {
-
-    std::vector<size_t> shape = {1};
-    std::vector<double> in0_val = {0x1p20};
-    std::vector<double> res_val = {0x1p20};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
 
     test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
@@ -3208,7 +2735,6 @@ TEST_F(FixedTensorTest, relu_upper_bound) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
 
-<<<<<<< HEAD
 TEST_F(FixedTensorTest, polynomial_wise) {
     // y = x + 1 (x >= 0)
     // y = 1 (x < 0)
@@ -3216,63 +2742,6 @@ TEST_F(FixedTensorTest, polynomial_wise) {
     std::vector<double> in0_val = {-1.0, 1.0, 2.0, 2.0};
     //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {1.0, 2.0, 3.0, 3.0};
-=======
-TEST_F(FixedTensorTest, relu2) {
-
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, -1.0, -2, 2};
-    //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {1.0, 0.0, 0.0, 2};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_relu2_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_relu2_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_relu2_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
-}
-
-TEST_F(FixedTensorTest, softmax) {
-
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {1.0, 1.0, 1, 1};
-    //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
-    std::vector<double> res_val = {0.5, 0.5, 0.5, 0.5};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
 
     test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
@@ -3311,71 +2780,17 @@ TEST_F(FixedTensorTest, softmax) {
     _t[1].join();
     _t[2].join();
 
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.1));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.1));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.1));
-}
-
-TEST_F(FixedTensorTest, sigmoid_chebyshev) {
-
-    std::vector<size_t> shape = {2, 2};
-    // larger error when input < -3 or >4
-    std::vector<double> in0_val = {1.0, 2.0, -3.0, 4.0};
-    std::vector<double> res_val = {0.73105, 0.88079, 0.0474, 0.9820};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_sigmoid_chebyshev_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_sigmoid_chebyshev_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_sigmoid_chebyshev_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.03));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.03));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.03));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
 
 TEST_F(FixedTensorTest, relu) {
 
     std::vector<size_t> shape = {2, 2};
-<<<<<<< HEAD
     std::vector<double> in0_val = {1.0, -1.0, -2, 2};
     //std::vector<double> in1_val = {2.0, 2.0, 2.0, 2.0};
     std::vector<double> res_val = {1.0, 0.0, 0.0, 2};
-=======
-    std::vector<double> in0_val = {0.0, 3, 7, 0.5};
-    std::vector<double> res_val = {0.5, 0.9525, 0.999, 0.6225};
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
 
     test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
@@ -3608,319 +3023,9 @@ TEST_F(FixedTensorTest, softmax) {
     _t[1].join();
     _t[2].join();
 
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.08));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.08));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.08));
-}
-
-TEST_F(FixedTensorTest, sigmoid_enhanced) {
-
-    std::vector<size_t> shape = {2, 2};
-    std::vector<double> in0_val = {0.0, 3, 7, 0.5};
-    std::vector<double> res_val = {0.5, 0.9525, 0.999, 0.6225};
-    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
-
-    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
-                                shape, _cpu_ctx).copy(in[0].get());
-    //not copy scaling factor in copy funtion
-    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
-                                scaling_factor() = 16;
-
-    auto out0 = _s_tensor_factory->create<int64_t>(shape);
-    auto out1 = _s_tensor_factory->create<int64_t>(shape);
-    auto out2 = _s_tensor_factory->create<int64_t>(shape);
-
-    PaddleTensor<int64_t> result =
-            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
-
-    _t[0] = std::thread([this, in, out0]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
-            test_fixedt_sigmoid_enhanced_fixed(0, in, out0.get());
-        });
-
-    });
-    _t[1] = std::thread([this, in, out1]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
-            test_fixedt_sigmoid_enhanced_fixed(1, in, out1.get());
-        });
-
-    });
-    _t[2] = std::thread([this, in, out2]() mutable {
-        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
-            test_fixedt_sigmoid_enhanced_fixed(2, in, out2.get());
-        });
-
-    });
-
-    _t[0].join();
-    _t[1].join();
-    _t[2].join();
-
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.08));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.08));
-    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.08));
-}
-
-TEST_F(FixedTensorTest, max_test) {
-    std::vector<size_t> shape = { 1 };
-    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
-    std::shared_ptr<TensorAdapter<int64_t>> sr[3] = { gen(shape), gen(shape), gen(shape) };
-
-    std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen(shape), gen(shape), gen(shape),
-                                                        gen(shape), gen(shape), gen(shape)};
-
-    std::shared_ptr<TensorAdapter<int64_t>> sbout[6] = {
-        gen(shape), gen(shape), gen(shape), gen(shape), gen(shape), gen(shape)};
-
-    // lhs = 6 = 1 + 2 + 3
-    sl[0]->data()[0] = 1;
-    sl[1]->data()[0] = 2;
-    sl[2]->data()[0] = 3;
-    // rhs = 15 = 4 + 5 + 6
-    sr[0]->data()[0] = 4;
-    sr[1]->data()[0] = 5;
-    sr[2]->data()[0] = 6;
-    Fix64N16 fl0(sl[0].get(), sl[1].get());
-    Fix64N16 fl1(sl[1].get(), sl[2].get());
-    Fix64N16 fl2(sl[2].get(), sl[0].get());
-    Fix64N16 fr0(sr[0].get(), sr[1].get());
-    Fix64N16 fr1(sr[1].get(), sr[2].get());
-    Fix64N16 fr2(sr[2].get(), sr[0].get());
-    Fix64N16 fout0(sout[0].get(), sout[1].get());
-    Fix64N16 fout1(sout[2].get(), sout[3].get());
-    Fix64N16 fout2(sout[4].get(), sout[5].get());
-    BooleanTensor<int64_t> bout0(sbout[0].get(), sbout[1].get());
-    BooleanTensor<int64_t> bout1(sbout[2].get(), sbout[3].get());
-    BooleanTensor<int64_t> bout2(sbout[4].get(), sbout[5].get());
-
-    auto p = gen(shape);
-    auto pb = gen(shape);
-
-    _t[0] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[0], [&](){
-                fl0.max(&fr0, &fout0, &bout0);
-                fout0.reveal_to_one(0, p.get());
-                bout0.reveal_to_one(0, pb.get());
-            });
-        }
-    );
-    _t[1] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[1], [&](){
-                fl1.max(&fr1, &fout1, &bout1);
-                fout1.reveal_to_one(0, nullptr);
-                bout1.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    _t[2] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[2], [&](){
-                fl2.max(&fr2, &fout2, &bout2);
-                fout2.reveal_to_one(0, nullptr);
-                bout2.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    for (auto &t: _t) {
-        t.join();
-    }
-    EXPECT_EQ(std::max(6, 15), p->data()[0]);
-    EXPECT_EQ(1, pb->data()[0]);
-}
-
-TEST_F(FixedTensorTest, max_test2) {
-    std::vector<size_t> shape = { 1 };
-    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
-    std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen(shape), gen(shape), gen(shape),
-                                                        gen(shape), gen(shape), gen(shape)};
-    // lhs = 6 = 1 + 2 + 3
-    sl[0]->data()[0] = 1 << 16;
-    sl[1]->data()[0] = 2 << 16;
-    sl[2]->data()[0] = 3 << 16;
-
-    auto pr = gen(shape);
-
-    // rhs = 15
-    pr->data()[0] = 15 << 16;
-    pr->scaling_factor() = 16;
-    Fix64N16 fl0(sl[0].get(), sl[1].get());
-    Fix64N16 fl1(sl[1].get(), sl[2].get());
-    Fix64N16 fl2(sl[2].get(), sl[0].get());
-    Fix64N16 fout0(sout[0].get(), sout[1].get());
-    Fix64N16 fout1(sout[2].get(), sout[3].get());
-    Fix64N16 fout2(sout[4].get(), sout[5].get());
-
-    auto p = gen(shape);
-
-    _t[0] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[0], [&](){
-                fl0.max(pr.get(), &fout0);
-                fout0.reveal_to_one(0, p.get());
-            });
-        }
-    );
-    _t[1] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[1], [&](){
-                fl1.max(pr.get(), &fout1);
-                fout1.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    _t[2] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[2], [&](){
-                fl2.max(pr.get(), &fout2);
-                fout2.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    for (auto &t: _t) {
-        t.join();
-    }
-    EXPECT_EQ(std::max(6, 15), p->data()[0] >> 16);
-}
-
-TEST_F(FixedTensorTest, max_pooling_test) {
-    std::vector<size_t> shape = { 4, 1 };
-    std::vector<size_t> shape_ = { 1, 1 };
-
-    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
-    std::shared_ptr<TensorAdapter<int64_t>> sfout[6] = {
-        gen(shape_), gen(shape_), gen(shape_), gen(shape_), gen(shape_), gen(shape_)};
-    std::shared_ptr<TensorAdapter<int64_t>> sbout[6] = {
-        gen(shape), gen(shape), gen(shape), gen(shape), gen(shape), gen(shape)};
-
-    assign_to_tensor(sl[1].get(), 0l);
-    assign_to_tensor(sl[2].get(), 0l);
-    sl[0]->data()[0] = 2;
-    sl[0]->data()[1] = 1;
-    sl[0]->data()[2] = 4;
-    sl[0]->data()[3] = 3;
-    // input [2 1 4 3]
-
-    auto pmax = gen(shape_);
-    auto ppos = gen(shape);
-
-    Fix64N16 fl0(sl[0].get(), sl[1].get());
-    Fix64N16 fl1(sl[1].get(), sl[2].get());
-    Fix64N16 fl2(sl[2].get(), sl[0].get());
-
-    Fix64N16 fout0(sfout[0].get(), sfout[1].get());
-    Fix64N16 fout1(sfout[2].get(), sfout[3].get());
-    Fix64N16 fout2(sfout[4].get(), sfout[5].get());
-
-    BooleanTensor<int64_t> bout0(sbout[0].get(), sbout[1].get());
-    BooleanTensor<int64_t> bout1(sbout[2].get(), sbout[3].get());
-    BooleanTensor<int64_t> bout2(sbout[4].get(), sbout[5].get());
-
-    _t[0] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[0], [&](){
-                fl0.max_pooling(&fout0, &bout0);
-                fout0.reveal_to_one(0, pmax.get());
-                bout0.reveal_to_one(0, ppos.get());
-            });
-        }
-    );
-    _t[1] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[1], [&](){
-                fl1.max_pooling(&fout1, &bout1);
-                fout1.reveal_to_one(0, nullptr);
-                bout1.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    _t[2] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[2], [&](){
-                fl2.max_pooling(&fout2, &bout2);
-                fout2.reveal_to_one(0, nullptr);
-                bout2.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    for (auto &t: _t) {
-        t.join();
-    }
-
-    EXPECT_EQ(4, pmax->data()[0]);
-
-    EXPECT_EQ(0, ppos->data()[0]);
-    EXPECT_EQ(0, ppos->data()[1]);
-    EXPECT_EQ(1, ppos->data()[2]);
-    EXPECT_EQ(0, ppos->data()[3]);
-}
-
-TEST_F(FixedTensorTest, inv_sqrt_test) {
-    std::vector<size_t> shape = { 1 };
-
-    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
-    std::shared_ptr<TensorAdapter<int64_t>> sfout[6] = {
-        gen(shape), gen(shape), gen(shape), gen(shape), gen(shape), gen(shape)};
-
-    sl[0]->data()[0] = 0x4p16;
-    sl[1]->data()[0] = 0;
-    sl[2]->data()[0] = 0;
-    // input [4]
-
-    auto p = gen(shape);
-
-    Fix64N16 fl0(sl[0].get(), sl[1].get());
-    Fix64N16 fl1(sl[1].get(), sl[2].get());
-    Fix64N16 fl2(sl[2].get(), sl[0].get());
-
-    Fix64N16 fout0(sfout[0].get(), sfout[1].get());
-    Fix64N16 fout1(sfout[2].get(), sfout[3].get());
-    Fix64N16 fout2(sfout[4].get(), sfout[5].get());
-
-    _t[0] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[0], [&](){
-                fl0.inverse_square_root(&fout0);
-                fout0.reveal_to_one(0, p.get());
-            });
-        }
-    );
-    _t[1] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[1], [&](){
-                fl1.inverse_square_root(&fout1);
-                fout1.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    _t[2] = std::thread(
-        [&] () {
-        g_ctx_holder::template run_with_context(
-            _exec_ctx.get(), _mpc_ctx[2], [&](){
-                fl2.inverse_square_root(&fout2);
-                fout2.reveal_to_one(0, nullptr);
-            });
-        }
-    );
-    for (auto &t: _t) {
-        t.join();
-    }
-
-    // inv_sqrt(4) = 1/2
-    EXPECT_NEAR(0.5, p->data()[0] / 0x1p16f, 2 / 0x1p16f);
-
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.1));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.1));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.1));
 }
 
 TEST_F(FixedTensorTest, sigmoid_chebyshev) {

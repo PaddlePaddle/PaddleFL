@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-=======
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
 #include <atomic>
 #include <set>
 #include <string>
@@ -90,7 +87,6 @@ PYBIND11_MODULE(mpc_data_utils, m)
 {
     // optional module docstring
     m.doc() = "pybind11 paddle-mpc plugin: data_utils (share, reveal, psi)";
-<<<<<<< HEAD
 
     m.def("share", &share<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
           "split plaintext into three shares.");
@@ -100,17 +96,6 @@ PYBIND11_MODULE(mpc_data_utils, m)
     m.def("send_psi", &send_psi, "Send input in two party PSI.");
     m.def("recv_psi", &recv_psi, "Send input and return PSI result as output in two party PSI.");
 
-=======
-
-    m.def("share", &share<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
-          "split plaintext into three shares.");
-    m.def("reveal", &reveal<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
-          "combine three shares to reveal plaintext.");
-
-    m.def("send_psi", &send_psi, "Send input in two party PSI.");
-    m.def("recv_psi", &recv_psi, "Send input and return PSI result as output in two party PSI.");
-
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     m.attr("mpc_one_share") = (1 << paddle::mpc::ABY3_SCALING_FACTOR) / 3;
 }
 

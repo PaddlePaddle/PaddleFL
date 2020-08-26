@@ -221,11 +221,7 @@ class MpcLayerHelper(LayerHelper):
         self.append_op(
             type="mpc_" + act_type,
             inputs={"X": [input_var]},
-<<<<<<< HEAD
             outputs={"Out": [tmp],
-=======
-            outputs={"Y": [tmp],
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
                      "Derivative": [derivative]},
             attrs=act)
         return tmp

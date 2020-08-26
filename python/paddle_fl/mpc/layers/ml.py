@@ -234,11 +234,7 @@ def relu(input, name=None):
         type="mpc_relu",
         inputs={"X": input},
         outputs={
-<<<<<<< HEAD
             "Out": out,
-=======
-            "Y": out,
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
             "Derivative": derivative}
         )
     return out

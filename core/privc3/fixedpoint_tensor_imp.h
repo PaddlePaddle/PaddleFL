@@ -208,7 +208,6 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
     return;
 }
 
-<<<<<<< HEAD
 // Protocol. `truncate3`
 // P2 randomly generates r' \in (-2^62, 2^62), randomly generates r'_0, r_0, r_1 in Z_{2^64},
 // P2 compute r'_1 = r' - r'_0, r_2 = r'/2^N - r_0 - r_1, let x2 = r_2
@@ -550,249 +549,6 @@ void FixedPointTensor<T, N>::sigmoid_chebyshev(FixedPointTensor<T, N>* ret) cons
 }
 
 template< typename T, size_t N>
-=======
-template<typename T, size_t N>
-template<typename MulFunc>
-void FixedPointTensor<T, N>::mul_trunc(const FixedPointTensor<T, N>* lhs,
-                                        const FixedPointTensor<T, N>* rhs,
-                                        FixedPointTensor<T, N>* ret,
-                                        MulFunc mul_func) {
-
-    auto r_zero = tensor_factory()->template create<T>(ret->shape());
-    aby3_ctx()->gen_zero_sharing_arithmetic(*r_zero.get());
-
-    // temp = _share[0]->mul(rhs->_share[0]) +
-    //        _share[0]->mul(rhs->_share[1]) +
-    //        _share[1]->mul(rhs->_share[0]) +
-    //        r_zero
-    auto temp = tensor_factory()->template create<T>(ret->shape());
-    auto temp1 = tensor_factory()->template create<T>(ret->shape());
-
-    // use mul_func to fit both element_wise mul and mat mul
-    (lhs->share(0)->*mul_func)(rhs->share(0), temp.get());
-    (lhs->share(0)->*mul_func)(rhs->share(1), temp1.get());
-    temp1->add(temp.get(), temp1.get());
-
-    (lhs->share(1)->*mul_func)(rhs->share(0), temp.get());
-    temp1->add(r_zero.get(), temp1.get());
-    temp->add(temp1.get(), temp.get());
-
-    auto temp2 = tensor_factory()->template create<T>(ret->shape());
-    auto temp3 = tensor_factory()->template create<T>(ret->shape());
-
-    TensorAdapter<int64_t>* temp_array[2] = {temp2.get(), temp3.get()};
-
-    std::shared_ptr<FixedPointTensor<T, N>> ret_no_trunc =
-            std::make_shared<FixedPointTensor<T, N>>(temp_array);
-
-    temp->copy(ret_no_trunc->_share[0]);
-    reshare(temp.get(), ret_no_trunc->_share[1]);
-
-    truncate(ret_no_trunc.get(), ret, N);
-}
-
-template<typename T, size_t N>
-void FixedPointTensor<T, N>::mul(const TensorAdapter<T>* rhs,
-                                 FixedPointTensor<T, N>* ret) const {
-    // PADDLE_ENFORCE_EQ(N, rhs->scaling_factor(),
-    //                   "no match scaling factor");
-    auto temp0 = tensor_factory()->template create<T>(this->shape());
-    auto temp1 = tensor_factory()->template create<T>(this->shape());
-    std::shared_ptr<FixedPointTensor<T, N>> temp =
-        std::make_shared<FixedPointTensor<T, N>>(temp0.get(), temp1.get());
-
-    _share[0]->mul(rhs, temp->_share[0]);
-    _share[1]->mul(rhs, temp->_share[1]);
-    truncate(temp.get(), ret, rhs->scaling_factor());
-}
-
-template<typename T, size_t N>
-void FixedPointTensor<T, N>::sum(FixedPointTensor<T, N>* ret) const {
-    PADDLE_ENFORCE_EQ(ret->numel(), 1, "output size should be 1.");
-    T sum1 = (T) 0;
-    T sum2 = (T) 0;
-    T* iter_0 = _share[0]->data();
-    T* iter_1 = _share[1]->data();
-    for (int i = 0; i < this->numel(); ++i) {
-        sum1 += *(iter_0 + i);
-        sum2 += *(iter_1 + i);
-    }
-    assign_to_tensor(ret->_share[0], sum1);
-    assign_to_tensor(ret->_share[1], sum2);
-}
-
-template<typename T, size_t N>
-template<template<typename U, size_t...> class CTensor,
-            size_t... N1>
-void FixedPointTensor<T, N>::dot_mul(const CTensor<T, N1...>* rhs,
-                                     FixedPointTensor<T, N>* ret) const {
-    PADDLE_ENFORCE_EQ(ret->numel(), 1, "output size should be 1.");
-
-    auto temp0 = tensor_factory()->template create<T>(this->shape());
-    auto temp1 = tensor_factory()->template create<T>(this->shape());
-    std::shared_ptr<FixedPointTensor<T, N>> temp =
-            std::make_shared<FixedPointTensor<T, N>>(temp0.get(), temp1.get());
-    this->mul(rhs, temp.get());
-    temp->sum(ret);
-}
-
-template<typename T, size_t N>
-void FixedPointTensor<T, N>::mat_mul(const FixedPointTensor<T, N>* rhs,
-                                     FixedPointTensor<T, N>* ret) const {
-    mul_trunc(this, rhs, ret, &TensorAdapter<T>::mat_mul);
-}
-
-template<typename T, size_t N>
-void FixedPointTensor<T, N>::mat_mul(const TensorAdapter<T>* rhs,
-                                     FixedPointTensor<T, N>* ret) const {
-    _share[0]->mat_mul(rhs, ret->_share[0]);
-    _share[1]->mat_mul(rhs, ret->_share[1]);
-    truncate(ret, ret, rhs->scaling_factor());
-}
-
-template< typename T, size_t N>
-void FixedPointTensor<T, N>::div(const TensorAdapter<T>* rhs,
-                                 FixedPointTensor<T, N>* ret) const {
-    PADDLE_ENFORCE_EQ(N, rhs->scaling_factor(),
-                        "no match scaling factor");
-
-    auto temp = tensor_factory()->template create<T>(this->shape());
-
-    double scale = std::pow(2, rhs->scaling_factor());
-    auto inverse = [scale](T d) -> T {
-                    return 1.0 * scale / d * scale; };
-    std::transform(rhs->data(), rhs->data() + rhs->numel(),
-                                temp->data(), inverse);
-    temp->scaling_factor() = rhs->scaling_factor();
-
-    this->mul(temp.get(), ret);
-}
-
-template<typename T, size_t N>
-void FixedPointTensor<T, N>::div(const FixedPointTensor<T, N>* rhs,
-                                 FixedPointTensor<T, N>* ret,
-                                 size_t iter, double x0) const {
-    auto temp0 = tensor_factory()->template create<T>(ret->shape());
-    auto temp1 = tensor_factory()->template create<T>(ret->shape());
-    std::shared_ptr<FixedPointTensor<T, N>> temp =
-        std::make_shared<FixedPointTensor<T, N>>(temp0.get(), temp1.get());
-    reciprocal(rhs, temp.get(), iter, x0);
-    this->mul(temp.get(), ret);
-}
-
-template<typename T, size_t N>
-void FixedPointTensor<T, N>::exp(FixedPointTensor<T, N>* ret,
-                                 size_t iter) const {
-    // exp approximate: exp(x) = \lim_{n->inf} (1+x/n)^n
-    // where n = 2^ite
-    auto pow_iter = tensor_factory()->template create<T>(this->shape());
-    assign_to_tensor(pow_iter.get(), (T) (pow(2, N -iter)));
-    pow_iter->scaling_factor() = N;
-
-    auto tensor_one = tensor_factory()->template create<T>(this->shape());
-    assign_to_tensor(tensor_one.get(), (T) 1 << N);
-    tensor_one->scaling_factor() = N;
-
-    this->mul(pow_iter.get(), ret);
-
-    ret->add(tensor_one.get(), ret);
-
-    for (int i = 0; i < iter; ++i) {
-        ret->mul(ret, ret);
-    }
-}
-
-template< typename T, size_t N>
-void FixedPointTensor<T, N>::relu(FixedPointTensor<T, N>* ret) const {
-    //utilize polynomial_piecewise
-    // break_point = {0}, coeff[0] = {0, 0}, coeff[1] = {0, 1}
-    // break_point.shape = {1, this->shape}, coeff.shape = {2, 2, this->shape}
-
-    auto shape_ = shape();
-    //construct break_point
-    auto b_shape = shape_;
-    b_shape.insert(b_shape.begin(), 1);
-
-    auto break_point = tensor_factory()->template create<T>(b_shape);
-
-    T* b_ptr = break_point->data();
-    for (size_t i = 0; i < break_point->numel(); ++i) {
-        b_ptr[i] = 0;
-    }
-    break_point->scaling_factor() = N;
-
-    //contruct coeff
-    std::vector<size_t> c_shape = {2, 2};
-    c_shape.insert(c_shape.end(), shape_.begin(), shape_.end());
-
-    auto coeff = tensor_factory()->template create<T>(c_shape);
-
-    T* c_ptr = coeff->data();
-
-    for (size_t i = 0; i < 3 * this->numel(); ++i) {
-        c_ptr[i] = 0;
-    }
-    for (size_t i = 3 * this->numel(); i < 4 * this->numel(); ++i) {
-        c_ptr[i] = (T) 1 << N;
-    }
-    coeff->scaling_factor() = N;
-
-    this->polynomial_piecewise(coeff.get(), break_point.get(), ret);
-}
-
-template< typename T, size_t N>
-void FixedPointTensor<T, N>::relu_with_derivative(
-    FixedPointTensor<T, N>* ret, BooleanTensor<T>* derivative) const {
-
-    auto shape_ = shape();
-    auto zero = tensor_factory()->template create<T>(shape_);
-
-    assign_to_tensor(zero.get(), (T)0);
-    zero->scaling_factor() = N;
-
-    auto tmp0 = tensor_factory()->template create<T>(shape_);
-    auto tmp1 = tensor_factory()->template create<T>(shape_);
-
-    BooleanTensor<T> der(tmp0.get(), tmp1.get());
-
-    gt(zero.get(), &der);
-
-    der.mul(this, ret);
-
-    if (derivative) {
-        der.share(0)->copy(derivative->share(0));
-        der.share(1)->copy(derivative->share(1));
-    }
-}
-
-template< typename T, size_t N>
-void FixedPointTensor<T, N>::sigmoid_chebyshev(FixedPointTensor<T, N>* ret) const {
-    //utilize Chebyshev polynomial approximation
-    // more accurate in small range, such as [-4, 4]
-    auto shape = ret->shape();
-    std::vector<size_t> shape_ = shape;
-    shape_.insert(shape_.begin(), 10);
-    auto numel = ret->numel();
-    auto coeff = tensor_factory()->template create<T>(shape_);
-    std::vector<double> w;
-    w.resize(10, 0.0f);
-    w[0] = 0.5;
-    w[1] = 0.2159198015;
-    w[3] = -0.0082176259;
-    w[5] = 0.0001825597;
-    w[7] = -0.0000018848;
-    w[9] = 0.0000000072;
-    for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < numel; ++j) {
-            *(coeff->data() + i * numel + j) = (T) (w[i] * pow(2, N));
-        }
-    }
-    coeff->scaling_factor() = N;
-    polynomial(coeff.get(), ret);
-}
-
-template< typename T, size_t N>
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
 void FixedPointTensor<T, N>::sigmoid(FixedPointTensor<T, N>* ret) const {
     //utilize polynomial_piecewise
     // break_point = {-2.5, 2.5}
@@ -823,7 +579,6 @@ void FixedPointTensor<T, N>::sigmoid(FixedPointTensor<T, N>* ret) const {
     //contruct coeff
     std::vector<size_t> c_shape = {3, 2};
     c_shape.insert(c_shape.end(), shape_.begin(), shape_.end());
-<<<<<<< HEAD
 
     auto coeff = tensor_factory()->template create<T>(c_shape);
 
@@ -841,25 +596,6 @@ void FixedPointTensor<T, N>::sigmoid(FixedPointTensor<T, N>* ret) const {
     }
     coeff->scaling_factor() = N;
 
-=======
-
-    auto coeff = tensor_factory()->template create<T>(c_shape);
-
-    T* c_ptr = coeff->data();
-
-    size_t numel = this->numel();
-    double scale = std::pow(2, N);
-    for (size_t i = 0; i < numel; ++i) {
-        c_ptr[i] = 0.0001 * scale;
-        c_ptr[i + numel] = 0;
-        c_ptr[i + 2 * numel] = 0.5 * scale;
-        c_ptr[i + 3 * numel] = 0.17 * scale;
-        c_ptr[i + 4 * numel] = (1 - 0.0001) * scale;
-        c_ptr[i + 5 * numel] = 0;
-    }
-    coeff->scaling_factor() = N;
-
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     this->polynomial_piecewise(coeff.get(), break_point.get(), ret);
 }
 
@@ -947,7 +683,6 @@ void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
     temp[8]->reshape({row, col});
     temp[9]->reshape({row, col});
     FixedPointTensor<T, N> max_x_broadcast(temp[8].get(), temp[9].get());
-<<<<<<< HEAD
 
     temp[10]->reshape({row, col});
     auto exp_lower_bound = temp[10].get();
@@ -981,41 +716,6 @@ void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
 
     if (use_relu) {
 
-=======
-
-    temp[10]->reshape({row, col});
-    auto exp_lower_bound = temp[10].get();
-
-    auto transpose = [](const TensorAdapter<T>* in, TensorAdapter<T>* out) {
-        // suppose input dims = 2
-        const size_t col = in->shape()[1];
-        const size_t row = in->shape()[0];
-        const size_t numel = in->numel();
-
-        for (size_t k = 0; k < numel; ++k) {
-            size_t i = k / row;
-            size_t j = k % row;
-            out->data()[k] = in->data()[j * col + i];
-        }
-    };
-
-    auto broadcast = [](const TensorAdapter<T>* in, TensorAdapter<T>* out) {
-        // suppose input dims = 2
-        // in shape = [row, 1]
-        const size_t col = out->shape()[1];
-        const size_t row = out->shape()[0];
-        for (size_t k = 0; k < out->numel(); ++k) {
-            size_t i = k / col;
-            out->data()[k] = in->data()[i];
-        }
-    };
-
-    share(0)->copy(x.mutable_share(0));
-    share(1)->copy(x.mutable_share(1));
-
-    if (use_relu) {
-
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         x.relu(&x);
 
     } else { // use exp
@@ -1087,7 +787,6 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
 
     assign_to_tensor(cmp_res_all.share(0), (T)0);
     assign_to_tensor(cmp_res_all.share(1), (T)0);
-<<<<<<< HEAD
 
     const size_t msb = sizeof(T) * 8 - 1;
     sign_lhs.bit_extract(msb, this);
@@ -1121,41 +820,6 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
         lshift(&abs_rhs, i, &sub_rhs);
 
 
-=======
-
-    const size_t msb = sizeof(T) * 8 - 1;
-    sign_lhs.bit_extract(msb, this);
-    sign_rhs.bit_extract(msb, rhs);
-    sign_lhs.bitwise_xor(&sign_rhs, &sign_ret);
-
-    auto lshift = []  (const FixedPointTensor<T, N>* in,
-                       size_t rhs,
-                       FixedPointTensor<T, N>* out) {
-        in->share(0)->lshift(rhs, out->mutable_share(0));
-        in->share(1)->lshift(rhs, out->mutable_share(1));
-    };
-
-    // abs = val - 2 * sign * val
-    auto abs = [lshift] (const FixedPointTensor<T, N>* in,
-                   const BooleanTensor<T>* sign,
-                   FixedPointTensor<T, N>* out) {
-        lshift(in, 1, out);
-        sign->mul(out, out);
-        in->sub(out, out);
-    };
-
-    auto out0 = tensor_factory()->template create<T>(ret->shape());
-
-    abs(this, &sign_lhs, &abs_lhs);
-
-    abs(rhs, &sign_rhs, &abs_rhs);
-
-
-    for (ssize_t i = int_len - 1; i >= 0; --i) {
-        lshift(&abs_rhs, i, &sub_rhs);
-
-
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         abs_lhs.gt(&sub_rhs, &cmp_res);
 
 
@@ -1167,11 +831,7 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
     }
 
     for (size_t i = 1; i <= N; ++i) {
-<<<<<<< HEAD
         truncate3(&abs_rhs, &sub_rhs, i);
-=======
-        truncate(&abs_rhs, &sub_rhs, i);
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
         abs_lhs.gt(&sub_rhs, &cmp_res);
         cmp_res.mul(&sub_rhs, &sub_rhs);
         cmp_res.lshift(N - i, &cmp_res);
@@ -1312,7 +972,6 @@ void FixedPointTensor<T, N>::polynomial_piecewise(
                                     temp[temp_index++].get()));
         msb[i]->bit_extract(sizeof(T) * 8 - 1, temp1[i].get());
     }
-<<<<<<< HEAD
 
     // b[0] = msb[0], b[i + 1] = ~ msb[i] & msb[i + 1]
     std::vector<std::shared_ptr<BooleanTensor<T>>> b;
@@ -1321,16 +980,6 @@ void FixedPointTensor<T, N>::polynomial_piecewise(
                                     temp[temp_index++].get()));
     b[0] = msb[0];
 
-=======
-
-    // b[0] = msb[0], b[i + 1] = ~ msb[i] & msb[i + 1]
-    std::vector<std::shared_ptr<BooleanTensor<T>>> b;
-    b.emplace_back(std::make_shared<BooleanTensor<T>>(
-                                    temp[temp_index++].get(),
-                                    temp[temp_index++].get()));
-    b[0] = msb[0];
-
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
     for (int i = 0; i < len_break_point - 1; ++i) {
         b.emplace_back(std::make_shared<BooleanTensor<T>>(
                                     temp[temp_index++].get(),
@@ -1535,11 +1184,7 @@ void FixedPointTensor<T, N>::inverse_square_root(const FixedPointTensor* op,
     std::shared_ptr<FixedPointTensor<T, N>> x2 =
         std::make_shared<FixedPointTensor<T, N>>(temp[2].get(), temp[3].get());
     // x2 = 0.5 * op
-<<<<<<< HEAD
     truncate3(op, x2.get(), 1);
-=======
-    truncate(op, x2.get(), 1);
->>>>>>> 5a09665c36ffb7eae2288b3f837d3be18091c259
 
     assign_to_tensor(y->mutable_share(0), (T)(x0 * pow(2, N)));
     assign_to_tensor(y->mutable_share(1), (T)(x0 * pow(2, N)));
