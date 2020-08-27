@@ -166,6 +166,7 @@ void FixedPointTensor<T, N>::mul(const FixedPointTensor<T, N>* rhs,
     mul_trunc(this, rhs, ret, &TensorAdapter<T>::mul);
 }
 
+#ifdef USE_ABY3_TRUNC1 //use aby3 trunc1
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
                                        FixedPointTensor<T, N>* ret,
@@ -208,7 +209,20 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
     return;
 }
 
+#else // use truncate3
+
 // Protocol. `truncate3`
+// motivation:
+// truncates in aby3 may cause msb error with small probability
+// the reason is that before rishft op, its masked value e.g., x' - r' may overflow in int64
+// so that, in `truncate3`, we limit r' in (-2^62, 2^62) to avoid the problem.
+
+// notice:
+// when r' is contrainted in (-2^62, 2^62),
+// the SD (statistical distance) of x' - r' between this
+// and r' in Z_{2^64} is equal to |X| / (2^63 + |X|)
+
+// detail protocol:
 // P2 randomly generates r' \in (-2^62, 2^62), randomly generates r'_0, r_0, r_1 in Z_{2^64},
 // P2 compute r'_1 = r' - r'_0, r_2 = r'/2^N - r_0 - r_1, let x2 = r_2
 // P2 send r_0, r'_0 to P0, send r_1, r'_1 to P1
@@ -217,7 +231,7 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
 // P0 set x0 = r_0
 // P0, P1, P2 invoke reshare() with inputs x0, x1, x2 respectively.
 template<typename T, size_t N>
-void FixedPointTensor<T, N>::truncate3(const FixedPointTensor<T, N>* op,
+void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
                                        FixedPointTensor<T, N>* ret,
                                        size_t scaling_factor) {
     if (scaling_factor == 0) {
@@ -232,10 +246,6 @@ void FixedPointTensor<T, N>::truncate3(const FixedPointTensor<T, N>* op,
                 tensor_factory()->template create<T>(op->shape()));
         }
         // r',  contraint in (-2^62, 2^62)
-        // notice : when r' is contrainted in (-2^62, 2^62),
-        // the SD (statistical distance) of x - r' between this
-        // and r' in Z_{2^64} is equal to |X| / (2^63 + |X|)
-        // according to http://yuyu.hk/files/ho2.pdf
         aby3_ctx()->template gen_random_private(*temp[0]);
         int64_t contraint_upper = ~((uint64_t) 1 << 62);
         int64_t contraint_low = (uint64_t) 1 << 62;
@@ -307,6 +317,7 @@ void FixedPointTensor<T, N>::truncate3(const FixedPointTensor<T, N>* op,
     tensor_carry_in->scaling_factor() = N;
     ret->add(tensor_carry_in.get(), ret);
 }
+#endif //USE_ABY3_TRUNC1
 
 template<typename T, size_t N>
 template<typename MulFunc>
@@ -345,7 +356,7 @@ void FixedPointTensor<T, N>::mul_trunc(const FixedPointTensor<T, N>* lhs,
     temp->copy(ret_no_trunc->_share[0]);
     reshare(temp.get(), ret_no_trunc->_share[1]);
 
-    truncate3(ret_no_trunc.get(), ret, N);
+    truncate(ret_no_trunc.get(), ret, N);
 }
 
 template<typename T, size_t N>
@@ -360,7 +371,7 @@ void FixedPointTensor<T, N>::mul(const TensorAdapter<T>* rhs,
 
     _share[0]->mul(rhs, temp->_share[0]);
     _share[1]->mul(rhs, temp->_share[1]);
-    truncate3(temp.get(), ret, rhs->scaling_factor());
+    truncate(temp.get(), ret, rhs->scaling_factor());
 }
 
 template<typename T, size_t N>
@@ -404,7 +415,7 @@ void FixedPointTensor<T, N>::mat_mul(const TensorAdapter<T>* rhs,
                                      FixedPointTensor<T, N>* ret) const {
     _share[0]->mat_mul(rhs, ret->_share[0]);
     _share[1]->mat_mul(rhs, ret->_share[1]);
-    truncate3(ret, ret, rhs->scaling_factor());
+    truncate(ret, ret, rhs->scaling_factor());
 }
 
 template< typename T, size_t N>
@@ -831,7 +842,7 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
     }
 
     for (size_t i = 1; i <= N; ++i) {
-        truncate3(&abs_rhs, &sub_rhs, i);
+        truncate(&abs_rhs, &sub_rhs, i);
         abs_lhs.gt(&sub_rhs, &cmp_res);
         cmp_res.mul(&sub_rhs, &sub_rhs);
         cmp_res.lshift(N - i, &cmp_res);
@@ -1184,7 +1195,7 @@ void FixedPointTensor<T, N>::inverse_square_root(const FixedPointTensor* op,
     std::shared_ptr<FixedPointTensor<T, N>> x2 =
         std::make_shared<FixedPointTensor<T, N>>(temp[2].get(), temp[3].get());
     // x2 = 0.5 * op
-    truncate3(op, x2.get(), 1);
+    truncate(op, x2.get(), 1);
 
     assign_to_tensor(y->mutable_share(0), (T)(x0 * pow(2, N)));
     assign_to_tensor(y->mutable_share(1), (T)(x0 * pow(2, N)));

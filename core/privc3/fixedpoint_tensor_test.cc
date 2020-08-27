@@ -1267,6 +1267,7 @@ TEST_F(FixedTensorTest, mulfixed) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
 
+#ifndef USE_ABY3_TRUNC1 //use aby3 trunc1
 TEST_F(FixedTensorTest, mulfixed_multi_times) {
 
     std::vector<size_t> shape = {100000, 1};
@@ -1327,6 +1328,7 @@ TEST_F(FixedTensorTest, mulfixed_multi_times) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
+#endif
 
 TEST_F(FixedTensorTest, mulfixed_overflow) {
 
