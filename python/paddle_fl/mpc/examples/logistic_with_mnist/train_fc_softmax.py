@@ -44,37 +44,11 @@ epoch_num = 5
 x = pfl_mpc.data(name='x', shape=[BATCH_SIZE, 1, 28, 28], dtype='int64')
 y = pfl_mpc.data(name='y', shape=[BATCH_SIZE, 10], dtype='int64')
 
-
-class Model(object):
-    def __int__(self):
-        pass
-
-    def lenet3(self):
-        conv = pfl_mpc.layers.conv2d(input=x, num_filters=16, filter_size=5, act='relu')
-        pool = pfl_mpc.layers.pool2d(input=conv, pool_size=2, pool_stride=2)
-        fc_1 = pfl_mpc.layers.fc(input=pool, size=100, act='relu')
-        fc_out = pfl_mpc.layers.fc(input=fc_1, size=10)
-        cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(logits=fc_out,
-                                                                  label=y,
-                                                                  soft_label=True,
-                                                                  return_softmax=True)
-        return cost, softmax
-
-    def lenet5(self):
-        conv_1 = pfl_mpc.layers.conv2d(input=x, num_filters=16, filter_size=5, act='relu')
-        pool_1 = pfl_mpc.layers.pool2d(input=conv_1, pool_size=2, pool_stride=2)
-        conv_2 = pfl_mpc.layers.conv2d(input=pool_1, num_filters=16, filter_size=5, act='relu')
-        pool_2 = pfl_mpc.layers.pool2d(input=conv_2, pool_size=2, pool_stride=2)
-        fc_1 = pfl_mpc.layers.fc(input=pool_2, size=100, act='relu')
-        fc_out = pfl_mpc.layers.fc(input=fc_1, size=10)
-        cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(logits=fc_out,
-                                                                  label=y,
-                                                                  soft_label=True,
-                                                                  return_softmax=True)
-        return cost, softmax
-
-model = Model()
-cost, softmax = model.lenet5()
+fc_out = pfl_mpc.layers.fc(input=x, size=10)
+cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(logits=fc_out,
+                                                          label=y,
+                                                          soft_label=True,
+                                                          return_softmax=True)
 
 infer_program = fluid.default_main_program().clone(for_test=False)
 

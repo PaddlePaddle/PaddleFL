@@ -8,7 +8,7 @@
 
 #### 1. 准备数据
 
-使用`process_data.py`脚本中的`generate_encrypted_data()`和`generate_encrypted_test_data()`产生加密训练数据和测试数据，用户可以直接运行脚本`python process_data.py`在指定的目录下（比如`./mpc_data/`）产生加密特征和标签。用户可以通过参数`class_num`指定label的类别数目，从而产生适用于`fc_sigmoid`（二分类）和`lenet`（十分类）网络的加密数据。在指定目录下生成对应于3个计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`mnist2_feature.part0`表示属于party0的feature数据。
+使用`process_data.py`脚本中的`generate_encrypted_data()`和`generate_encrypted_test_data()`产生加密训练数据和测试数据，用户可以直接运行脚本`python process_data.py`在指定的目录下（比如`./mpc_data/`）产生加密特征和标签。用户可以通过参数`class_num`指定label的类别数目，从而产生适用于`logistic_fc_sigmoid`（二分类）或`lenet``logistic_fc_softmax`（十分类）网络的加密数据。在指定目录下生成对应于3个计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`mnist2_feature.part0`表示属于party0的feature数据。
 
 #### 2. 使用shell脚本启动demo
 

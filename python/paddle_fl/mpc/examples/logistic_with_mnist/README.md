@@ -8,7 +8,7 @@ This document introduces how to run MNIST demo based on Paddle-MPC, which has tw
 
 #### (1). Prepare Data
 
-Generate encrypted training and testing data utilizing `generate_encrypted_data()` and `generate_encrypted_test_data()` in `process_data.py` script. Users can run the script with command `python process_data.py` to generate encrypted feature and label in given directory, e.g., `./mpc_data/`. Users can specify `class_num` (2 or 10) to determine the encrypted data is for `fc_sigmoid`(two classes) or `lenet`(10 classes) network.  Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `mnist2_feature.part0` means it is a feature file of party 0.
+Generate encrypted training and testing data utilizing `generate_encrypted_data()` and `generate_encrypted_test_data()` in `process_data.py` script. Users can run the script with command `python process_data.py` to generate encrypted feature and label in given directory, e.g., `./mpc_data/`. Users can specify `class_num` (2 or 10) to determine the encrypted data is for `logisticfc_sigmoid`(two classes) or `lenet` and `logistic_fc_softmax`(10 classes) network.  Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `mnist2_feature.part0` means it is a feature file of party 0.
 
 #### (2). Launch Demo with A Shell Script
 
