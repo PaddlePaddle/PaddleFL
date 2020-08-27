@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <algorithm>
 
@@ -21,7 +22,6 @@
 #include "prng.h"
 
 namespace aby3 {
-
 template<typename T, size_t N>
 FixedPointTensor<T, N>::FixedPointTensor(TensorAdapter<T>* share_tensor[2]) {
     // TODO: check tensors' shapes
@@ -245,15 +245,12 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
             temp.emplace_back(
                 tensor_factory()->template create<T>(op->shape()));
         }
-        // r',  contraint in (constraint_low, contraint_upper)
+        // r'
         aby3_ctx()->template gen_random_private(*temp[0]);
-        T contraint_upper = (T) 1 << (sizeof(T) * 8 - 2);
-        T contraint_low = - contraint_upper;
         std::for_each(temp[0]->data(), temp[0]->data() + temp[0]->numel(),
-                      [&contraint_upper, &contraint_low] (T& a) {
-                          while ((a > contraint_upper || a < contraint_low)) {
-                              a = aby3_ctx()->template gen_random_private<T>();
-                          }
+                      [] (T& a) {
+                          a = (T) (a * std::pow(2, sizeof(T) * 8 - 2)
+                                   / std::numeric_limits<T>::max());
                       });
 
         //r'_0, r'_1
