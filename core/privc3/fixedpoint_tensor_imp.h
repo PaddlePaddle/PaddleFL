@@ -247,11 +247,7 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
         }
         // r'
         aby3_ctx()->template gen_random_private(*temp[0]);
-        std::for_each(temp[0]->data(), temp[0]->data() + temp[0]->numel(),
-                      [] (T& a) {
-                          a = (T) (a * std::pow(2, sizeof(T) * 8 - 2)
-                                   / std::numeric_limits<T>::max());
-                      });
+        temp[0]->rshift(1, temp[0].get());
 
         //r'_0, r'_1
         aby3_ctx()->template gen_random_private(*temp[1]);

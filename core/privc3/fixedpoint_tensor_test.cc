@@ -3438,7 +3438,7 @@ TEST_F(FixedTensorTest, inv_sqrt_test) {
 }
 
 #ifdef USE_ABY3_TRUNC1 //use aby3 trunc1
-TEST_F(FixedTensorTest, truncate1_msb_failed) {
+TEST_F(FixedTensorTest, truncate1_msb_incorrect) {
     std::vector<size_t> shape = { 1 };
     std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen(shape), gen(shape), gen(shape),
@@ -3498,7 +3498,7 @@ TEST_F(FixedTensorTest, truncate1_msb_failed) {
 }
 
 #else
-TEST_F(FixedTensorTest, truncate3_msb_not_failed) {
+TEST_F(FixedTensorTest, truncate3_msb_correct) {
     std::vector<size_t> shape = { 1 };
     std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen(shape), gen(shape), gen(shape),
