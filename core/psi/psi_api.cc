@@ -298,24 +298,6 @@ const size_t PsiApi::_s_recv_step_len = 0x1000000;
 // default sync sock, no timeout
 int PsiApi::_s_timeout_s = 0;
 
-int get_err_code(const char *err) {
-  std::string s(err);
-  if (s.find("socket error: recv timeout") != std::string::npos) {
-    return SOCKET_TIMEOUT;
-  } else if (s.find("socket error") != std::string::npos) {
-    return SOCKET_ERROR;
-  } else if (s.find("openssl error") != std::string::npos) {
-    return OPENSSL_ERROR;
-  } else if (s.find("np ot error") != std::string::npos) {
-    return INTERNAL_ERROR;
-  } else if (s.find("ot ext error") != std::string::npos) {
-    return INTERNAL_ERROR;
-  } else if (s.find("psi error") != std::string::npos) {
-    return INTERNAL_ERROR;
-  }
-  return UNKNOWN_ERROR;
-}
-
 int psi_send(int port, const std::set<std::string> &in,
              std::atomic<int> *psi_progress) {
   try {
@@ -331,14 +313,9 @@ int psi_send(int port, const std::set<std::string> &in,
     if (psi_progress) {
       *psi_progress = -1;
     }
-    auto err = get_err_code(e.what());
-    if (err != UNKNOWN_ERROR) {
-      return err;
-    } else {
-      throw;
-    }
+    throw;
   }
-  return PSI_OK;
+  return 0;
 }
 
 int psi_recv(const std::string &remote_ip, int port,
@@ -357,14 +334,9 @@ int psi_recv(const std::string &remote_ip, int port,
     if (psi_progress) {
       *psi_progress = -1;
     }
-    auto err = get_err_code(e.what());
-    if (err != UNKNOWN_ERROR) {
-      return err;
-    } else {
-      throw;
-    }
+    throw;
   }
-  return PSI_OK;
+  return 0;
 }
 
 void set_psi_timeout(int timeout_s) { PsiApi::set_psi_timeout(timeout_s); }

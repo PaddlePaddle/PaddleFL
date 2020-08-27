@@ -19,17 +19,42 @@ process_data.generate_encrypted_data()
 
 #### 2. 使用shell脚本启动demo
 
-使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
+运行demo之前，需设置以下环境变量：
+
+```
+export PYTHON=/yor/python
+export PATH_TO_REDIS_BIN=/path/to/redis_bin
+export LOCALHOST=/your/localhost
+export REDIS_PORT=/your/redis/port
+```
+
+然后使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
 
 ```bash 
-bash run_standalone.sh uci_housing_demo.py
+bash run_standalone.sh uci_demo.py
 ```
 
 运行之后将在屏幕上打印训练过程中的密文loss数据，同时，对应的密文loss数据将会保存到/tmp目录下的文件中，文件命名格式类似于步骤1中所述。
 
 此外，在完成训练之后，demo会继续进行预测，并将预测密文结果也保存到/tmp目录下的文件中。
 
+#### 3. 解密数据
+
 最后，demo会使用`process_data.py`脚本中的`load_decrypt_data()`，恢复并打印出明文的loss数据和prediction结果，用以和明文Paddle模型结果进行对比。
+例如，将下面的内容写到一个decrypt_save.py脚本中，然后python decrypt_save.py decrypt_loss_file decrypt_prediction_file，将把明文losss数据和预测结果分别保存在文件中。
+
+```python
+import sys
+
+import process_data
+
+
+decrypt_loss_file=sys.argv[1]
+decrypt_prediction_file=sys.argv[2]
+BATCH_SIZE=10
+process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
+process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
+```
 
 **注意**：再次启动运行demo之前，请先将上次在`/tmp`保存的loss和prediction文件删除，以免影响本次密文数据的恢复结果。为了简化用户操作，我们在`run_standalone.sh`脚本中加入了如下的内容，可以在执行脚本时删除上次数据。
 
@@ -60,9 +85,9 @@ fi
 
 `house_feature.part0`和`house_label.part0`发送到party0的/tmp目录下。
 
-#### 3. 计算party修改uci_housing_demo.py脚本
+#### 3. 计算party修改uci_demo.py脚本
 
-各计算party根据自己的机器环境，对uci_housing_demo.py做如下改动：
+各计算party根据自己的机器环境，对uci_demo.py做如下改动：
 
 * 修改IP信息
 
@@ -72,17 +97,6 @@ fi
   pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
   ```
 
-* 注释掉单机运行所需代码
-
-  将脚本中如下代码注释掉，这部分代码用在单机运行case下。
-
-  ```python
-  import process_data
-  print("uci_loss:")
-  process_data.load_decrypt_data("/tmp/uci_loss", (1,))
-  print("prediction:")
-  process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
-  ```
 
 #### 4. 各计算party启动demo
 
@@ -95,7 +109,7 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 在各计算party分别执行以下命令，启动demo：
 
 ```
-$PYTHON_EXECUTABLE uci_housing_demo.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT
 ```
 
 其中，PYTHON_EXECUTABLE表示自己安装了PaddleFL的python，PARTY_ID表示计算party的编号，值为0、1或2，SERVER和PORT分别表示redis server的IP地址和端口号。
@@ -108,20 +122,19 @@ $PYTHON_EXECUTABLE uci_housing_demo.py $PARTY_ID $SERVER $PORT
 
 各计算party将`/tmp`目录下的`uci_loss.part`和`uci_prediction.part`文件发送到数据方的/tmp目录下。数据方使用process_data.py脚本中的load_decrypt_data()解密恢复出loss数据和prediction数据。
 
-比如，使用如下内容的python脚本，打印解密的loss数据：
+例如，将下面的内容写到一个decrypt_save.py脚本中，然后python decrypt_save.py decrypt_loss_file decrypt_prediction_file，将把明文losss数据和预测结果分别保存在文件中。
 
 ```python
-import process_data
-print("uci_loss:")
-process_data.load_decrypt_data("/tmp/uci_loss", (1,))
-```
+import sys
 
-使用如下内容的python脚本，打印解密的prediction数据：
-
-```python
 import process_data
-print("prediction:")
-process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE,))
+
+
+decrypt_loss_file=sys.argv[1]
+decrypt_prediction_file=sys.argv[2]
+BATCH_SIZE=10
+process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
+process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
 ```
 
 ### 三. 单机精度测试

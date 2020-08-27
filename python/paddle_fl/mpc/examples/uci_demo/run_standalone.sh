@@ -32,12 +32,13 @@
 #
 
 # modify the following vars according to your environment
-PYTHON="python"
-REDIS_HOME="path_to_redis_bin"
-SERVER="localhost"
-PORT=9937
+PYTHON=${PYTHON}
+REDIS_HOME=${PATH_TO_REDIS_BIN}
+SERVER=${LOCALHOST}
+PORT=${REDIS_PORT}
+echo "redis home in ${REDIS_HOME}, server is ${SERVER}, port is ${PORT}"
 
-function usage() {
+function usage(){
     echo 'run_standalone.sh SCRIPT_NAME [ARG...]'
     exit 0
 }
@@ -64,14 +65,25 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 # remove temp data generated in last time
 LOSS_FILE="/tmp/uci_loss.*"
 PRED_FILE="/tmp/uci_prediction.*"
-if [ "$LOSS_FILE" ]; then
+ls ${LOSS_FILE}
+if [ $? -eq 0 ]; then
         rm -rf $LOSS_FILE
 fi
 
-if [ "$PRED_FILE" ]; then
+ls ${PRED_FILE}
+if [ $? -eq 0 ]; then
         rm -rf $PRED_FILE
 fi
 
+TRAINING_FILE="/tmp/house_feature.part*"
+ls ${TRAINING_FILE}
+if [ $? -ne 0 ]; then
+    echo "There is no data in /tmp, please prepare data with "python prepare.py" firstly"
+    exit 1
+else
+    echo "There are data for uci:"
+    echo "`ls ${TRAINING_FILE}`"
+fi
 
 # kick off script with roles of 1 and 2, and redirect output to /dev/null
 for role in {1..2}; do

@@ -23,51 +23,61 @@ namespace psi {
 class PseudorandomNumberGenerator {
 
 public:
-  PseudorandomNumberGenerator() = default;
 
-  PseudorandomNumberGenerator(const block &seed);
+    PseudorandomNumberGenerator() = default;
 
-  PseudorandomNumberGenerator(const PseudorandomNumberGenerator &other) =
-      delete;
+    PseudorandomNumberGenerator(const block &seed);
 
-  PseudorandomNumberGenerator &
-  operator=(const PseudorandomNumberGenerator &other) = delete;
+    PseudorandomNumberGenerator(
+        const PseudorandomNumberGenerator &other) = delete;
 
-  void set_seed(const block &b);
+    PseudorandomNumberGenerator &operator=(
+        const PseudorandomNumberGenerator &other) = delete;
 
-  template <typename T> T get() {
-    T data;
-    get_array(&data, sizeof(T));
-    return data;
-  }
+    void set_seed(const block &b);
 
-  void get_array(void *res, size_t len);
+    template <typename T>
+    T get() {
+        T data;
+        get_array(&data, sizeof(T));
+        return data;
+    }
 
-  // for std::shuffle
-  typedef uint64_t result_type;
+    void get_array(void* res, size_t len);
 
-  constexpr static uint64_t min() { return 0; }
+    // for std::shuffle
+    typedef uint64_t result_type;
 
-  constexpr static uint64_t max() { return -1ull; }
+    constexpr static uint64_t min() {
+        return 0;
+    }
 
-  uint64_t operator()() { return get<uint64_t>(); }
+    constexpr static uint64_t max() {
+        return -1ull;
+    }
+
+    uint64_t operator()() {
+        return get<uint64_t>();
+    }
 
 private:
-  // buffer num for aes cipher
-  static const size_t _s_buffer_size = 0x100;
 
-  static const size_t _s_byte_capacity = _s_buffer_size * sizeof(block);
+    // buffer num for aes cipher
+    static const size_t _s_buffer_size = 0x100000;
 
-  std::array<block, _s_buffer_size> _buffer;
+    static const size_t _s_byte_capacity = _s_buffer_size * sizeof(block);
 
-  std::array<block, _s_buffer_size> _ctr64;
+    std::array<block, _s_buffer_size> _buffer;
 
-  uint64_t _ctr;
+    std::array<block, _s_buffer_size> _ctr64;
 
-  AES _aes;
+    uint64_t _ctr;
 
-  size_t _now_byte;
+    AES _aes;
 
-  void refill_buffer();
+    size_t _now_byte;
+
+    void refill_buffer();
 };
 } // namespace psi
+

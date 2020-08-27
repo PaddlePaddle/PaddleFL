@@ -17,6 +17,7 @@ Process data for UCI Housing.
 import numpy as np
 import paddle
 import six
+import os
 from paddle_fl.mpc.data_utils import aby3
 
 sample_reader = paddle.dataset.uci_housing.train()
@@ -45,10 +46,12 @@ def generate_encrypted_data():
     aby3.save_aby3_shares(encrypted_housing_labels, "/tmp/house_label")
 
 
-def load_decrypt_data(filepath, shape):
+def load_decrypt_data(filepath, shape, decrypted_file):
     """
     load the encrypted data and reconstruct
     """
+    if os.path.exists(decrypted_file):
+        os.remove(decrypted_file)
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(
@@ -59,4 +62,6 @@ def load_decrypt_data(filepath, shape):
 
     for instance in aby3_share_reader():
         p = aby3.reconstruct(np.array(instance))
-        print(p)
+        with open(decrypted_file, 'a+') as f:
+            for i in p:
+                f.write(str(i) + '\n')
