@@ -12,10 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Prepare data for MNIST.
+Decrypt Prediction Data.
 """
-import process_data
+import sys
+import os
+from process_data import decrypt_data_to_file
 
+decrypt_file=sys.argv[1]
+BATCH_SIZE=128
+class_num = 2
 
-process_data.generate_encrypted_data()
-process_data.generate_encrypted_test_data()
+mpc_infer_data_dir = "./mpc_infer_data/"
+prediction_file = mpc_infer_data_dir + "mnist_debug_prediction"
+
+if os.path.exists(decrypt_file):
+    os.remove(decrypt_file)
+
+if class_num == 2:
+    decrypt_data_to_file(prediction_file, (BATCH_SIZE,), decrypt_file)
+elif class_num == 10:
+    decrypt_data_to_file(prediction_file, (BATCH_SIZE, 10), decrypt_file)
+else:
+    raise ValueError("class_num should be 2 or 10, but received {}.".format(class_num))
+
