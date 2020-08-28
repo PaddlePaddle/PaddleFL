@@ -62,24 +62,6 @@ fi
 # clear the redis cache
 $REDIS_BIN -h $SERVER -p $PORT flushall
 
-# remove temp data generated in last time
-PRED_FILE="/tmp/mnist_output_prediction.*"
-ls ${PRED_FILE}
-if [ $? -eq 0 ]; then
-        rm -rf $PRED_FILE
-fi
-
-TRAINING_FILE="/tmp/mnist2_feature.part*"
-ls ${TRAINING_FILE}
-if [ $? -ne 0 ]; then
-    echo "There is no data in /tmp, please prepare data with "python prepare.py" firstly"
-    exit 1
-else
-    echo "There are data for mnist:"
-    echo "`ls ${TRAINING_FILE}`"
-fi
-
-
 # kick off script with roles of 1 and 2, and redirect output to /dev/null
 for role in {1..2}; do
     $PYTHON $SCRIPT $role $SERVER $PORT 2>&1 >/dev/null &
