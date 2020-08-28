@@ -15,6 +15,7 @@
 MPC Metrics
 """
 
+import paddle.fluid.metrics
 from paddle.fluid.metrics import MetricBase
 
 import numpy as np
@@ -23,6 +24,7 @@ import scipy
 
 __all__ = [
     'KSstatistic',
+    'Auc',
 ]
 
 
@@ -108,3 +110,6 @@ class KSstatistic(MetricBase):
         """
 
         return scipy.stats.ks_2samp(self._data1, self._data2).statistic
+
+
+Auc = paddle.fluid.metrics.Auc
