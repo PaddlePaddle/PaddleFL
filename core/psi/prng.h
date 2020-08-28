@@ -63,7 +63,7 @@ public:
 private:
 
     // buffer num for aes cipher
-    static const size_t _s_buffer_size = 0x100000;
+    static const size_t _s_buffer_size = 0x10000;
 
     static const size_t _s_byte_capacity = _s_buffer_size * sizeof(block);
 
