@@ -61,6 +61,8 @@ option(USE_AES_NI "Compile with AES NI" ON)
 
 option(USE_OPENMP "Compile with OpenMP" ON)
 
+option(USE_ABY3_TRUNC1 "Compile with ABY3 truncate 1 algorithm" OFF)
+
 ########################### the project build part ###############################
 message(STATUS "Using paddlepaddle installation of ${paddle_version}")
 message(STATUS "paddlepaddle include directory: ${PADDLE_INCLUDE}")
@@ -83,6 +85,10 @@ if (USE_OPENMP)
     add_compile_options(-fopenmp)
     find_package(OpenMP REQUIRED)
 endif(USE_OPENMP)
+
+if (USE_ABY3_TRUNC1)
+    add_compile_definitions(USE_ABY3_TRUNC1)
+endif(USE_ABY3_TRUNC1)
 
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)

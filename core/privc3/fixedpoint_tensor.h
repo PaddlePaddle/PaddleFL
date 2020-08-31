@@ -193,6 +193,9 @@ public:
     void max_pooling(FixedPointTensor* ret,
                      BooleanTensor<T>* pos = nullptr) const;
 
+    static void truncate(const FixedPointTensor* op, FixedPointTensor* ret,
+                        size_t scaling_factor);
+
 private:
     static inline std::shared_ptr<AbstractContext> aby3_ctx() {
       return paddle::mpc::ContextHolder::mpc_ctx();
@@ -201,9 +204,6 @@ private:
     static inline std::shared_ptr<TensorAdapterFactory> tensor_factory() {
         return paddle::mpc::ContextHolder::tensor_factory();
     }
-
-    static void truncate(const FixedPointTensor* op, FixedPointTensor* ret,
-                          size_t scaling_factor);
 
     template<typename MulFunc>
     static void mul_trunc(const FixedPointTensor<T, N>* lhs,

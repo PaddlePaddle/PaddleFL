@@ -17,6 +17,7 @@ MNIST Demo
 
 import sys
 import os
+import errno
 
 import numpy as np
 import time
@@ -49,15 +50,19 @@ avg_loss = pfl_mpc.layers.mean(cost)
 optimizer = pfl_mpc.optimizer.SGD(learning_rate=0.001)
 optimizer.minimize(avg_loss)
 
+mpc_data_dir = "./mpc_data/"
+if not os.path.exists(mpc_data_dir):
+    raise ValueError("mpc_data_dir is not found. Please prepare encrypted data.")
+
 # train_reader
-feature_reader = aby3.load_aby3_shares("/tmp/mnist2_feature", id=role, shape=(784,))
-label_reader = aby3.load_aby3_shares("/tmp/mnist2_label", id=role, shape=(1,))
+feature_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist2_feature", id=role, shape=(784,))
+label_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist2_label", id=role, shape=(1,))
 batch_feature = aby3.batch(feature_reader, BATCH_SIZE, drop_last=True)
 batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
 
 # test_reader
-test_feature_reader = aby3.load_aby3_shares("/tmp/mnist2_test_feature", id=role, shape=(784,))
-test_label_reader = aby3.load_aby3_shares("/tmp/mnist2_test_label", id=role, shape=(1,))
+test_feature_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist2_test_feature", id=role, shape=(784,))
+test_label_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist2_test_label", id=role, shape=(1,))
 test_batch_feature = aby3.batch(test_feature_reader, BATCH_SIZE, drop_last=True)
 test_batch_label = aby3.batch(test_label_reader, BATCH_SIZE, drop_last=True)
 
@@ -79,24 +84,34 @@ test_loader.set_batch_generator(test_batch_sample, places=place)
 exe = fluid.Executor(place)
 exe.run(fluid.default_startup_program())
 
+start_time = time.time()
+step = 0
 for epoch_id in range(epoch_num):
-    start_time = time.time()
-    step = 0
     # feed data via loader
     for sample in loader():
-        batch_start = time.time()
+        step += 1
         exe.run(feed=sample, fetch_list=[cost.name])
         batch_end = time.time()
         if step % 50 == 0:
-            print('Epoch={}, Step={}, batch_cost={:.4f} s'.format(epoch_id, step, (batch_end - batch_start)))
-        step += 1
+            print('Epoch={}, Step={}'.format(epoch_id, step))
 
-    end_time = time.time()
-    print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
+end_time = time.time()
+print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
       .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
 
 # prediction
-prediction_file = "/tmp/mnist_output_prediction.part{}".format(role)
+
+mpc_infer_data_dir = "./mpc_infer_data/"
+if not os.path.exists(mpc_infer_data_dir):
+    try:
+        os.mkdir(mpc_infer_data_dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+prediction_file = mpc_infer_data_dir + "mnist_debug_prediction.part{}".format(role)
+if os.path.exists(prediction_file):
+    os.remove(prediction_file)
 for sample in test_loader():
     prediction = exe.run(program=infer_program, feed=sample, fetch_list=[cost])
     with open(prediction_file, 'ab') as f:

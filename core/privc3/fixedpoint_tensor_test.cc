@@ -1269,6 +1269,7 @@ TEST_F(FixedTensorTest, mulfixed) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
 
+#ifndef USE_ABY3_TRUNC1 //use aby3 trunc1
 TEST_F(FixedTensorTest, mulfixed_multi_times) {
 
     std::vector<size_t> shape = {100000, 1};
@@ -1329,6 +1330,7 @@ TEST_F(FixedTensorTest, mulfixed_multi_times) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
 }
+#endif
 
 TEST_F(FixedTensorTest, mulfixed_overflow) {
 
@@ -3436,5 +3438,125 @@ TEST_F(FixedTensorTest, inv_sqrt_test) {
     EXPECT_NEAR(0.5, p->data()[0] / 0x1p16f, 2 / 0x1p16f);
 
 }
+
+#ifdef USE_ABY3_TRUNC1 //use aby3 trunc1
+TEST_F(FixedTensorTest, truncate1_msb_incorrect) {
+    std::vector<size_t> shape = { 1 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen(shape), gen(shape), gen(shape),
+                                                        gen(shape), gen(shape), gen(shape)};
+    // lhs = 6 = 1 + 2 + 3, share before truncate
+    // zero share 0 = (1 << 62) + (1 << 62) - (1 << 63)
+    sl[0]->data()[0] = ((int64_t) 3 << 32) - ((uint64_t) 1 << 63);
+    sl[1]->data()[0] = ((int64_t) 2 << 32) + ((int64_t) 1 << 62);
+    sl[2]->data()[0] = ((int64_t) 1 << 32) + ((int64_t) 1 << 62);
+
+    auto pr = gen(shape);
+
+    // rhs = 15
+    pr->data()[0] = 6 << 16;
+    pr->scaling_factor() = 16;
+    Fix64N16 fl0(sl[0].get(), sl[1].get());
+    Fix64N16 fl1(sl[1].get(), sl[2].get());
+    Fix64N16 fl2(sl[2].get(), sl[0].get());
+    Fix64N16 fout0(sout[0].get(), sout[1].get());
+    Fix64N16 fout1(sout[2].get(), sout[3].get());
+    Fix64N16 fout2(sout[4].get(), sout[5].get());
+
+    auto p = gen(shape);
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                Fix64N16::truncate(&fl0, &fout0, 16);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                Fix64N16::truncate(&fl1, &fout1, 16);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    _t[2] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[2], [&](){
+                Fix64N16::truncate(&fl2, &fout2, 16);
+                fout2.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    // failed: result is not close to 6
+    EXPECT_GT(std::abs((p->data()[0] >> 16) - 6), 1000);
+}
+
+#else
+TEST_F(FixedTensorTest, truncate3_msb_correct) {
+    std::vector<size_t> shape = { 1 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sout[6] = { gen(shape), gen(shape), gen(shape),
+                                                        gen(shape), gen(shape), gen(shape)};
+    // lhs = 6 = 1 + 2 + 3, share before truncate
+    // zero share 0 = (1 << 62) + (1 << 62) - (1 << 63)
+    sl[0]->data()[0] = ((int64_t) 3 << 32) - ((uint64_t) 1 << 63);
+    sl[1]->data()[0] = ((int64_t) 2 << 32) + ((int64_t) 1 << 62);
+    sl[2]->data()[0] = ((int64_t) 1 << 32) + ((int64_t) 1 << 62);
+
+    auto pr = gen(shape);
+
+    // rhs = 15
+    pr->data()[0] = 6 << 16;
+    pr->scaling_factor() = 16;
+    Fix64N16 fl0(sl[0].get(), sl[1].get());
+    Fix64N16 fl1(sl[1].get(), sl[2].get());
+    Fix64N16 fl2(sl[2].get(), sl[0].get());
+    Fix64N16 fout0(sout[0].get(), sout[1].get());
+    Fix64N16 fout1(sout[2].get(), sout[3].get());
+    Fix64N16 fout2(sout[4].get(), sout[5].get());
+
+    auto p = gen(shape);
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                Fix64N16::truncate(&fl0, &fout0, 16);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                Fix64N16::truncate(&fl1, &fout1, 16);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    _t[2] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[2], [&](){
+                Fix64N16::truncate(&fl2, &fout2, 16);
+                fout2.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_EQ((p->data()[0] >> 16), 6);
+}
+#endif
 
 } // namespace aby3
