@@ -10,9 +10,9 @@ This document introduces how to run encrypt PaddlePaddle  model, then train or u
 
 Model encryption demo contains three scenarios:
 
-*  **Encrypt Model and Train**
+*  **Transpile Model and Train**
 
-Each party loads PaddlePadlde model and encrypts it. Each party feeds the encrypted data to train the encrypted model. Each party can get one share for the encrypted model. PaddlePaddle model can be reconstructed with three encrypted model shares.
+Each party loads an empty PaddlePadlde model and transpile it into encrypted and empty model. Each party feeds encrypted data to train the encrypted model. Each party can get one share for the encrypted model. PaddlePaddle model can be reconstructed with three encrypted model shares.
 
 *  **Encrypt Pre-trained Model and Update**
 
@@ -24,7 +24,7 @@ Pre-trained model is encryption and distributed to multipel parties. Parties pre
 
 ### 3. Usage
 
-#### 3.1 Train Model
+#### 3.1 Train a New Model
 
 <img src='images/model_training.png' width = "500" height = "550" align="middle"/>
 
@@ -38,7 +38,7 @@ This figure shows model encryption and training with Paddle-MPC.
    exe.run(fluid.default_startup_program())
    ```
 
-2). **Transpile(Encrypt) Model**: Users use api `aby3.transpile` to encrypt curent default PaddlePaddle model.
+2). **Transpile Model**: Users use api `aby3.transpile` to encrypt curent PaddlePaddle model to encrypted model.
 
    ```python
    aby3.transpile()
@@ -101,7 +101,7 @@ This figure shows how to update pre-trained model with Paddle-MPC.
 
 4). **Decrypt Model**：User can decrypt model with three model shares. 
 
-#### 3.3 Predict Model
+#### 3.3 Model Inference
 
 <img src='images/model_infer.png' width = "500" height = "380" align="middle"/>
 

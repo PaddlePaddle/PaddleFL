@@ -105,5 +105,4 @@ REGISTER_OPERATOR(
     ops::MpcSGDOpInferVarType);
 REGISTER_OP_CPU_KERNEL(
     mpc_sgd,
-    ops::MpcSGDOpKernel<paddle::platform::CPUDeviceContext, int64_t, float>,
-    ops::MpcSGDOpKernel<paddle::platform::CPUDeviceContext, int64_t, double>);
+    ops::MpcSGDOpKernel<paddle::platform::CPUDeviceContext, int64_t, float>);

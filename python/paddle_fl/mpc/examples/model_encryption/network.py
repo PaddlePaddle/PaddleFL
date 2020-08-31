@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides networks.
+This module provides a linear regression network.
 """
 import paddle
 import paddle.fluid as fluid
