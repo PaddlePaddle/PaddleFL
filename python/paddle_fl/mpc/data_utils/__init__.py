@@ -17,7 +17,10 @@ Import data_utils module.
 
 from . import aby3
 from . import alignment
+from . import one_hot_encoding
 from .alignment import *
+from .one_hot_encoding import *
 
 __all__ = []
 __all__ += alignment.__all__
+__all__ += one_hot_encoding.__all__
