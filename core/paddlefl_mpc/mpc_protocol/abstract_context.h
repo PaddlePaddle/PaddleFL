@@ -30,16 +30,12 @@ using PseudorandomNumberGenerator = psi::PseudorandomNumberGenerator;
 class AbstractContext {
 public:
   AbstractContext(size_t party, std::shared_ptr<AbstractNetwork> network) {
-    init(party, network);
+    set_party(party);
+    set_network(network);
   };
   AbstractContext(const AbstractContext &other) = delete;
 
   AbstractContext &operator=(const AbstractContext &other) = delete;
-
-  void init(size_t party, std::shared_ptr<AbstractNetwork> network) {
-    set_party(party);
-    set_network(network);
-  }
 
   void set_party(size_t party) {
     _party = party;
@@ -124,8 +120,6 @@ private:
   size_t _num_party;
   size_t _party;
   std::shared_ptr<AbstractNetwork> _network;
-  PseudorandomNumberGenerator _prng[3];
-
 };
 
 } // namespace mpc
