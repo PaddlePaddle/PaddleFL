@@ -29,20 +29,10 @@ using AbstractContext = paddle::mpc::AbstractContext;
 class ABY3Context : public AbstractContext {
 public:
   ABY3Context(size_t party, std::shared_ptr<AbstractNetwork> network,
-                 const block &seed = g_zero_block,
-                 const block &seed2 = g_zero_block) {
-    init(party, network, seed, seed2);
-  }
-
-  ABY3Context(const ABY3Context &other) = delete;
-
-  ABY3Context &operator=(const ABY3Context &other) = delete;
-
-  void init(size_t party, std::shared_ptr<AbstractNetwork> network, block seed,
-            block seed2) override {
+                 block seed = g_zero_block,
+                 block seed2 = g_zero_block) :
+                 AbstractContext::AbstractContext(party, network) {
     set_num_party(3);
-    set_party(party);
-    set_network(network);
 
     if (psi::equals(seed, psi::g_zero_block)) {
       seed = psi::block_from_dev_urandom();
@@ -70,6 +60,16 @@ public:
 
     set_random_seed(seed, 1);
   }
+
+  ABY3Context(const ABY3Context &other) = delete;
+
+  ABY3Context &operator=(const ABY3Context &other) = delete;
+protected:
+  PseudorandomNumberGenerator& get_prng(size_t idx) override {
+    return _prng[idx];
+  }
+private:
+  PseudorandomNumberGenerator _prng[3];
 };
 
 } // namespace aby3
