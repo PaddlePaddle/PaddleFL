@@ -4,7 +4,7 @@
 
 ### 1. Introduction
 
-This document introduces how to run encrypt PaddlePaddle's  model, then train or update encrypted model, or predict with encrypted model. Model encryption is suitable for protecting user data and model.
+This document introduces how to run encrypt PaddlePaddle  model, then train or update encrypted model, or predict encrypted data with encrypted model. Model encryption is suitable for protecting training/prediction data and model.
 
 ### 2. Scenarios
 
@@ -12,15 +12,15 @@ Model encryption demo contains three scenarios:
 
 *  **Encrypt Model and Train**
 
-Each party loads PaddlePadlde model and then encrypts it. Each party feeds the encrypted data to train the encrypted model. Each party can get one share for the encrypted model. PaddlePaddle model can be reconstructed with three encrypted model shares.
+Each party loads PaddlePadlde model and encrypts it. Each party feeds the encrypted data to train the encrypted model. Each party can get one share for the encrypted model. PaddlePaddle model can be reconstructed with three encrypted model shares.
 
 *  **Encrypt Pre-trained Model and Update**
 
-Pre-trained model is encryption and distributed to multipel parties. All parties update the encrypted model by feeding encrypted data. PaddlePaddle model can be reconstructed with three encrypted model shares.
+Pre-trained model is encryption and distributed to multipel parties. Parties update the encrypted model with encrypted data. PaddlePaddle model can be reconstructed with three encrypted model shares.
 
 *  **Encrypt Pre-trained Model and Predict**
 
-Pre-trained model is encryption and distributed to multipel parties. All parties predict encrypted data with encrypted model. Prediction ouput can be reconstructed with three encrypted prediction shares.
+Pre-trained model is encryption and distributed to multipel parties. Parties predict encrypted data with the encrypted model. Prediction output can be reconstructed with three encrypted prediction output shares.
 
 ### 3. Usage
 
@@ -28,9 +28,9 @@ Pre-trained model is encryption and distributed to multipel parties. All parties
 
 <img src='images/model_training.png' width = "500" height = "550" align="middle"/>
 
-This figure shows the model encryption training with Paddle-MPC.
+This figure shows model encryption and training with Paddle-MPC.
 
-1. **Load Model**: Users init mpc context with mpc_init OP. Then, users load or define PaddlePaddle network.
+1). **Load PaddlePaddle Model**: Users init mpc context with mpc_init OP, then load or define PaddlePaddle network.
 
    ```python
    pfl_mpc.init("aby3", role, ip, server, port)
@@ -38,13 +38,13 @@ This figure shows the model encryption training with Paddle-MPC.
    exe.run(fluid.default_startup_program())
    ```
 
-2. **Transpile(Encrypt) Model**: Users use api `aby3.transpile` encrypt PaddlePaddle model.
+2). **Transpile(Encrypt) Model**: Users use api `aby3.transpile` to encrypt curent default PaddlePaddle model.
 
    ```python
    aby3.transpile()
    ```
 
-3. **Train Model**: Users train encrypted model with encrypted data.
+3). **Train Model**: Users train encrypted model with encrypted data.
 
    ```python
    for epoch_id in range(epoch_num):
@@ -52,7 +52,7 @@ This figure shows the model encryption training with Paddle-MPC.
            mpc_loss = exe.run(feed=mpc_sample, fetch_list=[loss.name])
    ```
 
-4. **Save Model**：Users save encrypted model using `aby3.save_trainable_model`.
+4). **Save Model**：Users save encrypted model using `aby3.save_trainable_model`.
 
    ```python
    aby3.save_trainable_model(exe=exe,
@@ -60,7 +60,7 @@ This figure shows the model encryption training with Paddle-MPC.
                              model_filename=model_filename)
    ```
 
-5. **Decrypt Model**：Users can decrypt model with the model shares. 
+5). **Decrypt Model**：PaddlePaddle model can be reconstructed with three model shares (encrypted model). 
 
 #### 3.2 Update Model
 
@@ -68,9 +68,9 @@ This figure shows the model encryption training with Paddle-MPC.
 
 This figure shows how to update pre-trained model with Paddle-MPC.
 
-1. **Pre-train Model**: Users train PaddlePaddle model with plaintext data.
+1). **Pre-train Model**: PaddlePaddle model is trained with plaintext data.
 
-2. **Encrypt Model**: Users encrypt pre-trained model with api `aby3.encrypt_model` and distribute model shares to other users.
+2). **Encrypt Model**: User encrypts pre-trained model with api `aby3.encrypt_model` and distributes three model shares to three parties.
 
    ```python
    # Step 1. Load pre-trained model.
@@ -83,7 +83,7 @@ This figure shows how to update pre-trained model with Paddle-MPC.
                       model_filename=model_filename)
    ```
 
-3. **Update Model**：Users init mpc context with mpc_init OP, then load encrypted model with `aby3.load_mpc_model`. Users update the encrypted model with encrypted data.
+3). **Update Model**：Users init mpc context with mpc_init OP, then load encrypted model with `aby3.load_mpc_model`. Users update the encrypted model with encrypted data.
 
    ```python
    # Step 1. initialize MPC environment and load MPC model into
@@ -99,19 +99,19 @@ This figure shows how to update pre-trained model with Paddle-MPC.
            mpc_loss = exe.run(feed=mpc_sample, fetch_list=[loss.name])
    ```
 
-4. **Decrypt Model**：Users can decrypt model with the model shares. 
+4). **Decrypt Model**：User can decrypt model with three model shares. 
 
 #### 3.3 Predict Model
 
 <img src='images/model_infer.png' width = "500" height = "380" align="middle"/>
 
-This figure shows how to predict with encrypted model.
+This figure shows how to predict encryted data with encrypted model.
 
-1. **Train Model**：Users train PaddlePaddle model with plaintext data.
+1). **Train Model**：User trains PaddlePaddle model with plaintext data.
 
-2. **Encrypt Model**: Users encrypt model with api `aby3.encrypt_model` and distribute model shares to other users. The api is same with `Update Model`.
+2). **Encrypt Model**: User encrypts model with api `aby3.encrypt_model` and distributes model shares to three users. The api is same with `Update Model`.
 
-3. **Predict Model**: Users initialize mpc context with `mpc_init OP`, then load encrypted model with api `aby3.load_mpc_model`. Users predict encryped data with encryted model.
+3). **Predict/Infer**: Users initialize mpc context with `mpc_init OP`, then load encrypted model with api `aby3.load_mpc_model`. Users predict encryped data with encryted model.
 
    ```python
    # Step 1. initialize MPC environment and load MPC model to predict
@@ -128,22 +128,11 @@ This figure shows how to predict with encrypted model.
        f.write(np.array(prediction).tostring())
    ```
 
-4. **Decrypt Model**：Users can decrypt model with the model shares. 
+4. **Decrypt Model**：User can decrypt model with the model shares. 
 
 ### 4. Usage Demo
 
-#### 4.1 Train Model
-
-Instructions for model encryption and training with PaddleFL-MPC using UCI Housing dataset: [Here](./train).
-
-#### 4.2 Update Model
-
-Instructions for pre-trained model encryption and update with Paddle-MPC using UCI Housing dataset: [Here](./update).
-
-#### 4.3 Predict Model
-
-Instructions for pre-trained model encryption and prediction with Paddle-MPC using UCI Housing dataset: [Here](./predict).
-
-  
-
+**Train Model**: Instructions for model encryption and training with PaddleFL-MPC using UCI Housing dataset: [Here](./train).
+**Update Model**: Instructions for pre-trained model encryption and update with Paddle-MPC using UCI Housing dataset: [Here](./update).
+**Predict Model**: Instructions for pre-trained model encryption and prediction with Paddle-MPC using UCI Housing dataset: [Here](./predict).
 

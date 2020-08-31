@@ -2,7 +2,7 @@
 
 (简体中文|[English](./README.md))
 
-###1. 训练明文模型并加密保存
+### 1. 训练明文模型并加密保存
 
 使用如下命令完成明文模型的训练、加密和保存：
 
@@ -10,11 +10,11 @@
 python train_and_encrypt_model.py
 ```
 
-###2. 准备用于预测的加密数据
+### 2. 准备用于预测的加密数据
 
-执行脚本`../process_data.py`完成模型更新所需数据的加密处理。
+执行脚本`../process_data.py`加密待预测的数据。
 
-###3. 加密预测
+### 3. 加密预测
 
 使用如下命令完成密文模型预测：
 
@@ -22,7 +22,7 @@ python train_and_encrypt_model.py
 bash run_standalone.sh predict_with_mpc_model.py
 ```
 
-###4. 解密loss数据验证密文模型预测过程
+### 4. 解密loss数据验证密文模型预测过程
 
 使用如下命令对保存的预测结果进行解密查看：
 

@@ -4,13 +4,13 @@
 
 ### 1. Introduction
 
-Users can decrypt encrypted model with Paddle-MPC. The decrypted model can be used for training and prediction.
+User can decrypt encrypted model (three model shares) with Paddle-MPC. The decrypted model can be used for training and prediction.
 
 ### 2. Usages
 
-We will show how to decrypt prediction model.
+How to decrypt and use prediction model:
 
-1. **Decrypt Model**：Users decrypt encryped model with api `aby3.decrypt_model`.
+1. **Decrypt Model**：user decrypts encryped model with api `aby3.decrypt_model`.
 
    ```python
    aby3.decrypt_model(mpc_model_dir=mpc_model_dir,
@@ -19,9 +19,9 @@ We will show how to decrypt prediction model.
                       plain_model_filename=paddle_model_filename)
    ```
 
-2. **Predict**：Users can predict plaintext data with decrypted model.
+2. **Predict**：user predicts plaintext data with decrypted model.
 
-  1) User loads decrypted model with api `fluid.io.load_inference_model`.
+  1) Load decrypted model with api `fluid.io.load_inference_model`.
   
   ```python
   infer_prog, feed_names, fetch_targets = fluid.io.load_inference_model(executor=exe,
@@ -29,7 +29,7 @@ We will show how to decrypt prediction model.
                                                                         model_filename=paddle_model_filename)
   ```
   
-  2) User predict plaintext data with decrypted model.
+  2) Predict plaintext data with decrypted model.
   
   ```python
   results = exe.run(infer_prog,
@@ -37,3 +37,6 @@ We will show how to decrypt prediction model.
                     fetch_list=fetch_targets)
   ```
 
+### 3. Demo
+
+Script `decrypt_inference_model.py` shows model decryption and prediction. Note that, encryption model should be saved in specified directory before running the script. Script `../model_encryption/predict/train_and_encrypt_model.py` can be used to generate encryption model.
