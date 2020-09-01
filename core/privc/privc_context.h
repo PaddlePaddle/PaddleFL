@@ -14,23 +14,27 @@
 #pragma once
 
 #include <algorithm>
-#include <algorithm>
 #include <memory>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
-#include "prng_utils.h"
+#include "core/privc3/prng_utils.h"
 
-namespace aby3 {
+namespace privc {
 
 using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
+using block = psi::block;
+
+static const size_t SCALING_N = 32;
+template <typename T, size_t N>
+class TripletGenerator;
 
 class PrivCContext : public AbstractContext {
 public:
   PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> network,
-                 block seed = g_zero_block):
-                 AbstractContext::AbstractContext(party, network) {
+                 block seed = psi::g_zero_block):
+                 AbstractContext::AbstractContext(party, network), _tripletor{nullptr} {
     set_num_party(2);
 
     if (psi::equals(seed, psi::g_zero_block)) {
@@ -42,13 +46,28 @@ public:
   PrivCContext(const PrivCContext &other) = delete;
 
   PrivCContext &operator=(const PrivCContext &other) = delete;
+/*
+  block get_private_block() {
+    std::array<int64_t, 2> ret_block;
+    ret_block[0] = gen_random_private<int64_t>();
+    ret_block[1] = gen_random_private<int64_t>();
+
+    return *(reinterpret_cast<block*>(ret_block.data()));
+  }
+*/
+
+  void set_triplet_generator(std::shared_ptr<TripletGenerator<int64_t, SCALING_N>>& tripletor);
+
+  std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> triplet_generator();
 
 protected:
-  PseudorandomNumberGenerator& get_prng(size_t idx) override {
+  psi::PseudorandomNumberGenerator& get_prng(size_t idx) override {
     return _prng;
   }
+
 private:
-  PseudorandomNumberGenerator _prng;
+  std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> _tripletor;
+  psi::PseudorandomNumberGenerator _prng;
 };
 
-} // namespace aby3
+} // namespace privc

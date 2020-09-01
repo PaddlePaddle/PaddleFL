@@ -14,7 +14,6 @@
 #pragma once
 
 #include <algorithm>
-#include <algorithm>
 #include <memory>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_context.h"

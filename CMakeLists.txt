@@ -90,6 +90,7 @@ if (USE_ABY3_TRUNC1)
     add_compile_definitions(USE_ABY3_TRUNC1)
 endif(USE_ABY3_TRUNC1)
 
+add_subdirectory(core/privc)
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)
 add_subdirectory(core/paddlefl_mpc/operators)
