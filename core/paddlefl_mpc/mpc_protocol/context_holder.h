@@ -22,20 +22,20 @@
 #pragma once
 
 #include "paddle/fluid/framework/operator.h"
-#include "core/privc3/circuit_context.h"
+#include "core/privc3/aby3_context.h"
 #include "core/privc3/paddle_tensor.h"
 
 namespace paddle {
 namespace mpc {
 
-using CircuitContext = aby3::CircuitContext;
+using ABY3Context = aby3::ABY3Context;
 using ExecutionContext = paddle::framework::ExecutionContext;
 
 class ContextHolder {
 public:
   template <typename Operation>
   static void run_with_context(const ExecutionContext *exec_ctx,
-                               std::shared_ptr<CircuitContext> mpc_ctx,
+                               std::shared_ptr<AbstractContext> mpc_ctx,
                                Operation op) {
 
     // set new ctxs
@@ -60,7 +60,7 @@ public:
     _s_current_tensor_factory = old_factory;
   }
 
-  static std::shared_ptr<CircuitContext> mpc_ctx() { return current_mpc_ctx; }
+  static std::shared_ptr<AbstractContext> mpc_ctx() { return current_mpc_ctx; }
 
   static const ExecutionContext *exec_ctx() { return current_exec_ctx; }
 
@@ -77,7 +77,7 @@ public:
   }
 
 private:
-  thread_local static std::shared_ptr<CircuitContext> current_mpc_ctx;
+  thread_local static std::shared_ptr<AbstractContext> current_mpc_ctx;
 
   thread_local static const ExecutionContext *current_exec_ctx;
 

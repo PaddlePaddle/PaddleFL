@@ -15,6 +15,7 @@
 #pragma once
 
 #include <algorithm>
+#include "core/privc3/ot.h"
 
 namespace aby3 {
 
@@ -268,7 +269,7 @@ void BooleanTensor<T>::ppa(const BooleanTensor* rhs,
 }
 
 template<typename T, size_t N>
-void a2b(CircuitContext* aby3_ctx,
+void a2b(AbstractContext* aby3_ctx,
          TensorAdapterFactory* tensor_factory,
          const FixedPointTensor<T, N>* a,
          BooleanTensor<T>* b,
@@ -432,9 +433,9 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         m[0]->add(tmp[0], m[0]);
         m[1]->add(tmp[0], m[1]);
 
-        aby3_ctx()->template ot(idx0, idx1, idx2, null_arg[0],
-                                const_cast<const aby3::TensorAdapter<T>**>(m),
-                                tmp, null_arg[0]);
+        ObliviousTransfer::ot(idx0, idx1, idx2, null_arg[0],
+                    const_cast<const aby3::TensorAdapter<T>**>(m),
+                    tmp, null_arg[0]);
 
         // ret0 = s2
         // ret1 = s1
@@ -445,18 +446,18 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         // ret0 = s1
         aby3_ctx()->template gen_zero_sharing_arithmetic(*(ret->mutable_share(0)));
         // ret1 = a * b + s0
-        aby3_ctx()->template ot(idx0, idx1, idx2, share(1),
-                                const_cast<const aby3::TensorAdapter<T>**>(null_arg),
-                                tmp, ret->mutable_share(1));
+        ObliviousTransfer::ot(idx0, idx1, idx2, share(1),
+                    const_cast<const aby3::TensorAdapter<T>**>(null_arg),
+                    tmp, ret->mutable_share(1));
         aby3_ctx()->network()->template send(idx0, *(ret->share(0)));
         aby3_ctx()->network()->template send(idx2, *(ret->share(1)));
     } else if (party() == idx2) {
         // ret0 = a * b + s0
         aby3_ctx()->template gen_zero_sharing_arithmetic(*(ret->mutable_share(1)));
         // ret1 = s2
-        aby3_ctx()->template ot(idx0, idx1, idx2, share(0),
-                                const_cast<const aby3::TensorAdapter<T>**>(null_arg),
-                                tmp, null_arg[0]);
+        ObliviousTransfer::ot(idx0, idx1, idx2, share(0),
+                    const_cast<const aby3::TensorAdapter<T>**>(null_arg),
+                    tmp, null_arg[0]);
 
         aby3_ctx()->network()->template send(idx0, *(ret->share(1)));
 

@@ -16,7 +16,9 @@
 
 #include <vector>
 
-#include "circuit_context.h"
+#include "boolean_tensor.h"
+#include "aby3_context.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "paddle_tensor.h"
 #include "boolean_tensor.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
@@ -195,9 +197,8 @@ public:
                         size_t scaling_factor);
 
 private:
-
-    static inline std::shared_ptr<CircuitContext> aby3_ctx() {
-        return paddle::mpc::ContextHolder::mpc_ctx();
+    static inline std::shared_ptr<AbstractContext> aby3_ctx() {
+      return paddle::mpc::ContextHolder::mpc_ctx();
     }
 
     static inline std::shared_ptr<TensorAdapterFactory> tensor_factory() {

@@ -122,9 +122,9 @@ public:
     void onehot_from_cmp();
 
 private:
-    static inline std::shared_ptr<CircuitContext> aby3_ctx() {
-        return paddle::mpc::ContextHolder::mpc_ctx();
-    }
+  static inline std::shared_ptr<AbstractContext> aby3_ctx() {
+    return paddle::mpc::ContextHolder::mpc_ctx();
+  }
 
     static inline std::shared_ptr<TensorAdapterFactory> tensor_factory() {
         return paddle::mpc::ContextHolder::tensor_factory();

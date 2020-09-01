@@ -24,7 +24,7 @@
 namespace paddle {
 namespace mpc {
 
-thread_local std::shared_ptr<CircuitContext> ContextHolder::current_mpc_ctx;
+thread_local std::shared_ptr<AbstractContext> ContextHolder::current_mpc_ctx;
 
 thread_local const ExecutionContext *ContextHolder::current_exec_ctx;
 

@@ -48,7 +48,7 @@ void Aby3Protocol::init_with_store(
   mesh_net->init();
 
   _network = std::move(mesh_net);
-  _circuit_ctx = std::make_shared<CircuitContext>(role, _network);
+  _circuit_ctx = std::make_shared<ABY3Context>(role, _network);
   _operators = std::make_shared<Aby3OperatorsImpl>();
   _is_initialized = true;
 }
@@ -63,7 +63,7 @@ std::shared_ptr<AbstractNetwork> Aby3Protocol::network() {
   return _network;
 }
 
-std::shared_ptr<CircuitContext> Aby3Protocol::mpc_context() {
+std::shared_ptr<AbstractContext> Aby3Protocol::mpc_context() {
   PADDLE_ENFORCE(_is_initialized, PROT_INIT_ERR);
   return _circuit_ctx;
 }
