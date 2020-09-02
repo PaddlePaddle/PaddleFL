@@ -152,19 +152,7 @@ private:
     return privc_ctx()->next_party();
   }
   // gen triplet for int64_t type
-  std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input) {
-    return gen_product_impl<T>(input, Type2Type<T>());
-  };
-
-  template<typename T__>
-  std::vector<uint64_t> gen_product_impl(const std::vector<uint64_t> &input,
-              Type2Type<T__>) {
-    PADDLE_THROW("type except `int64_t` for generating triplet is not implemented yet");
-  }
-
-  template<typename T__>
-  std::vector<uint64_t> gen_product_impl(const std::vector<uint64_t> &input,
-              Type2Type<int64_t>);
+  std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input);
 
   const block _base_ot_choices;
 

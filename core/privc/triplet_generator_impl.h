@@ -123,10 +123,8 @@ void TripletGenerator<T, N>::fill_triplet_buffer_impl(const Type2Type<int64_t>) 
 }
 
 template<typename T, size_t N>
-template<typename T_>
-std::vector<uint64_t> TripletGenerator<T, N>::gen_product_impl(
-                                        const std::vector<uint64_t> &input,
-                                        Type2Type<int64_t>) {
+std::vector<uint64_t> TripletGenerator<T, N>::gen_product(
+                                        const std::vector<uint64_t> &input) {
   size_t word_width = 8 * sizeof(uint64_t);
   std::vector<uint64_t> ret;
 
