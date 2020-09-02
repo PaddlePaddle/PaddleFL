@@ -37,7 +37,8 @@ def one_hot_encoding_map(input_set, host_addr, is_client=True):
         otherwise, plays as socket server
 
     Return Val: dict, int.
-        dict key: feature value, dict value: corresponding idx in one hot vector.
+        dict key: feature values in input_set,
+        dict value: corresponding idx in one hot vector.
 
         int: length of one hot vector for this feature.
 
@@ -56,7 +57,7 @@ def one_hot_encoding_map(input_set, host_addr, is_client=True):
 
             ins = a if is_client else b
 
-            x, y = paddle_fl.mpc.data_utilsone_hot_encoding_map(ins, addr, is_client)
+            x, y = paddle_fl.mpc.data_utils.one_hot_encoding_map(ins, addr, is_client)
             # y = 10
             # x['5'] = 0, x['6'] = 1
             # for those feature val owned only by one party, dict val shall
