@@ -21,6 +21,8 @@
 #include "paddle/fluid/framework/tensor.h"
 #include "paddle/fluid/platform/place.h"
 
+#include "core/paddlefl_mpc/operators/math/math_function.h"
+
 #include "tensor_adapter.h"
 #include "tensor_adapter_factory.h"
 
@@ -46,6 +48,14 @@ public:
   T *data() override { return _tensor.data<T>(); }
 
   const T *data() const override { return _tensor.data<T>(); }
+
+  const paddle::framework::Tensor* paddle_tensor() const {
+    return &_tensor;
+  }
+
+  paddle::framework::Tensor* paddle_tensor() {
+    return &_tensor;
+  }
 
   std::vector<size_t> shape() const override {
     return paddle::framework::vectorize<size_t>(_tensor.dims());
@@ -108,6 +118,15 @@ public:
   PaddleTensor &from_float_point_scalar(const U &scalar,
                                         const std::vector<size_t> &shape,
                                         size_t scaling_factor);
+
+  template<int Rank>
+  void Transpose(const std::vector<int> axis, TensorAdapter<T>* ret) {
+    paddle::operators::math::Transpose<paddle::platform::CPUDeviceContext, T, Rank> trans;
+    trans(*(dynamic_cast<const paddle::platform::CPUDeviceContext*>(_device_ctx)),
+          _tensor,
+          dynamic_cast<PaddleTensor<T>*>(ret)->paddle_tensor(),
+          axis);
+  }
 
 private:
   paddle::platform::Place place() const { return _device_ctx->GetPlace(); }

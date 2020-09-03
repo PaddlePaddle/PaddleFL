@@ -426,7 +426,62 @@ TEST_F(FixedTensorTest, triplet) {
                     + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
                     + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
 
-        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), 20);
+        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N * 0.00001));
+    }
+}
+
+TEST_F(FixedTensorTest, penta_triplet) {
+    std::vector<size_t> shape = { 1 };
+
+    auto shape_triplet = shape;
+    shape_triplet.insert(shape_triplet.begin(), 5);
+
+    std::shared_ptr<TensorAdapter<int64_t>> ret[2] = {gen(shape_triplet), gen(shape_triplet)};
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[0])
+                        ->triplet_generator()->get_penta_triplet(ret[0].get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[1])
+                        ->triplet_generator()->get_penta_triplet(ret[1].get());
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+
+    auto num_triplet = ret[0]->numel() / 5;
+    for (int i = 0; i < ret[0]->numel() / 5; ++i) {
+        auto ret0_ptr = ret[0]->data();
+        auto ret1_ptr = ret[1]->data();
+
+        uint64_t a_idx = i;
+        uint64_t alpha_idx = num_triplet + i;
+        uint64_t b_idx = 2 * num_triplet + i;
+        uint64_t c_idx = 3 * num_triplet + i;
+        uint64_t alpha_c_idx = 4 * num_triplet + i;
+        int64_t c = fixed64_mult<SCALING_N>(*(ret0_ptr + a_idx), *(ret0_ptr + b_idx))
+                    + fixed64_mult<SCALING_N>(*(ret0_ptr + a_idx), *(ret1_ptr + b_idx))
+                    + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
+                    + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
+        int64_t alpha_c = fixed64_mult<SCALING_N>(*(ret0_ptr + alpha_idx), *(ret0_ptr + b_idx))
+                    + fixed64_mult<SCALING_N>(*(ret0_ptr + alpha_idx), *(ret1_ptr + b_idx))
+                    + fixed64_mult<SCALING_N>(*(ret1_ptr + alpha_idx), *(ret0_ptr + b_idx))
+                    + fixed64_mult<SCALING_N>(*(ret1_ptr + alpha_idx), *(ret1_ptr + b_idx));
+
+        // sometimes the difference big than 200
+        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N * 0.00001));
+        EXPECT_NEAR(alpha_c , (*(ret0_ptr + alpha_c_idx) + *(ret1_ptr + alpha_c_idx)), std::pow(2, SCALING_N * 0.00001));
     }
 }
 
@@ -473,6 +528,241 @@ TEST_F(FixedTensorTest, mulfixed) {
         t.join();
     }
     EXPECT_NEAR(4, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+}
+
+TEST_F(FixedTensorTest, mulfixed_upper_bound) {
+    std::vector<size_t> shape = { 1 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sr[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
+    // lhs = 2^16
+    // rhs = 2^16
+    sl[0]->data()[0] = (int64_t)1 << (SCALING_N + 15);
+    sl[1]->data()[0] = (int64_t)1 << (SCALING_N + 15);
+    sr[0]->data()[0] = (int64_t)1 << (SCALING_N + 15);
+    sr[1]->data()[0] = (int64_t)1 << (SCALING_N + 15);
+
+    auto p = gen(shape);
+
+    Fix64N32 fl0(sl[0].get());
+    Fix64N32 fl1(sl[1].get());
+    Fix64N32 fr0(sr[0].get());
+    Fix64N32 fr1(sr[1].get());
+    Fix64N32 fout0(ret[0].get());
+    Fix64N32 fout1(ret[1].get());
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                fl0.mul(&fr0, &fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                fl1.mul(&fr1, &fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_NEAR(0, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+}
+
+TEST_F(FixedTensorTest, mulplain) {
+    std::vector<size_t> shape = { 1 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sr = gen(shape);
+    std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
+    // lhs = 2 = 1 + 1
+    // rhs = 2 = 1 + 1
+    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[1]->data()[0] = (int64_t)1 << SCALING_N;
+    sr->data()[0] = (int64_t)2 << SCALING_N;
+
+
+    auto p = gen(shape);
+
+    Fix64N32 fl0(sl[0].get());
+    Fix64N32 fl1(sl[1].get());
+
+    Fix64N32 fout0(ret[0].get());
+    Fix64N32 fout1(ret[1].get());
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                fl0.mul(sr.get(), &fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                fl1.mul(sr.get(), &fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_NEAR(4, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+}
+
+TEST_F(FixedTensorTest, sum) {
+    std::vector<size_t> shape = { 2 };
+    std::vector<size_t> shape_ret = { 1 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape_ret), gen(shape_ret) };
+    // lhs = (3, 3)
+    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
+    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
+    sl[1]->data()[1] = (int64_t)2 << SCALING_N;
+
+    auto p = gen(shape_ret);
+
+    Fix64N32 fl0(sl[0].get());
+    Fix64N32 fl1(sl[1].get());
+    Fix64N32 fout0(ret[0].get());
+    Fix64N32 fout1(ret[1].get());
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                fl0.sum(&fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                fl1.sum(&fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_EQ(6, p->data()[0] / std::pow(2, SCALING_N));
+}
+
+TEST_F(FixedTensorTest, divplain) {
+    std::vector<size_t> shape = { 1 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sr = gen(shape);
+    std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
+    // lhs = 2 = 1 + 1
+    // rhs = 4
+    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[1]->data()[0] = (int64_t)1 << SCALING_N;
+    sr->data()[0] = (int64_t)4 << SCALING_N;
+
+
+    auto p = gen(shape);
+
+    Fix64N32 fl0(sl[0].get());
+    Fix64N32 fl1(sl[1].get());
+
+    Fix64N32 fout0(ret[0].get());
+    Fix64N32 fout1(ret[1].get());
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                fl0.div(sr.get(), &fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                fl1.div(sr.get(), &fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_NEAR(0.5, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+}
+
+TEST_F(FixedTensorTest, mat_mulfixed) {
+    std::vector<size_t> shape = { 2, 2 };
+    std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sr[2] = { gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
+    // lhs = [2, 3, 4, 5]
+    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[1] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[2] = (int64_t)3 << SCALING_N;
+    sl[0]->data()[3] = (int64_t)4 << SCALING_N;
+    sl[1]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
+    sl[1]->data()[2] = (int64_t)1 << SCALING_N;
+    sl[1]->data()[3] = (int64_t)1 << SCALING_N;
+    // rhs = [0, -1, -2, -3]
+    sr[0]->data()[0] = (int64_t)-1 << SCALING_N;
+    sr[0]->data()[1] = (int64_t)-2 << SCALING_N;
+    sr[0]->data()[2] = (int64_t)-3 << SCALING_N;
+    sr[0]->data()[3] = (int64_t)-4 << SCALING_N;
+    sr[1]->data()[0] = (int64_t)1 << SCALING_N;
+    sr[1]->data()[1] = (int64_t)1 << SCALING_N;
+    sr[1]->data()[2] = (int64_t)1 << SCALING_N;
+    sr[1]->data()[3] = (int64_t)1 << SCALING_N;
+
+    auto p = gen(shape);
+
+    Fix64N32 fl0(sl[0].get());
+    Fix64N32 fl1(sl[1].get());
+    Fix64N32 fr0(sr[0].get());
+    Fix64N32 fr1(sr[1].get());
+    Fix64N32 fout0(ret[0].get());
+    Fix64N32 fout1(ret[1].get());
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                fl0.mat_mul(&fr0, &fout0);
+                fout0.reveal_to_one(0, p.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                fl1.mat_mul(&fr1, &fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    EXPECT_NEAR(-6, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(-11, p->data()[1] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(-10, p->data()[2] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(-19, p->data()[3] / std::pow(2, SCALING_N), 0.00001);
 }
 
 } // namespace privc

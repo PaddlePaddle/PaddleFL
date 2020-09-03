@@ -94,16 +94,10 @@ public:
       mul_impl<T>(rhs, ret, Type2Type<T>());
     }
 
-    template<typename T_>
-    void mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor mul is not implemented yet");
-    }
-
-    template<typename T_>
-    void mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
-
     // element-wise mul with TensorAdapter
-    void mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
+    void mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const {
+      mul_impl<T>(rhs, ret, Type2Type<T>());
+    }
 
     // div by TensorAdapter
     void div(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
@@ -112,7 +106,9 @@ public:
     void sum(FixedPointTensor* ret) const;
 
     // mat_mul with FixedPointTensor
-    void mat_mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const;
+    void mat_mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const {
+      mat_mul_impl<T>(rhs, ret, Type2Type<T>());
+    }
 
     // mat_mul with TensorAdapter
     void mat_mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
@@ -195,6 +191,33 @@ private:
     static size_t next_party() {
         return privc_ctx()->next_party();
     }
+    static inline AbstractNetwork* net() {
+      return privc_ctx()->network();
+    }
+
+    // mul_impl with FixedPointTensor
+    template<typename T_>
+    void mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
+      PADDLE_THROW("type except `int64_t` for fixedtensor mul is not implemented yet");
+    }
+    template<typename T_>
+    void mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
+
+    // mul_impl with TensorAdapter
+    template<typename T_>
+    void mul_impl(const TensorAdapter<T>* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
+      PADDLE_THROW("type except `int64_t` for fixedtensor mul is not implemented yet");
+    }
+    template<typename T_>
+    void mul_impl(const TensorAdapter<T>* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
+
+    // mat_mul_impl with FixedPointTensor
+    template<typename T_>
+    void mat_mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
+      PADDLE_THROW("type except `int64_t` for fixedtensor mul is not implemented yet");
+    }
+    template<typename T_>
+    void mat_mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
 
     TensorAdapter<T>* _share;
 

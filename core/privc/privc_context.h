@@ -46,15 +46,6 @@ public:
   PrivCContext(const PrivCContext &other) = delete;
 
   PrivCContext &operator=(const PrivCContext &other) = delete;
-/*
-  block get_private_block() {
-    std::array<int64_t, 2> ret_block;
-    ret_block[0] = gen_random_private<int64_t>();
-    ret_block[1] = gen_random_private<int64_t>();
-
-    return *(reinterpret_cast<block*>(ret_block.data()));
-  }
-*/
 
   void set_triplet_generator(std::shared_ptr<TripletGenerator<int64_t, SCALING_N>>& tripletor);
 

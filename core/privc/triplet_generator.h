@@ -110,15 +110,17 @@ public:
 
   virtual void get_triplet(TensorAdapter<T>* ret);
 
-  virtual void get_penta_triplet(TensorAdapter<T>* ret) {}
+  virtual void get_penta_triplet(TensorAdapter<T>* ret);
 
   std::queue<std::array<T, 3>> _triplet_buffer;
+  std::queue<std::array<T, 5>> _penta_triplet_buffer;
+
   static const size_t _s_triplet_step = 1 << 8;
   static constexpr double _s_fixed_point_compensation = 0.3;
   static const size_t OT_SIZE = sizeof(block) * 8;
 
 protected:
-  // T = int64
+  // dummy type for specilize template method
   template<typename T_>
   class Type2Type {
     typedef T_ type;
@@ -134,6 +136,17 @@ protected:
   // specialize template method by overload
   template<typename T__>
   void fill_triplet_buffer_impl(const Type2Type<int64_t>);
+
+  void fill_penta_triplet_buffer() { fill_penta_triplet_buffer_impl<T>(Type2Type<T>()); }
+
+  template<typename T__>
+  void fill_penta_triplet_buffer_impl(const Type2Type<T__>) {
+    PADDLE_THROW("type except `int64_t` for generating triplet is not implemented yet");
+  }
+
+  // specialize template method by overload
+  template<typename T__>
+  void fill_penta_triplet_buffer_impl(const Type2Type<int64_t>);
 
 private:
 
@@ -153,6 +166,10 @@ private:
   }
   // gen triplet for int64_t type
   std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input);
+  std::vector<std::pair<uint64_t, uint64_t>> gen_product(size_t ot_sender,
+                                                 const std::vector<uint64_t> &input0,
+                                                 const std::vector<uint64_t> &input1
+                                                 = std::vector<uint64_t>());
 
   const block _base_ot_choices;
 
