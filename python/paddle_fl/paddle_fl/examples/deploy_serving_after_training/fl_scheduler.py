@@ -1,4 +1,4 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Import data_utils module.
-"""
 
-from . import aby3
-from . import alignment
-from . import one_hot_encoding
-from .alignment import *
-from .one_hot_encoding import *
+from paddle_fl.paddle_fl.core.scheduler.agent_master import FLScheduler
 
-__all__ = []
-__all__ += alignment.__all__
-__all__ += one_hot_encoding.__all__
+worker_num = 2
+server_num = 1
+# Define the number of worker/server and the port for scheduler
+scheduler = FLScheduler(worker_num, server_num, port=9091)
+scheduler.set_sample_worker_num(worker_num)
+scheduler.init_env()
+print("init env done.")
+scheduler.start_fl_training()

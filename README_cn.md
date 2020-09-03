@@ -38,7 +38,7 @@ PaddleFL 中主要提供两种解决方案：**Data Parallel** 以及 **Federate
 
 ```sh
 #Pull and run the docker
-docker pull hub.baidubce.com/paddlefl/paddle_fl:latest
+docker pull paddlepaddle/paddlefl:latest
 docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/bash
 
 #Install paddle_fl

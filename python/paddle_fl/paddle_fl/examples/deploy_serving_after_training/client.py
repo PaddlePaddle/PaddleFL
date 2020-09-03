@@ -1,4 +1,4 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Import data_utils module.
-"""
 
-from . import aby3
-from . import alignment
-from . import one_hot_encoding
-from .alignment import *
-from .one_hot_encoding import *
+import numpy as np
+from paddle_serving_client import Client
 
-__all__ = []
-__all__ += alignment.__all__
-__all__ += one_hot_encoding.__all__
+client = Client()
+client.load_client_config("imdb_client_conf/serving_client_conf.prototxt")
+client.connect(["127.0.0.1:9292"])
+
+data_dict = {}
+
+for i in range(3):
+    data_dict[str(i)] = np.random.rand(1, 5).astype('float32')
+
+fetch_map = client.predict(
+    feed={"0": data_dict['0'],
+          "1": data_dict['1'],
+          "2": data_dict['2']},
+    fetch=["fc_2.tmp_2"])
+
+print("fetched result: ", fetch_map)
