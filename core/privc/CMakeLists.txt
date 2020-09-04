@@ -1,5 +1,4 @@
 set(PRIVC_SRCS
-    "crypto.cc"
     "privc_context.cc"
 )
 

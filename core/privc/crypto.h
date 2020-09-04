@@ -31,21 +31,6 @@ typedef unsigned long long u64;
 const block ZeroBlock = _mm_set_epi64x(0, 0);
 const block OneBlock = _mm_set_epi64x(-1, -1);
 
-const int CURVE_ID = NID_secp160k1;
-
-const int POINT_BUFFER_LEN = 21;
-// only apply for 160 bit curve
-// specification about point buf len,  see http://www.secg.org/sec1-v2.pdf
-// chapter 2.2.3
-
-const int HASH_DIGEST_LEN = SHA_DIGEST_LENGTH;
-
-const int GCM_IV_LEN = 12;
-
-const int GCM_TAG_LEN = 16;
-
-u8 *hash(const void *d, u64 n, void *md);
-
 static block double_block(block bl);
 
 static inline block hash_block(const block& x, const block& i = ZeroBlock) {
@@ -62,84 +47,6 @@ static inline std::pair<block, block> hash_blocks(const std::pair<block, block>&
     pi.ecb_enc_blocks(k, 2, c);
     return {c[0] ^ k[0], c[1] ^ k[1]};
 }
-
-template <typename T>
-static inline block to_block(const T& val) {
-    block ret = ZeroBlock;
-    std::memcpy(&ret, &val, std::min(sizeof ret, sizeof val));
-    return ret;
-}
-
-// ciphertext = iv || aes_ciphertext || gcm_tag
-// allocate buffer before call
-int encrypt(const unsigned char *plaintext, int plaintext_len,
-            const unsigned char *key, const unsigned char *iv,
-            unsigned char *ciphertext);
-
-int decrypt(const unsigned char *ciphertext, int ciphertext_len,
-            const unsigned char *key, unsigned char *plaintext);
-
-class ECDH {
-private:
-    EC_GROUP *_group;
-    EC_KEY *_key;
-    EC_POINT *_remote_key;
-    bool _error;
-
-public:
-    ECDH();
-    ~ECDH();
-
-    inline bool error() {return _error;}
-
-    ECDH(const ECDH &other) = delete;
-    ECDH operator=(const ECDH &other) = delete;
-
-    std::array<u8, POINT_BUFFER_LEN> generate_key();
-
-    std::array<u8, POINT_BUFFER_LEN - 1>
-    get_shared_secret(const std::array<u8, POINT_BUFFER_LEN> &remote_key);
-};
-
-/*
-    This file is part of JustGarble.
-    JustGarble is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-    JustGarble is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    You should have received a copy of the GNU General Public License
-    along with JustGarble.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-
-/*------------------------------------------------------------------------
-  / OCB Version 3 Reference Code (Optimized C)     Last modified 08-SEP-2012
-  /-------------------------------------------------------------------------
-  / Copyright (c) 2012 Ted Krovetz.
-  /
-  / Permission to use, copy, modify, and/or distribute this software for any
-  / purpose with or without fee is hereby granted, provided that the above
-  / copyright notice and this permission notice appear in all copies.
-  /
-  / THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  / WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  / MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  / ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  / WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  / ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  / OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  /
-  / Phillip Rogaway holds patents relevant to OCB. See the following for
-  / his patent grant: http://www.cs.ucdavis.edu/~rogaway/ocb/grant.htm
-  /
-  / Special thanks to Keegan McAllister for suggesting several good improvements
-  /
-  / Comments are welcome: Ted Krovetz <ted@krovetz.net> - Dedicated to Laurel K
-  /------------------------------------------------------------------------- */
 
 static inline block double_block(block bl) {
     const __m128i mask = _mm_set_epi32(135,1,1,1);

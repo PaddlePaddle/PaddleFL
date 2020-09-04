@@ -110,6 +110,7 @@ public:
 
   virtual void get_triplet(TensorAdapter<T>* ret);
 
+  // TODO: use SecureML sec4.2 triplet generator trick to improve mat_mul
   virtual void get_penta_triplet(TensorAdapter<T>* ret);
 
   std::queue<std::array<T, 3>> _triplet_buffer;
