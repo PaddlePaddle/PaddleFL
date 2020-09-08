@@ -847,7 +847,7 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
 
 // reduce last dim
 template <typename T, size_t N>
-void FixedPointTensor<T, N>::reduce(FixedPointTensor<T, N>* input,
+void FixedPointTensor<T, N>::reduce(const FixedPointTensor<T, N>* input,
                                     FixedPointTensor<T, N>* ret) {
     //enfoce shape: input->shape[0 ... (n-2)] == ret shape
     auto& shape = input->shape();
@@ -1293,4 +1293,172 @@ void FixedPointTensor<T, N>::max_pooling(FixedPointTensor* ret,
 
 }
 
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::preds_to_indices(const FixedPointTensor* preds,
+                                              FixedPointTensor* indices,
+                                              float threshold) {
+    // 3 for allocating temp tensor
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (size_t i = 0; i < 3; ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>());
+    }
+
+    auto shape_ = preds->shape();
+
+    // plaintext tensor for threshold
+    temp[0]->reshape(shape_);
+    temp[0]->scaling_factor() = N;
+    assign_to_tensor(temp[0].get(), T(threshold * (T(1) << N)));
+
+    temp[1]->reshape(shape_);
+    temp[2]->reshape(shape_);
+    BooleanTensor<T> cmp_res(temp[1].get(), temp[2].get());
+
+    preds->gt(temp[0].get(), &cmp_res);
+
+    cmp_res.lshift(N, &cmp_res);
+
+    cmp_res.b2a(indices);
+}
+
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::calc_tp_fp_fn(
+    const FixedPointTensor* indices,
+    const FixedPointTensor* labels,
+    FixedPointTensor* tp_fp_fn) {
+
+    PADDLE_ENFORCE_EQ(indices->shape().size(), 1,
+                      "multi-classification not support yet");
+
+    PADDLE_ENFORCE_EQ(tp_fp_fn->shape().size(), 1,
+                      "multi-classification not support yet");
+
+    PADDLE_ENFORCE_EQ(tp_fp_fn->shape()[0], 3,
+                      "store tp fp fn for binary-classification only");
+
+    // 4 for allocating temp tensor
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (size_t i = 0; i < 4; ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>());
+    }
+
+    auto shape_ = indices->shape();
+    std::vector<size_t> shape_one = {1};
+    std::vector<size_t> shape_3 = {3};
+
+    temp[0]->reshape(shape_);
+    temp[1]->reshape(shape_);
+
+    FixedPointTensor true_positive(temp[0].get(), temp[1].get());
+
+    indices->mul(labels, &true_positive);
+
+    temp[2]->reshape(shape_one);
+    temp[3]->reshape(shape_one);
+
+    FixedPointTensor scalar(temp[2].get(), temp[3].get());
+
+    // tp
+    reduce(&true_positive, &scalar);
+
+    const T& share0 = scalar.share(0)->data()[0];
+    const T& share1 = scalar.share(1)->data()[0];
+
+    T* ret_data0 = tp_fp_fn->mutable_share(0)->data();
+    T* ret_data1 = tp_fp_fn->mutable_share(1)->data();
+
+    // assgin tp
+    ret_data0[0] = share0;
+    ret_data1[0] = share1;
+
+    // tp + fp
+    reduce(indices, &scalar);
+
+    // direcrt aby3 sub
+    ret_data0[1] = share0 - ret_data0[0];
+    ret_data1[1] = share1 - ret_data1[0];
+
+    // tp + fn
+    reduce(labels, &scalar);
+
+    ret_data0[2] = share0 - ret_data0[0];
+    ret_data1[2] = share1 - ret_data1[0];
+
+}
+
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::calc_precision_recall(
+    const FixedPointTensor* tp_fp_fn,
+    TensorAdapter<T>* ret) {
+    PADDLE_ENFORCE_EQ(tp_fp_fn->shape().size(), 1,
+                      "multi-classification not support yet");
+
+    PADDLE_ENFORCE_EQ(tp_fp_fn->shape()[0], 3,
+                      "store tp fp fn for binary-classification only");
+
+    PADDLE_ENFORCE_EQ(ret->shape().size(), 1,
+                      "multi-classification not support yet");
+
+    PADDLE_ENFORCE_EQ(ret->shape()[0], 3,
+                      "store precision recall f1-score"
+                      "for binary-classification only");
+    // 5 for allocating temp tensor
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (size_t i = 0; i < 5; ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>());
+    }
+    std::vector<size_t> shape_ = {3};
+
+    std::vector<size_t> shape_one = {1};
+
+    temp[0]->reshape(shape_one);
+    temp[1]->reshape(shape_one);
+    FixedPointTensor scalar(temp[0].get(), temp[1].get());
+
+    temp[2]->reshape(shape_one);
+    temp[3]->reshape(shape_one);
+    FixedPointTensor scalar2(temp[2].get(), temp[3].get());
+
+    auto get = [&tp_fp_fn](size_t idx, FixedPointTensor* dest) {
+        dest->mutable_share(0)->data()[0] = tp_fp_fn->share(0)->data()[idx];
+        dest->mutable_share(1)->data()[0] = tp_fp_fn->share(1)->data()[idx];
+    };
+
+    get(0, &scalar);
+    get(1, &scalar2);
+
+    // tp + fp
+    scalar.add(&scalar2, &scalar2);
+
+    scalar.long_div(&scalar2, &scalar2);
+
+    temp[4]->reshape(shape_one);
+
+    scalar2.reveal(temp[4].get());
+
+    ret->scaling_factor() = N;
+    ret->data()[0] = temp[4]->data()[0];
+
+    get(2, &scalar2);
+
+    // tp + fn
+    scalar.add(&scalar2, &scalar2);
+
+    scalar.long_div(&scalar2, &scalar2);
+    scalar2.reveal(temp[4].get());
+
+    ret->data()[1] = temp[4]->data()[0];
+
+    float precision = 1.0 * ret->data()[0] / (T(1) << N);
+    float recall = 1.0 * ret->data()[1] / (T(1) << N);
+    float f1_score = 0.0;
+    if (precision + recall > 0) {
+        f1_score = 2 * precision * recall / (precision + recall);
+    }
+
+    ret->data()[2] = T(f1_score * (T(1) << N));
+}
 } // namespace aby3

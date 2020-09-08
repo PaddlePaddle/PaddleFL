@@ -338,6 +338,45 @@ public:
         x_->inverse_square_root(y_);
     }
 
+    // only support pred for 1 in binary classification for now
+    void predicts_to_indices(const Tensor* in,
+                             Tensor* out,
+                             float threshold = 0.5) override {
+        auto x_tuple = from_tensor(in);
+        auto x_ = std::get<0>(x_tuple).get();
+
+        auto y_tuple = from_tensor(out);
+        auto y_ = std::get<0>(y_tuple).get();
+
+        FixedTensor::preds_to_indices(x_, y_, threshold);
+    }
+
+    void calc_tp_fp_fn(const Tensor* indices,
+                       const Tensor* labels,
+                       Tensor* out) override {
+        auto idx_tuple = from_tensor(indices);
+        auto idx = std::get<0>(idx_tuple).get();
+
+        auto lbl_tuple = from_tensor(labels);
+        auto lbl = std::get<0>(lbl_tuple).get();
+
+        auto out_tuple = from_tensor(out);
+        auto out_ = std::get<0>(out_tuple).get();
+
+        FixedTensor::calc_tp_fp_fn(idx, lbl, out_);
+    }
+
+    void calc_precision_recall(const Tensor* tp_fp_fn,
+                               Tensor* out) override {
+        auto in_tuple = from_tensor(tp_fp_fn);
+        auto in = std::get<0>(in_tuple).get();
+
+        PaddleTensor out_(ContextHolder::device_ctx(), *out);
+        out_.scaling_factor() = ABY3_SCALING_FACTOR;
+
+        FixedTensor::calc_precision_recall(in, &out_);
+    }
+
 private:
     template <typename T>
     std::tuple<
