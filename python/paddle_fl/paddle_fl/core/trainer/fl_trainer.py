@@ -19,6 +19,7 @@ import pickle
 from paddle.fluid.io import is_belong_to_optimizer
 from paddle_fl.paddle_fl.core.scheduler.agent_master import FLWorkerAgent
 import numpy
+import paddle_serving_client.io as serving_io
 import hmac
 import hashlib
 from .diffiehellman.diffiehellman import DiffieHellman
