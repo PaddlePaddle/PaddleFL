@@ -21,7 +21,7 @@
 #include "gloo/rendezvous/hash_store.h"
 #include "mpc_config.h"
 #include "mpc_operators.h"
-#include "core/privc3/circuit_context.h"
+#include "core/paddlefl_mpc/mpc_protocol/abstract_context.h"
 
 namespace paddle {
 namespace mpc {
@@ -44,7 +44,7 @@ public:
 
   virtual std::shared_ptr<AbstractNetwork> network() = 0;
 
-  virtual std::shared_ptr<aby3::CircuitContext> mpc_context() = 0;
+  virtual std::shared_ptr<AbstractContext> mpc_context() = 0;
 
 private:
   const std::string _name;

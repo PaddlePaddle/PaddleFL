@@ -21,7 +21,8 @@ limitations under the License. */
 #include "context_holder.h"
 #include "mpc_operators.h"
 #include "paddle/fluid/framework/tensor.h"
-#include "core/privc3/circuit_context.h"
+#include "core/privc3/boolean_tensor.h"
+#include "core/privc3/aby3_context.h"
 #include "core/privc3/fixedpoint_tensor.h"
 #include "core/privc3/boolean_tensor.h"
 #include "core/privc3/paddle_tensor.h"
@@ -30,7 +31,7 @@ namespace paddle {
 namespace mpc {
 
 using paddle::framework::Tensor;
-using aby3::CircuitContext;
+using aby3::ABY3Context;
 // TODO: decide scaling factor
 const size_t ABY3_SCALING_FACTOR = FIXED_POINTER_SCALING_FACTOR;
 using FixedTensor = aby3::FixedPointTensor<int64_t, ABY3_SCALING_FACTOR>;

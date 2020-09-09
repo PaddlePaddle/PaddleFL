@@ -299,8 +299,8 @@ def transpile(program=None):
                 # process initialized params that should be 0
                 set_tensor_value = np.array([param_tensor, param_tensor]).astype(np.int64)
                 param.get_tensor().set(set_tensor_value, place)
-            else:
-                param.get_tensor().set(np.array(param.get_tensor()).astype('float64'), place)
+            #else:
+            #    param.get_tensor().set(np.array(param.get_tensor()).astype('float64'), place)
 
     # trigger sync to replace old ops.
     op_num = global_block.desc.op_size()
@@ -327,7 +327,7 @@ def _transpile_type_and_shape(block):
         if var.name != "feed" and var.name != "fetch":
             mpc_vars_names.add(var.name)
             if var_name in plain_vars:
-                var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float64))
+                # var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float64))
                 continue
             # set mpc param shape = [2, old_shape]
             encrypted_var_shape = (ABY3_SHARE_DIM,) + var.shape
@@ -338,7 +338,7 @@ def _transpile_type_and_shape(block):
     for op in block.ops:
         if _is_supported_op(op.type):
             if op.type == 'fill_constant':
-                op._set_attr(name='shape', val=(2L, 1L))
+                op._set_attr(name='shape', val=(2, 1))
                 # set default MPC value for fill_constant OP
                 op._set_attr(name='value', val=MPC_ONE_SHARE)
                 op._set_attr(name='dtype', val=3)
@@ -389,8 +389,8 @@ def encrypt_model(program, mpc_model_dir=None, model_filename=None):
                     param.get_tensor()._set_dims(mpc_var.shape)
                     set_tensor_value = get_aby3_shares(param_tensor_shares, idx)
                     param.get_tensor().set(set_tensor_value, place)
-                else:
-                    param.get_tensor().set(np.array(param.get_tensor()).astype('float64'), place)
+                #else:
+                #    param.get_tensor().set(np.array(param.get_tensor()).astype('float64'), place)
 
                 param_share_dir = os.path.join(
                     mpc_model_dir, MODEL_SHARE_DIR + "_" + str(idx))
@@ -468,7 +468,7 @@ def decrypt_model(mpc_model_dir, plain_model_path, mpc_model_filename=None, plai
             else:
                 plain_var_shape = mpc_var.shape[1:]
                 mpc_var.desc.set_shape(plain_var_shape)
-                mpc_var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float32))
+                #mpc_var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float32))
 
     # remove init op
     first_mpc_op = global_block.ops[0]
@@ -482,7 +482,7 @@ def decrypt_model(mpc_model_dir, plain_model_path, mpc_model_filename=None, plai
             new_type = str(mpc_op.type)[len(MPC_OP_PREFIX):]
             mpc_op.desc.set_type(new_type)
         elif mpc_op.type == 'fill_constant':
-            mpc_op._set_attr(name='shape', val=(1L))
+            mpc_op._set_attr(name='shape', val=(1))
             mpc_op._set_attr(name='value', val=1.0)
             mpc_op._set_attr(name='dtype', val=5)
 

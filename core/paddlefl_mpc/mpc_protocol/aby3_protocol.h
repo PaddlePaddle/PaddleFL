@@ -24,12 +24,13 @@
 #include "mesh_network.h"
 #include "mpc_operators.h"
 #include "mpc_protocol.h"
-#include "core/privc3/circuit_context.h"
+#include "core/paddlefl_mpc/mpc_protocol/abstract_context.h"
+#include "core/privc3/aby3_context.h"
 
 namespace paddle {
 namespace mpc {
 
-using CircuitContext = aby3::CircuitContext;
+using ABY3Context = aby3::ABY3Context;
 
 class Aby3Protocol : public MpcProtocol {
 public:
@@ -46,14 +47,14 @@ public:
 
   std::shared_ptr<AbstractNetwork> network() override;
 
-  std::shared_ptr<CircuitContext> mpc_context() override;
+  std::shared_ptr<AbstractContext> mpc_context() override;
 
 private:
   bool _is_initialized = false;
   const std::string PROT_INIT_ERR = "The protocol is not yet initialized.";
   std::shared_ptr<MpcOperators> _operators;
   std::shared_ptr<AbstractNetwork> _network;
-  std::shared_ptr<CircuitContext> _circuit_ctx;
+  std::shared_ptr<AbstractContext> _circuit_ctx;
 };
 
 } // mpc

@@ -17,6 +17,7 @@ MNIST CNN Demo (LeNet5)
 
 import sys
 import os
+import errno
 import numpy as np
 import time
 import logging
@@ -117,7 +118,12 @@ def infer():
     """
     mpc_infer_data_dir = "./mpc_infer_data/"
     if not os.path.exists(mpc_infer_data_dir):
-        os.mkdir(mpc_infer_data_dir)
+        try:
+            os.mkdir(mpc_infer_data_dir)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
     prediction_file = mpc_infer_data_dir + "mnist_debug_prediction"
     prediction_file_part = prediction_file + ".part{}".format(role)
 

@@ -20,21 +20,23 @@ limitations under the License. */
 #include "paddle/fluid/framework/operator.h"
 #include "paddle/fluid/framework/scope.h"
 
+#include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "fixedpoint_tensor.h"
 
 namespace aby3 {
 
-    using g_ctx_holder = paddle::mpc::ContextHolder;
-    using Fix64N16 = FixedPointTensor<int64_t, 16>;
+using g_ctx_holder = paddle::mpc::ContextHolder;
+using Fix64N16 = FixedPointTensor<int64_t, 16>;
+using AbstractContext = paddle::mpc::AbstractContext;
 
 class FixedTensorTest : public ::testing::Test {
 public:
 
     paddle::platform::CPUDeviceContext _cpu_ctx;
     std::shared_ptr<paddle::framework::ExecutionContext> _exec_ctx;
-    std::shared_ptr<CircuitContext> _mpc_ctx[3];
+    std::shared_ptr<AbstractContext> _mpc_ctx[3];
     std::shared_ptr<gloo::rendezvous::HashStore> _store;
     std::thread _t[3];
     std::shared_ptr<TensorAdapterFactory> _s_tensor_factory;
@@ -71,7 +73,7 @@ public:
     void gen_mpc_ctx(size_t idx) {
         auto net = gen_network(idx);
         net->init();
-        _mpc_ctx[idx] = std::make_shared<CircuitContext>(idx, net);
+        _mpc_ctx[idx] = std::make_shared<ABY3Context>(idx, net);
     }
 
     std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {

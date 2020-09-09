@@ -50,8 +50,6 @@ class KSstatistic(MetricBase):
 
             import paddle_fl.mpc
             import numpy as np
-            # init the KSstatistic
-            ks = paddle_fl.mpc.metrics.KSstatistic('ks')
 
             # suppose that batch_size is 128
             batch_num = 100
@@ -65,6 +63,10 @@ class KSstatistic(MetricBase):
                 preds = np.concatenate((class0_preds, class1_preds), axis=1)
 
                 labels = np.random.randint(2, size = (batch_size, 1))
+
+                # init the KSstatistic for each batch
+                # to get global ks statistic, init ks before for-loop
+                ks = paddle_fl.mpc.metrics.KSstatistic('ks')
                 ks.update(preds = preds, labels = labels)
 
                 # shall be some score closing to 0.1 as the preds are randomly assigned

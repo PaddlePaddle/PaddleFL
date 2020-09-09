@@ -17,6 +17,7 @@ MNIST Demo
 
 import sys
 import os
+import errno
 
 import numpy as np
 import time
@@ -99,9 +100,15 @@ print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
       .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
 
 # prediction
+
 mpc_infer_data_dir = "./mpc_infer_data/"
 if not os.path.exists(mpc_infer_data_dir):
-    os.mkdir(mpc_infer_data_dir)
+    try:
+        os.mkdir(mpc_infer_data_dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
 prediction_file = mpc_infer_data_dir + "mnist_debug_prediction.part{}".format(role)
 if os.path.exists(prediction_file):
     os.remove(prediction_file)
