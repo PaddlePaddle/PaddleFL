@@ -20,6 +20,10 @@
 #include "paddle/fluid/platform/enforce.h"
 #include "../common/prng.h"
 #include "core/common/paddle_tensor.h"
+//#include "core/privc3/prng.h"
+//#include "core/privc3/paddle_tensor.h"
+//#include "core/privc3/paddle_tensor_util.h"
+#include "core/privc/fixed_point.h"
 
 namespace privc {
 
@@ -43,7 +47,7 @@ template<typename T, size_t N>
 void FixedPointTensor<T, N>::reveal_to_one(size_t party,
                                            TensorAdapter<T>* ret) const {
 
-    if (party == this->party()) {
+    if (party == privc::party()) {
         auto buffer = tensor_factory()->template create<T>(ret->shape());
         privc_ctx()->network()->template recv(next_party(), *buffer);
 
@@ -330,6 +334,72 @@ void FixedPointTensor<T, N>::mat_mul_impl(const FixedPointTensor<T, N>* rhs,
                         trunc_sum += n;
                     });
         *(ret_ptr + i) = trunc_sum;
+    }
+}
+
+template<typename T, size_t N>
+template<typename T_>
+void FixedPointTensor<T, N>::relu_impl(FixedPointTensor<T, N>* ret,
+                                       const Type2Type<int64_t>) const {
+    std::vector<T> op_v;
+    aby3::TensorToVector<T>(share(), &op_v);
+    // ac to gc
+    auto x_v = Integer::vector(op_v, 0);
+    auto y_v = Integer::vector(op_v, 1);
+    std::transform(x_v.begin(), x_v.end(),
+                   y_v.begin(), ret->mutable_share()->data(),
+                   [](const Integer& x, const Integer& y) -> int64_t {
+                       FixedPoint<N> gc = (FixedPoint<N>) (x + y);
+                       auto ret_bc = gc.relu_bc();
+                       return to_ac_num(ret_bc);
+                   });
+}
+
+template<typename T, size_t N>
+template<typename T_>
+void FixedPointTensor<T, N>::sigmoid_impl(FixedPointTensor<T, N>* ret,
+                                       const Type2Type<int64_t>) const {
+    std::vector<T> op_v;
+    aby3::TensorToVector<T>(share(), &op_v);
+    // ac to gc
+    auto x_v = Integer::vector(op_v, 0);
+    auto y_v = Integer::vector(op_v, 1);
+    std::transform(x_v.begin(), x_v.end(),
+                   y_v.begin(), ret->mutable_share()->data(),
+                   [](const Integer& x, const Integer& y) -> int64_t {
+                       FixedPoint<N> gc = (FixedPoint<N>) (x + y);
+                       auto ret_gc = gc.logistic();
+                       return to_ac_num(ret_gc.lsb());
+                   });
+}
+
+template<typename T, size_t N>
+template<typename T_>
+void FixedPointTensor<T, N>::argmax_impl(FixedPointTensor<T, N>* ret,
+                                       const Type2Type<int64_t>) const {
+    PADDLE_ENFORCE_EQ(ret->shape()[1], shape()[1], "shape mot match.");
+
+    for ( int i = 0; i < shape()[0]; ++i) {
+      std::vector<T> vec;
+      aby3::TensorToVector<T>(share(), &vec, i);
+      // ac to gc
+      auto x_v = Integer::vector(vec, 0);
+      auto y_v = Integer::vector(vec, 1);
+      std::vector<Integer> gc_v;
+      gc_v.resize(x_v.size());
+      std::transform(x_v.begin(), x_v.end(),
+                     y_v.begin(), gc_v.begin(),
+                     std::plus<Integer>());
+      std::vector<int64_t> one_hot_index = Integer::argmax_one_hot(gc_v);
+      // gc to ac
+      auto ac_one_hot = to_ac_num(one_hot_index);
+
+      T* ret_ptr = ret->mutable_share()->data() + i * shape()[1];
+      std::transform(ac_one_hot.begin(), ac_one_hot.end(), ret_ptr,
+                     [] (const int64_t& op) {
+                        // int to fixedpoint
+                        return op << N;
+                      });
     }
 }
 

@@ -67,42 +67,6 @@ inline std::string block_to_string(const block &b) {
     return std::string(reinterpret_cast<const char *>(&b), sizeof(block));
 }
 
-inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
-                         uint64_t input,
-                         std::vector<block>& ot_masks,
-                         std::vector<block>& t0_buffer,
-                         size_t word_width = 8 * sizeof(uint64_t)) {
-        for (uint64_t idx = 0; idx < word_width; idx += 1) {
-            auto ot_instance = ot_ext_recver.get_ot_instance();
-            block choice = (input >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
-
-            t0_buffer.emplace_back(ot_instance[0]);
-            ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
-        }
-}
-
-inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
-                         const int64_t* input,
-                         size_t size,
-                         std::vector<block>& ot_masks,
-                         std::vector<block>& t0_buffer,
-                         size_t word_width = 8 * sizeof(uint64_t)) {
-    for (size_t i = 0; i < size; ++i) {
-        gen_ot_masks(ot_ext_recver, input[i], ot_masks, t0_buffer, word_width);
-    }
-}
-
-template <typename T>
-inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
-                         const std::vector<T>& input,
-                         std::vector<block>& ot_masks,
-                         std::vector<block>& t0_buffer,
-                         size_t word_width = 8 * sizeof(uint64_t)) {
-    for (const auto& i: input) {
-        gen_ot_masks(ot_ext_recver, i, ot_masks, t0_buffer, word_width);
-    }
-}
-
 template<typename T, size_t N>
 class TripletGenerator {
 public:
@@ -130,7 +94,6 @@ public:
 
   static const size_t _s_triplet_step = 1 << 8;
   static constexpr double _s_fixed_point_compensation = 0.3;
-  static const size_t OT_SIZE = sizeof(block) * 8;
 
 protected:
   // dummy type for specilize template method
@@ -173,6 +136,9 @@ private:
 
   size_t next_party() {
     return _next_party;
+  }
+  std::shared_ptr<OT> ot() {
+    return std::dynamic_pointer_cast<PrivCContext>(privc_ctx())->ot();
   }
   // gen triplet for int64_t type
   std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input);

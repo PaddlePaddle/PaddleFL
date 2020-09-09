@@ -30,6 +30,7 @@ typedef unsigned char u8;
 typedef unsigned long long u64;
 const block ZeroBlock = _mm_set_epi64x(0, 0);
 const block OneBlock = _mm_set_epi64x(-1, -1);
+const int POINT_BUFFER_LEN = 21;
 
 static block double_block(block bl);
 
@@ -46,6 +47,13 @@ static inline std::pair<block, block> hash_blocks(const std::pair<block, block>&
     block c[2];
     pi.ecb_enc_blocks(k, 2, c);
     return {c[0] ^ k[0], c[1] ^ k[1]};
+}
+
+template <typename T>
+static inline block to_block(const T& val) {
+    block ret = ZeroBlock;
+    std::memcpy(&ret, &val, std::min(sizeof ret, sizeof val));
+    return ret;
 }
 
 static inline block double_block(block bl) {
