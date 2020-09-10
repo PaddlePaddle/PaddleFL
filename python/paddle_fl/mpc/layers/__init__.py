@@ -37,6 +37,8 @@ from . import rnn
 from .rnn import *
 from . import metric_op
 from .metric_op import *
+from . import data_preprocessing
+from .data_preprocessing import *
 
 __all__ = []
 __all__ += basic.__all__
@@ -46,3 +48,4 @@ __all__ += ml.__all__
 __all__ += compare.__all__
 __all__ += conv.__all__
 __all__ += metric_op.__all__
+__all__ += data_preprocessing.__all__

@@ -319,13 +319,17 @@ public:
         auto a_tuple = from_tensor(in);
         auto a_ = std::get<0>(a_tuple).get();
 
-        auto b_tuple = from_tensor<BoolTensor>(pos_info);
-        auto b_ = std::get<0>(b_tuple).get();
-
         auto out_tuple = from_tensor(out);
         auto out_ = std::get<0>(out_tuple).get();
 
-        a_->max_pooling(out_, b_);
+        if (pos_info) {
+            auto b_tuple = from_tensor<BoolTensor>(pos_info);
+            auto b_ = std::get<0>(b_tuple).get();
+
+            a_->max_pooling(out_, b_);
+        } else {
+            a_->max_pooling(out_, nullptr);
+        }
     }
 
     void inverse_square_root(const Tensor* in, Tensor* out) override {
