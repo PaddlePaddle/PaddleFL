@@ -83,6 +83,16 @@ public:
     virtual void max_pooling(const Tensor* in, Tensor* out, Tensor* pos_info) {}
 
     virtual void inverse_square_root(const Tensor* in, Tensor* out) = 0;
+
+    virtual void predicts_to_indices(const Tensor* in,
+                                     Tensor* out,
+                                     float threshold = 0.5) = 0;
+
+    virtual void calc_tp_fp_fn(const Tensor* indices,
+                               const Tensor* labels,
+                               Tensor* out) = 0;
+
+    virtual void calc_precision_recall(const Tensor* tp_fp_fn, Tensor* out) = 0;
 };
 
 } // mpc

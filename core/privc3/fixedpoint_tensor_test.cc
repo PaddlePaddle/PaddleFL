@@ -898,6 +898,40 @@ void test_fixedt_matmul_fixed(size_t p,
     result->reveal(out);
 }
 
+void test_fixedt_precision_recall_fixed(size_t p,
+               double threshold,
+               std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in,
+               TensorAdapter<int64_t>* out) {
+    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> temp;
+    // preds
+    for (int i = 0; i < 2; i++) {
+        temp.emplace_back(gen(in[0]->shape()));
+    }
+    // labels
+    for (int i = 0; i < 2; i++) {
+        temp.emplace_back(gen(in[1]->shape()));
+    }
+    // indices
+    for (int i = 0; i < 2; i++) {
+        temp.emplace_back(gen(in[0]->shape()));
+    }
+    std::vector<size_t> shape_ = {3};
+    // tp fp fn
+    for (int i = 0; i < 2; i++) {
+        temp.emplace_back(gen(shape_));
+    }
+
+    test_fixedt_gen_shares(p, in, temp);
+    Fix64N16* preds   = new Fix64N16(temp[0].get(), temp[1].get());
+    Fix64N16* labels  = new Fix64N16(temp[2].get(), temp[3].get());
+    Fix64N16* indices = new Fix64N16(temp[4].get(), temp[5].get());
+    Fix64N16* tpfpfn  = new Fix64N16(temp[6].get(), temp[7].get());
+
+    Fix64N16::preds_to_indices(preds, indices, threshold);
+    Fix64N16::calc_tp_fp_fn(indices, labels, tpfpfn);
+    Fix64N16::calc_precision_recall(tpfpfn, out);
+}
+
 TEST_F(FixedTensorTest, matmulfixed) {
 
     std::vector<size_t> shape = {1, 3};
@@ -3558,5 +3592,56 @@ TEST_F(FixedTensorTest, truncate3_msb_correct) {
     EXPECT_EQ((p->data()[0] >> 16), 6);
 }
 #endif
+
+TEST_F(FixedTensorTest, precision_recall) {
+
+    std::vector<size_t> shape = {6};
+    std::vector<size_t> shape_o = {3};
+    std::vector<double> in0_val = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
+    std::vector<double> in1_val = {0, 1, 0, 1, 0 ,1};
+    std::vector<double> res_val = {0.5, 1.0/3, 0.4};
+    double threshold = 0.7;
+    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in =
+                            {gen(shape), gen(shape)};
+
+    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
+                                shape, _cpu_ctx).copy(in[0].get());
+    test_fixedt_gen_paddle_tensor<int64_t, 16>(in1_val,
+                                shape, _cpu_ctx).copy(in[1].get());
+
+    auto out0 = _s_tensor_factory->create<int64_t>(shape_o);
+    auto out1 = _s_tensor_factory->create<int64_t>(shape_o);
+    auto out2 = _s_tensor_factory->create<int64_t>(shape_o);
+
+    PaddleTensor<int64_t> result =
+            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape_o, _cpu_ctx);
+
+    _t[0] = std::thread([this, in, out0, threshold]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
+            test_fixedt_precision_recall_fixed(0, threshold,  in, out0.get());
+        });
+
+    });
+    _t[1] = std::thread([this, in, out1, threshold]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
+            test_fixedt_precision_recall_fixed(1, threshold, in, out1.get());
+        });
+
+    });
+    _t[2] = std::thread([this, in, out2, threshold]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
+            test_fixedt_precision_recall_fixed(2, threshold, in, out2.get());
+        });
+
+    });
+
+    _t[0].join();
+    _t[1].join();
+    _t[2].join();
+
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get()));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get()));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result));
+}
 
 } // namespace aby3

@@ -16,12 +16,10 @@
 
 #include <vector>
 
-#include "boolean_tensor.h"
 #include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "paddle_tensor.h"
 #include "boolean_tensor.h"
-#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 
 namespace aby3 {
 
@@ -193,6 +191,20 @@ public:
     void max_pooling(FixedPointTensor* ret,
                      BooleanTensor<T>* pos = nullptr) const;
 
+    // only support pred for 1 in binary classification for now
+    static void preds_to_indices(const FixedPointTensor* preds,
+                                 FixedPointTensor* indices,
+                                 float threshold = 0.5);
+
+    static void calc_tp_fp_fn(const FixedPointTensor* indices,
+                              const FixedPointTensor* labels,
+                              FixedPointTensor* tp_fp_fn);
+
+    // clac precision_recall f1_score
+    // result is a plaintext fixed-point tensor, shape is [3]
+    static void calc_precision_recall(const FixedPointTensor* tp_fp_fn,
+                                      TensorAdapter<T>* ret);
+
     static void truncate(const FixedPointTensor* op, FixedPointTensor* ret,
                         size_t scaling_factor);
 
@@ -217,7 +229,7 @@ private:
                           size_t scaling_factor);
 
     // reduce last dim
-    static void reduce(FixedPointTensor<T, N>* input,
+    static void reduce(const FixedPointTensor<T, N>* input,
                        FixedPointTensor<T, N>* ret);
 
     static size_t party() {
