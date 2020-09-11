@@ -25,6 +25,7 @@ TEST_MODULES=("test_datautils_aby3"
 "test_op_batch_norm"
 "test_op_conv"
 "test_op_pool"
+"test_op_metric"
 )
 
 # run unittest

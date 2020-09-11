@@ -34,7 +34,7 @@ def _is_numpy_(var):
 
 class KSstatistic(MetricBase):
     """
-    The is for binary classification.
+    The KSstatistic is for binary classification.
     Refer to https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test#Kolmogorov%E2%80%93Smirnov_statistic
     Please notice that the KS statistic is implemented with scipy.
 
