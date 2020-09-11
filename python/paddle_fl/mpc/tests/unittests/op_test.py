@@ -140,13 +140,13 @@ class OpTest(unittest.TestCase):
 
         target = kwargs['target']
 
-        partys = []
+        parties = []
 
         for role in range(self.party_num):
             kwargs.update({'role': role})
-            partys.append(Aby3Process(target=target, kwargs=kwargs))
-            partys[-1].start()
-        for party in partys:
+            parties.append(Aby3Process(target=target, kwargs=kwargs))
+            parties[-1].start()
+        for party in parties:
             party.join()
             if party.exception:
                 return party.exception

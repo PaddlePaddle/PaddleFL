@@ -19,10 +19,10 @@ import unittest
 from multiprocessing import Manager
 import numpy as np
 
-
 import test_op_base
 from op_test import OpTest
 import paddle_fl.mpc.data_utils.aby3 as aby3
+import mpc_data_utils as mdu
 
 import paddle.fluid as fluid
 import paddle.fluid.core as core
@@ -190,7 +190,7 @@ class TestConv2dOp(OpTest):
             'dilation': self.dilations
         }
 
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64')
+        share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64')
 
         input = np.random.random(self.input_size)
         filter = np.random.uniform(-1, 1, self.filter_size)
@@ -385,7 +385,7 @@ class TestConv2dOp_v2(OpTest):
             'dilation': self.dilations
         }
 
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64')
+        share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64')
 
         input = np.random.random(self.input_size)
         filter = np.random.uniform(-1, 1, self.filter_size)

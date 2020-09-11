@@ -54,15 +54,15 @@ class TestOpPool2d(test_op_base.TestOpBase):
     def test_pool2d(self):
 
         data_1 = np.array(
-            [[[[1, 2, 3, 4, 0, 100], 
-               [5, 6, 7, 8, 0, 100], 
+            [[[[1, 2, 3, 4, 0, 100],
+               [5, 6, 7, 8, 0, 100],
                [9, 10, 11, 12, 0, 200],
                [13, 14, 15, 16, 0, 200]]]]).astype('float32')
-        
+
         expected_out = np.array(
-            [[[[6, 8, 100], 
+            [[[[6, 8, 100],
                [14, 16, 200]]]]).astype('float32')
-        print("input data_1: {} \n".format(data_1))
+        # print("input data_1: {} \n".format(data_1))
 
         data_1_shares = aby3.make_shares(data_1)
 

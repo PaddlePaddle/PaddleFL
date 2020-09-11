@@ -20,6 +20,7 @@ import unittest
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
+import mpc_data_utils as mdu
 
 import test_op_base
 
@@ -92,7 +93,7 @@ class TestOpPrecisionRecall(test_op_base.TestOpBase):
         self.threshold = np.random.random()
         preds, labels = [], []
         self.exp_res = (0, [0] * 3)
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64').reshape(
+        share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64').reshape(
                 [2] + self.input_size)
 
         for _ in range(n):
