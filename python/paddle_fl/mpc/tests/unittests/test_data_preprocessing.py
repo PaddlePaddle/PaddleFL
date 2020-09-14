@@ -78,10 +78,10 @@ class TestOpMeanNormalize(test_op_base.TestOpBase):
         mi = pfl_mpc.data(name='mi', shape=self.input_size, dtype='int64')
         ma = pfl_mpc.data(name='ma', shape=self.input_size, dtype='int64')
         me = pfl_mpc.data(name='me', shape=self.input_size, dtype='int64')
-        sn = pfl_mpc.data(name='sn', shape=self.input_size, dtype='int64')
+        sn = pfl_mpc.data(name='sn', shape=self.input_size[:-1], dtype='int64')
 
-        out0, out1 = pfl_mpc.layers.mean_normalize(f_min=mi, f_max=ma, f_mean=me, sample_num=sn, total_sample_num=self.total_num)
-
+        out0, out1 = pfl_mpc.layers.mean_normalize(f_min=mi,
+                f_max=ma, f_mean=me, sample_num=sn)
 
         exe = fluid.Executor(place=fluid.CPUPlace())
 
@@ -98,7 +98,6 @@ class TestOpMeanNormalize(test_op_base.TestOpBase):
         mat, mi, ma, me = gen_data(f_nums, sample_nums)
 
         self.input_size = [len(sample_nums), f_nums]
-        self.total_num = mat.shape[0]
 
         share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64').reshape(
                 [2] + list(x.shape))
@@ -116,7 +115,7 @@ class TestOpMeanNormalize(test_op_base.TestOpBase):
 
         plain_r, plain_m = mean_norm_naive(mat)
         self.assertTrue(np.allclose(f_r, plain_r, atol=1e-4))
-        self.assertTrue(np.allclose(f_m, plain_m, atol=1e-3))
+        self.assertTrue(np.allclose(f_m, plain_m, atol=1e-4))
 
 
 if __name__ == '__main__':

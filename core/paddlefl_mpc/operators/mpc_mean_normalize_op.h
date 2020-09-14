@@ -12,6 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
+#include <algorithm>
+
 #include "paddle/fluid/framework/op_registry.h"
 #include "mpc_op.h"
 
@@ -28,6 +30,7 @@ class MpcMeanNormalizationKernel : public MpcOpKernel<T> {
     const Tensor* max = context.Input<Tensor>("Max");
     const Tensor* mean = context.Input<Tensor>("Mean");
     const Tensor* sample_num = context.Input<Tensor>("SampleNum");
+    const Tensor* total_num = context.Input<Tensor>("TotalNum");
 
     Tensor* range = context.Output<Tensor>("Range");
     Tensor* mean_out = context.Output<Tensor>("MeanOut");
@@ -65,9 +68,6 @@ class MpcMeanNormalizationKernel : public MpcOpKernel<T> {
     range->mutable_data<T>(
         framework::make_ddim({share_num, feat_num}), context.GetPlace(), 0);
 
-    // TODO: get total_sample_num by reduing size
-    int total_sample_num = context.Attr<int>("total_sample_num");
-
     Tensor sample_num_;
 
     sample_num_.ShareDataWith(*sample_num);
@@ -84,8 +84,20 @@ class MpcMeanNormalizationKernel : public MpcOpKernel<T> {
     mean_out->mutable_data<T>(
         framework::make_ddim({share_num, feat_num}), context.GetPlace(), 0);
 
+    Tensor total_num_;
+
+    total_num_.mutable_data<T>(
+        framework::make_ddim({share_num, feat_num}), context.GetPlace(), 0);
+
+    // broadcasting total_num to shape [share_num, feat_num]
+    for (int i = 0; i < share_num; ++i) {
+        std::fill(total_num_.data<T>() + i * feat_num,
+                  total_num_.data<T>() + (i + 1) * feat_num,
+                  total_num->data<T>()[i]);
+    }
+
     mpc::MpcInstance::mpc_instance()->mpc_protocol()
-        ->mpc_operators()->scale(mean_out, 1.0 / total_sample_num, mean_out);
+        ->mpc_operators()->div(mean_out, &total_num_, mean_out);
 
 }
 };

@@ -381,6 +381,20 @@ public:
         FixedTensor::calc_precision_recall(in, &out_);
     }
 
+    void div(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
+
+        auto lhs_tuple = from_tensor(lhs);
+        auto rhs_tuple = from_tensor(rhs);
+        auto out_tuple = from_tensor(out);
+
+        auto lhs_ = std::get<0>(lhs_tuple).get();
+        auto rhs_ = std::get<0>(rhs_tuple).get();
+        auto out_ = std::get<0>(out_tuple).get();
+
+        lhs_->long_div(rhs_, out_);
+
+    }
+
 private:
     template <typename T>
     std::tuple<

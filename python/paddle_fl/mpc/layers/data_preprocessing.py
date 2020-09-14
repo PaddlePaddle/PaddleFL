@@ -17,10 +17,11 @@ mpc data preprocessing op layers.
 from paddle.fluid.data_feeder import check_type, check_dtype
 from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
+from .math import reduce_sum
 
 __all__ = ['mean_normalize']
 
-def mean_normalize(f_min, f_max, f_mean, sample_num, total_sample_num):
+def mean_normalize(f_min, f_max, f_mean, sample_num):
     '''
     Mean normalization is a method used to normalize the range of independent
     variables or features of data.
@@ -40,7 +41,6 @@ def mean_normalize(f_min, f_max, f_mean, sample_num, total_sample_num):
         sample_num (Variable): A 1-D tensor with shape [P], where P is the
                                party num. Each element contains sample num
                                of party_i.
-        total_sample_num (int): Sum of sample nums from all party.
 
     Returns:
         f_range (Variable): A 1-D tensor with shape [N], where N is the
@@ -51,121 +51,26 @@ def mean_normalize(f_min, f_max, f_mean, sample_num, total_sample_num):
                                range of feature_i.
     Examples:
         .. code-block:: python
-            from multiprocessing import Manager
-            from multiprocessing import Process
-            import numpy as np
-            import paddle.fluid as fluid
             import paddle_fl.mpc as pfl_mpc
-            import mpc_data_utils as mdu
-            import paddle_fl.mpc.data_utils.aby3 as aby3
 
+            pfl_mpc.init("aby3", role, "localhost", redis_server, redis_port)
 
-            redis_server = "127.0.0.1"
-            redis_port = 9937
-            test_f_num = 100
-            # party i owns 2 + 2*i rows of data
-            test_row_split = range(2, 10, 2)
+            # 2 for share, 4 for 4 party, 100 for feat_num
+            input_size = [2, 4, 100]
 
+            mi = pfl_mpc.data(name='mi', shape=input_size, dtype='int64')
+            ma = pfl_mpc.data(name='ma', shape=input_size, dtype='int64')
+            me = pfl_mpc.data(name='me', shape=input_size, dtype='int64')
+            sn = pfl_mpc.data(name='sn', shape=input_size[:-1], dtype='int64')
 
-            def mean_norm_naive(f_mat):
-                ma = np.amax(f_mat, axis=0)
-                mi = np.amin(f_mat, axis=0)
-                return ma - mi, np.mean(f_mat, axis=0)
+            out0, out1 = pfl_mpc.layers.mean_normalize(f_min=mi, f_max=ma,
+                    f_mean=me, sample_num=sn)
 
+            exe = fluid.Executor(place=fluid.CPUPlace())
 
-            def gen_data(f_num, sample_nums):
-                f_mat = np.random.rand(np.sum(sample_nums), f_num)
-
-                f_min, f_max, f_mean = [], [], []
-
-                prev_idx = 0
-
-                for n in sample_nums:
-                    i = prev_idx
-                    j = i + n
-
-                    ma = np.amax(f_mat[i:j], axis=0)
-                    mi = np.amin(f_mat[i:j], axis=0)
-                    me = np.mean(f_mat[i:j], axis=0)
-
-                    f_min.append(mi)
-                    f_max.append(ma)
-                    f_mean.append(me)
-
-                    prev_idx += n
-
-                f_min = np.array(f_min).reshape(sample_nums.size, f_num)
-                f_max = np.array(f_max).reshape(sample_nums.size, f_num)
-                f_mean = np.array(f_mean).reshape(sample_nums.size, f_num)
-
-                return f_mat, f_min, f_max, f_mean
-
-
-            class MeanNormDemo:
-
-                def mean_normalize(self, **kwargs):
-                    """
-                    mean_normalize op ut
-                    :param kwargs:
-                    :return:
-                    """
-                    role = kwargs['role']
-
-                    pfl_mpc.init("aby3", role, "localhost", redis_server, redis_port)
-
-                    mi = pfl_mpc.data(name='mi', shape=self.input_size, dtype='int64')
-                    ma = pfl_mpc.data(name='ma', shape=self.input_size, dtype='int64')
-                    me = pfl_mpc.data(name='me', shape=self.input_size, dtype='int64')
-                    sn = pfl_mpc.data(name='sn', shape=self.input_size, dtype='int64')
-
-                    out0, out1 = pfl_mpc.layers.mean_normalize(f_min=mi, f_max=ma,
-                            f_mean=me, sample_num=sn, total_sample_num=self.total_num)
-
-                    exe = fluid.Executor(place=fluid.CPUPlace())
-
-                    f_range, f_mean = exe.run(feed={'mi': kwargs['min'],
-                        'ma': kwargs['max'], 'me': kwargs['mean'],
-                        'sn': kwargs['sample_num']},fetch_list=[out0, out1])
-
-                    self.f_range_list.append(f_range)
-                    self.f_mean_list.append(f_mean)
-
-                def run(self):
-                    f_nums = test_f_num
-                    sample_nums = np.array(test_row_split)
-                    mat, mi, ma, me = gen_data(f_nums, sample_nums)
-
-                    self.input_size = [len(sample_nums), f_nums]
-                    self.total_num = mat.shape[0]
-
-                    # simulating encrypting data
-                    share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64').reshape(
-                            [2] + list(x.shape))
-
-                    self.f_range_list = Manager().list()
-                    self.f_mean_list = Manager().list()
-
-                    proc = list()
-                    for role in range(3):
-                        args = {'role': role, 'min': share(mi), 'max': share(ma),
-                                'mean': share(me), 'sample_num': share(sample_nums)}
-                        p = Process(target=self.mean_normalize, kwargs=args)
-
-                        proc.append(p)
-                        p.start()
-
-                    for p in proc:
-                        p.join()
-
-                    f_r = aby3.reconstruct(np.array(self.f_range_list))
-                    f_m = aby3.reconstruct(np.array(self.f_mean_list))
-
-                    plain_r, plain_m = mean_norm_naive(mat)
-                    print("max error in featrue range:", np.max(np.abs(f_r - plain_r)))
-                    print("max error in featrue mean:", np.max(np.abs(f_m - plain_m)))
-
-
-            MeanNormDemo().run()
+            # feed encrypted data
+            f_range, f_mean = exe.run(feed={'mi': f_min, 'ma': f_max,
+            'me': f_mean, 'sn': sample_num}, fetch_list=[out0, out1])
     '''
     helper = MpcLayerHelper("mean_normalize", **locals())
 
@@ -180,6 +85,8 @@ def mean_normalize(f_min, f_max, f_mean, sample_num, total_sample_num):
     f_range = helper.create_mpc_variable_for_type_inference(dtype=f_min.dtype)
     f_mean_out= helper.create_mpc_variable_for_type_inference(dtype=f_min.dtype)
 
+    total_num = reduce_sum(sample_num)
+
     op_type = 'mean_normalize'
 
     helper.append_op(
@@ -189,14 +96,12 @@ def mean_normalize(f_min, f_max, f_mean, sample_num, total_sample_num):
             "Max": f_max,
             "Mean": f_mean,
             "SampleNum": sample_num,
+            "TotalNum": total_num,
             },
         outputs={
             "Range": f_range,
             "MeanOut": f_mean_out,
              },
-        attrs={
-            # TODO: remove attr total_sample_num, reducing sample_num instead
-            "total_sample_num": total_sample_num,
-        })
+        )
 
     return f_range, f_mean_out

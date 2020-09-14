@@ -39,6 +39,9 @@ class MpcMeanNormalizationOp : public framework::OperatorWithKernel {
     PADDLE_ENFORCE_EQ(
         ctx->HasInput("SampleNum"), true,
         platform::errors::InvalidArgument("Input(Sample) should not be null."));
+    PADDLE_ENFORCE_EQ(
+        ctx->HasInput("TotalNum"), true,
+        platform::errors::InvalidArgument("Input(TotalNum) should not be null."));
     PADDLE_ENFORCE_EQ(ctx->HasOutput("Range"), true,
                       platform::errors::InvalidArgument(
                           "Output(Range) should not be null."));
@@ -46,13 +49,11 @@ class MpcMeanNormalizationOp : public framework::OperatorWithKernel {
                       platform::errors::InvalidArgument(
                           "Output(Meanor) should not be null."));
 
-    int64_t total_sample_num =
-        static_cast<int64_t>(ctx->Attrs().Get<int>("total_sample_num"));
-
     auto min_dims = ctx->GetInputDim("Min");
     auto max_dims = ctx->GetInputDim("Max");
     auto mean_dims = ctx->GetInputDim("Mean");
     auto sample_num_dims = ctx->GetInputDim("SampleNum");
+    auto total_num_dims = ctx->GetInputDim("TotalNum");
 
     if (ctx->IsRuntime()) {
       PADDLE_ENFORCE_EQ(min_dims, max_dims,
@@ -77,7 +78,7 @@ class MpcMeanNormalizationOp : public framework::OperatorWithKernel {
       PADDLE_ENFORCE_EQ(
           sample_num_dims.size(), 2,
           platform::errors::InvalidArgument(
-              "The dimension of Input(SampleNum) should be equal to 3 "
+              "The dimension of Input(SampleNum) should be equal to 2 "
               "(share_num, party_num). But received (%d)",
               sample_num_dims.size()));
 
@@ -87,6 +88,27 @@ class MpcMeanNormalizationOp : public framework::OperatorWithKernel {
               "The party num of Input(SampleNum) and Input(Min) "
               "should be equal But received (%d) != (%d)",
               sample_num_dims[1], min_dims[1]));
+
+      PADDLE_ENFORCE_EQ(
+          total_num_dims.size(), 2,
+          platform::errors::InvalidArgument(
+              "The dimension of Input(TotalNum) "
+              "should be 2, But received (%d) != (%d)",
+              total_num_dims.size(), 2));
+
+      PADDLE_ENFORCE_EQ(
+          sample_num_dims[0], total_num_dims[0],
+          platform::errors::InvalidArgument(
+              "The share num of Input(SampleNum) and Input(TotalNum) "
+              "should be equal But received (%d) != (%d)",
+              sample_num_dims[0], total_num_dims[0]));
+
+      PADDLE_ENFORCE_EQ(
+          total_num_dims[1], 1,
+          platform::errors::InvalidArgument(
+              "The shape of Input(TotalNum) "
+              "should be [share_num,  1] But dims[1] received (%d) != (%d)",
+              total_num_dims[1], 1));
     }
 
     ctx->SetOutputDim("Range", {mean_dims[0], mean_dims[2]});
@@ -121,6 +143,9 @@ class MpcMeanNormalizationOpMaker : public framework::OpProtoAndCheckerMaker {
              "(Tensor, default Tensor<int64_t>) A 1-D tensor with shape [P], "
              "where P is the party num. Each element contains "
              "sample num of party_i.");
+    AddInput("TotalNum",
+             "(Tensor, default Tensor<int64_t>) A 1-D tensor with shape [1], "
+             "Element contains sum of sample num of party_i.");
     AddOutput("Range",
               "(Tensor, default Tensor<int64_t>) A 1-D tensor with shape [N], "
               "where N is the feature num. Each element contains "
@@ -129,10 +154,9 @@ class MpcMeanNormalizationOpMaker : public framework::OpProtoAndCheckerMaker {
               "(Tensor, default Tensor<int64_t>) A 1-D tensor with shape [N], "
               "where N is the feature num. Each element contains "
               "global mean of feature_i.");
-    AddAttr<int>("total_sample_num", "(int) Sum of sample nums from all party.");
     AddComment(R"DOC(
 Mean normalization Operator.
-When given Input(Min), Input(Max), Input(Mean) and Input(SampleNum),
+When given Input(Min), Input(Max), Input(Mean), Input(SampleNum) and Input(TotalNum)
 this operator can be used to compute global range and mean for further feature
 scaling.
 Output(Range) is the global range of all features.
