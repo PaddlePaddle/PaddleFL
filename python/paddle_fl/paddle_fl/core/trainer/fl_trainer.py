@@ -124,6 +124,21 @@ class FLTrainer(object):
         with open(model_path + ".pdmodel", "wb") as f:
             f.write(self._main_program.desc.serialize_to_string())
 
+    def save_serving_model(self, model_path, client_conf_path):
+        feed_vars = {}
+        target_vars = {}
+        for target in self._target_names:
+            tmp_target = self._main_program.block(0)._find_var_recursive(
+                target)
+            target_vars[target] = tmp_target
+
+        for feed in self._feed_names:
+            tmp_feed = self._main_program.block(0)._find_var_recursive(feed)
+            feed_vars[feed] = tmp_feed
+
+        serving_io.save_model(model_path, client_conf_path, feed_vars,
+                              target_vars, self._main_program)
+
     def stop(self):
         # ask for termination with master endpoint
         # currently not open sourced, will release the code later
