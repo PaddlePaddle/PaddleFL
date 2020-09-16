@@ -117,13 +117,13 @@ def embedding(input,
 
     if is_sparse:
       warnings.warn("the process on sparse data is the same with dense data,"
-                   " this is, 'is_sparse' always set as 'False' in paddle_encrypted.")
+                   " that is, 'is_sparse' always set as 'False' in paddle_encrypted.")
     if is_distributed:
       warnings.warn("distributed deployment of paddle_encrypted has not been implemented."
-                   " this is, 'is_distributed' always set as 'False' in paddle_encrypted.")
+                   " that is, 'is_distributed' always set as 'False' in paddle_encrypted.")
     if padding_idx:
       warnings.warn("padding_idx is not supported in paddle_encrypted."
-                   " this is, 'padding_idx' always set as 'None' in paddle_encrypted.")
+                   " that is, 'padding_idx' always set as 'None' in paddle_encrypted.")
     helper = MpcLayerHelper('embedding', **locals())
     check_variable_and_dtype(input, 'input', ['int64'], 'paddle_encrypted.embedding')
     check_dtype(dtype, 'dtype', ['int64'],

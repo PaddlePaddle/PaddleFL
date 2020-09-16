@@ -153,26 +153,26 @@ def append_loss_ops(block, output_names):
     else:
         avg_sum = []
         for cur_loss in mean_inputs:
-            cur_avg_loss = block.create_var(dtype=cur_loss.dtype, shape=[1])
+            cur_avg_loss = block.create_var(dtype=cur_loss.dtype, shape=[2, 1])
             op = block.append_op(
                 inputs={"X": [cur_loss]},
                 outputs={"Out": [cur_avg_loss]},
-                type="mean")
+                type="mpc_mean")
             op.desc.infer_var_type(block.desc)
             op.desc.infer_shape(block.desc)
             avg_sum.append(cur_avg_loss)
 
-        loss_sum = block.create_var(dtype=avg_sum[0].dtype, shape=[1])
+        loss_sum = block.create_var(dtype=avg_sum[0].dtype, shape=[2, 1])
         op_sum = block.append_op(
-            inputs={"X": avg_sum}, outputs={"Out": loss_sum}, type='sum')
+            inputs={"X": avg_sum}, outputs={"Out": loss_sum}, type='mpc_sum')
         op_sum.desc.infer_var_type(block.desc)
         op_sum.desc.infer_shape(block.desc)
 
-        loss = block.create_var(dtype=loss_sum.dtype, shape=[1])
+        loss = block.create_var(dtype=loss_sum.dtype, shape=[2, 1])
         op_loss = block.append_op(
             inputs={"X": loss_sum},
             outputs={"Out": loss},
-            type='scale',
+            type='mpc_scale',
             attrs={'scale': 1.0 / float(len(avg_sum))})
         op_loss.desc.infer_var_type(block.desc)
         op_loss.desc.infer_shape(block.desc)
