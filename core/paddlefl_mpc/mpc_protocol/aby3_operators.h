@@ -328,6 +328,17 @@ public:
         a_->max_pooling(out_, b_);
     }
 
+    void max(const Tensor* in, Tensor* out) override {
+
+        auto a_tuple = from_tensor(in);
+        auto a_ = std::get<0>(a_tuple).get();
+
+        auto out_tuple = from_tensor(out);
+        auto out_ = std::get<0>(out_tuple).get();
+
+        a_->max_pooling(out_, nullptr);
+    }
+
     void inverse_square_root(const Tensor* in, Tensor* out) override {
         auto x_tuple = from_tensor(in);
         auto x_ = std::get<0>(x_tuple).get();
@@ -375,6 +386,20 @@ public:
         out_.scaling_factor() = ABY3_SCALING_FACTOR;
 
         FixedTensor::calc_precision_recall(in, &out_);
+    }
+
+    void div(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
+
+        auto lhs_tuple = from_tensor(lhs);
+        auto rhs_tuple = from_tensor(rhs);
+        auto out_tuple = from_tensor(out);
+
+        auto lhs_ = std::get<0>(lhs_tuple).get();
+        auto rhs_ = std::get<0>(rhs_tuple).get();
+        auto out_ = std::get<0>(out_tuple).get();
+
+        lhs_->long_div(rhs_, out_);
+
     }
 
 private:

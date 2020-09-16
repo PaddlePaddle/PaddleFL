@@ -18,6 +18,7 @@ mpc math op layers.
 from ..framework import MpcVariable
 from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
+from .ml import reshape
 
 __all__ = [
     'mean',
@@ -125,7 +126,7 @@ def square_error_cost(input, label):
 
     square_out = helper.create_mpc_variable_for_type_inference(dtype=input.dtype)
     helper.append_op(
-        type='mpc_square', 
+        type='mpc_square',
         inputs={'X': [minus_out]},
         outputs={'Out': [square_out]})
     return square_out
@@ -158,14 +159,14 @@ def reduce_sum(input, dim=None, keep_dim=False, name=None):
 
     Returns:
         out(MpcVariable): (Tensor) The output of mean op
-    Examples: 
+    Examples:
         .. code-block:: python
-            
+
             import paddle_fl.mpc as pfl_mpc
 
             pfl_mpc.init("aby3", int(args.role), "localhost", args.server, int(args.port))
             data_1 = pfl_mpc.data(name='x', shape=[3, 3], dtype='int64')
-            pfl_mpc.layers.reshape(data_1, [1, 2])  # shape: [2, 1, 1]  
+            pfl_mpc.layers.reshape(data_1, [1, 2])  # shape: [2, 1, 1]
             # data_1 = np.full(shape=(3, 4), fill_value=2)
             # reduce_sum: 24
     """
@@ -178,7 +179,7 @@ def reduce_sum(input, dim=None, keep_dim=False, name=None):
                 "'dim' should not contain 0, because dim[0] is share number."
             )
     else:
-        dim = [i for i in range(len(input.shape))][1:] 
+        dim = [i for i in range(len(input.shape))][1:]
 
     attrs = {
         'dim': dim,
@@ -194,6 +195,8 @@ def reduce_sum(input, dim=None, keep_dim=False, name=None):
         inputs={'X': input},
         outputs={'Out': out},
         attrs=attrs)
+    if out.shape  == (2,):
+        out = reshape(out, list(out.shape) + [1])
     return out
 
 

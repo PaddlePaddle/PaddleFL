@@ -26,6 +26,7 @@ TEST_MODULES=("test_datautils_aby3"
 "test_op_conv"
 "test_op_pool"
 "test_op_metric"
+"test_data_preprocessing"
 "test_op_reshape"
 "test_op_reduce_sum"
 )

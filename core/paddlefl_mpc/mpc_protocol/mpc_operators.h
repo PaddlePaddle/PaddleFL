@@ -82,6 +82,10 @@ public:
     // for filter in other shape, reshape input first
     virtual void max_pooling(const Tensor* in, Tensor* out, Tensor* pos_info) {}
 
+    // column wise max
+    // in shape [n, ...], out shape [1, ...]
+    virtual void max(const Tensor* in, Tensor* out) {}
+
     virtual void inverse_square_root(const Tensor* in, Tensor* out) = 0;
 
     virtual void predicts_to_indices(const Tensor* in,
@@ -93,6 +97,8 @@ public:
                                Tensor* out) = 0;
 
     virtual void calc_precision_recall(const Tensor* tp_fp_fn, Tensor* out) = 0;
+
+    virtual void div(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
 };
 
 } // mpc

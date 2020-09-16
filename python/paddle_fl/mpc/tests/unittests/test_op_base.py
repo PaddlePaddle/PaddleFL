@@ -77,13 +77,13 @@ class TestOpBase(unittest.TestCase):
         """
         target = kwargs['target']
 
+        parties = []
         for role in range(self.party_num):
             kwargs.update({'role': role})
-            party = Aby3Process(target=target, kwargs=kwargs)
-            party.start()
-            if role == self.party_num - 1:
-                party.join()
-                if party.exception:
-                    return party.exception
-                else:
-                    return (True,)
+            parties.append(Aby3Process(target=target, kwargs=kwargs))
+            parties[-1].start()
+        for party in parties:
+            party.join()
+            if party.exception:
+                return party.exception
+        return (True,)
