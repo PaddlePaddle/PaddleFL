@@ -11,8 +11,9 @@ Create a empty dir for data, and modify `data_path` in `process_data.py`,
 default dir path is `./data`.
 
 Then run the script with command `python prepare.py` to generate random data
-for demo. Otherwise generate your own data, move them to `data_path` and modify
-corresponding meta info in `prepare.py`.
+for demo, which is dumped by numpy and named `feature_data.{i}.npy` located
+in `data_path`. Otherwise generate your own data, move them to `data_path`,
+name as the same way, and  modify corresponding meta info in `prepare.py`.
 
 Encrypted data files of feature statstics would be generated and saved in
 `data_path` directory. Different suffix names are used for these files to
@@ -55,5 +56,9 @@ import process_data
 res = process_data.decrypt_data(prepare.data_path + 'result', (2, prepare.feat_width, ))
 ```
 
-Also, `verify.py` could be used to calculate error between direct plaintext
-numpy calculation and mpc mean normalize.
+Or use `decrypt_and_rescale.py` to decrypt, rescale the feature data which has
+been saved in `feature_data.{i}.npy`, and dump the normalized data to
+`normalized_data.{i}.npy` which is located in `data_path`.
+
+Also, `verify.py` could be used to calculate error of `f_range` and `f_mean`
+between direct plaintext numpy calculation and mpc mean normalize.
