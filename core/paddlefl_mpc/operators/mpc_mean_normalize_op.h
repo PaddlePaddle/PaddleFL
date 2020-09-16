@@ -54,10 +54,10 @@ class MpcMeanNormalizationKernel : public MpcOpKernel<T> {
         ->mpc_operators()->neg(min, &neg_min);
 
     mpc::MpcInstance::mpc_instance()->mpc_protocol()
-        ->mpc_operators()->max_pooling(&neg_min, &neg_min_global, nullptr);
+        ->mpc_operators()->max(&neg_min, &neg_min_global);
 
     mpc::MpcInstance::mpc_instance()->mpc_protocol()
-        ->mpc_operators()->max_pooling(max, &max_global, nullptr);
+        ->mpc_operators()->max(max, &max_global);
 
     range->mutable_data<T>(
         framework::make_ddim({share_num, 1, feat_num}), context.GetPlace(), 0);
