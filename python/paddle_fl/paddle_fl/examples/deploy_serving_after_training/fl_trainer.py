@@ -47,17 +47,6 @@ place = fluid.CPUPlace()
 trainer.start(place)
 print("scheduler_ep is {}, current_ep is {}".format(trainer._scheduler_ep,
                                                     trainer._current_ep))
-"""
-feed_vars = {}
-target_vars = {}
-for target in trainer._target_names:
-    tmp_target = trainer._main_program.block(0)._find_var_recursive(target)
-    target_vars[target] = tmp_target
-
-for feed in trainer._feed_names:
-    tmp_feed = trainer._main_program.block(0)._find_var_recursive(feed)
-    feed_vars[feed] = tmp_feed
-"""
 epoch_id = 0
 while not trainer.stop():
     if epoch_id > 10:
@@ -73,6 +62,4 @@ while not trainer.stop():
             break
     epoch_id += 1
     if epoch_id % 5 == 0:
-        #        trainer.save_inference_program(output_folder)
-        trainer.save_serving_model("test", "imdb_client_conf")
-#        serving_io.save_model("test","imdb_client_conf", feed_vars, target_vars, trainer._main_program)
+        trainer.save_serving_model("imdb_server_model", "imdb_client_conf")
