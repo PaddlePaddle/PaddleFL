@@ -29,6 +29,7 @@ TEST_MODULES=("test_datautils_aby3"
 "test_data_preprocessing"
 "test_op_reshape"
 "test_op_reduce_sum"
+"test_op_elementwise_mul"
 )
 
 # run unittest

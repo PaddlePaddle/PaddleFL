@@ -25,7 +25,8 @@ __all__ = [
     'square',
     'sum',
     'square_error_cost',
-    'reduce_sum'
+    'reduce_sum',
+    'scale'
 ]
 
 
@@ -199,4 +200,48 @@ def reduce_sum(input, dim=None, keep_dim=False, name=None):
         out = reshape(out, list(out.shape) + [1])
     return out
 
+
+def scale(x, scale=1.0, bias=0.0, bias_after_scale=True, act=None, name=None):
+    """
+    Scale operator.
+    Putting scale and bias to the input Tensor as following:
+    ``bias_after_scale`` is True:
+    .. math::
+                            Out=scale*X+bias
+    ``bias_after_scale`` is False:
+    .. math::
+                            Out=scale*(X+bias)
+    Args:
+        x(MpcVariable): Input N-D Tensor of scale operator. Data type should be int64.
+        scale(float|Variable): The scale factor of the input, it should be a float number or a Variable with shape [1] and data type as float32.
+        bias(float): The bias to be put on the input.
+        bias_after_scale(bool): Apply bias addition after or before scaling. It is useful for numeric stability in some circumstances.
+        act(str, optional): Activation applied to the output such as tanh, softmax, sigmoid, relu.
+        name(str, optional): The default value is None. Normally there is no need for user to set this property.  For more information, please refer to :ref:`api_guide_Name`
+    Returns:
+        Variable(Tensor|LoDTensor): Output tensor of scale operator, with shape and data type same as input.
+    Examples:
+        .. code-block:: python
+            import paddle_fl.mpc as pfl_mpc
+            pfl_mpc.init("aby3", int(args.role), "localhost", args.server, int(args.port))
+            data_1 = pfl_mpc.data(name='x', shape=[3, 3], dtype='int64')
+            pfl_mpc.layers.scale(data_1, 0.5)
+    """
+
+    check_mpc_variable_and_dtype(x, "x", ['int64'], "scale")
+    inputs = {'X': [x]}
+    attrs = {
+        'bias': float(bias),
+        'bias_after_scale': bias_after_scale,
+    }
+    if isinstance(scale, MpcVariable):
+        inputs['ScaleTensor'] = [scale]
+    else:
+        attrs['scale'] = float(scale)
+    helper = MpcLayerHelper('scale', **locals())
+    out = helper.create_mpc_variable_for_type_inference(dtype=x.dtype)
+
+    helper.append_op(
+        type='mpc_scale', inputs=inputs, outputs={'Out': out}, attrs=attrs)
+    return helper.append_activation(out)
 
