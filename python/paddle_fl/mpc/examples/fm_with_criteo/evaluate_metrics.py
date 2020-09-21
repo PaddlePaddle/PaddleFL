@@ -17,9 +17,30 @@ Evaluate accuracy.
 import numpy as np
 import logging
 
+import paddle_fl.mpc as pfl_mpc
+
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
+
+def evaluate_auc(file1, file2):
+    """
+    evaluate accuracy
+    """
+    auc_metric = pfl_mpc.metrics.Auc("ROC")
+    label = np.loadtxt(file1,delimiter='\n')
+    class1_preds = np.loadtxt(file2,delimiter='\n')
+    label_data = label.reshape(label.shape[0], 1)
+    class1_preds = class1_preds.reshape(label_data.shape)
+
+    class0_preds = 1 - class1_preds
+    preds = np.concatenate((class0_preds, class1_preds), axis=1)
+
+    auc_metric.update(preds = preds, labels = label_data)
+    logger.info("Evaluate AUC: ")
+    auc_value = auc_metric.eval()
+    logger.info(auc_value)
+    return auc_value
 
 
 def evaluate_accuracy(file1, file2):
@@ -44,6 +65,6 @@ def evaluate_accuracy(file1, file2):
 
 
 if __name__ == '__main__':
-    #evaluate_accuracy("./mpc_data/label_mnist", "./mpc_infer_data/label_paddle")
-    evaluate_accuracy("./mpc_data/label_criteo", "./mpc_infer_data/label_mpc")
+    evaluate_accuracy("./mpc_infer_data/label_criteo", "./mpc_infer_data/label_mpc")
+    evaluate_auc("./mpc_infer_data/label_criteo", "./mpc_infer_data/label_mpc")
 

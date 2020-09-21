@@ -22,34 +22,6 @@ cont_diff_ = [cont_max_[i] - cont_min_[i] for i in range(len(cont_min_))]
 continuous_range_ = range(1, 14)
 categorical_range_ = range(14, 40)
 
-line_num = 0
-
-def reader(hash_dim_, paddle_train_data_dir):
-    files = [str(paddle_train_data_dir) + "/%s" % x for x in os.listdir(paddle_train_data_dir)] 
-    for file in files:
-        with open(file, 'r') as f:
-            for line in f:
-                features = line.rstrip('\n').split('\t')
-                feat_idx = []
-                feat_value = []
-                for idx in continuous_range_:
-                    feat_idx.append(hash('dense_feat_id' + str(idx)) % hash_dim_)
-                    if features[idx] == '':
-                        feat_value.append(0.0)
-                    else:
-                        feat_value.append(
-                            (float(features[idx]) - cont_min_[idx - 1]) /
-                            cont_diff_[idx - 1])
-                for idx in categorical_range_:
-                    if features[idx] == '':
-                        feat_idx.append(hash('sparse_feat_id' + str(idx)) % hash_dim_)
-                        feat_value.append(0.0)
-                    else:
-                        feat_idx.append(
-                            hash(str(idx) + features[idx]) % hash_dim_)
-                        feat_value.append(1.0)
-                label = [int(features[0])]
-                yield feat_idx[:], feat_value[:], label[:]
 
 def generate_sample(hash_dim_, paddle_train_data_dir):
     files = [str(paddle_train_data_dir) + "/%s" % x for x in os.listdir(paddle_train_data_dir)]

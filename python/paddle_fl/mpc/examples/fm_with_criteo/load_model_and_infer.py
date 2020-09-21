@@ -26,7 +26,7 @@ import paddle_fl.mpc.data_utils.aby3 as aby3
 import args
 import mpc_network
 import process_data
-import evaluate_accuracy
+import evaluate_metrics as evaluate
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
@@ -113,8 +113,8 @@ def infer(test_loader, role, exe, BATCH_SIZE, mpc_model_dir, mpc_model_filename)
         if os.path.exists(decrypt_file):
             os.remove(decrypt_file)
         process_data.decrypt_data_to_file(cypher_file, (BATCH_SIZE, ), decrypt_file)
-        evaluate_accuracy.evaluate_accuracy('./mpc_infer_data/label_criteo', decrypt_file)
-        os.remove(decrypt_file)
+        evaluate.evaluate_accuracy('./mpc_infer_data/label_criteo', decrypt_file)
+        evaluate.evaluate_auc('./mpc_infer_data/label_criteo', decrypt_file)
 
     end_time = time.time()
     logger.info('End Evaluate Accuracy...cost time: {}'.format(end_time - start_time))
