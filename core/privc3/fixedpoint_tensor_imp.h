@@ -162,7 +162,12 @@ void FixedPointTensor<T, N>::negative(FixedPointTensor<T, N>* ret) const {
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::mul(const FixedPointTensor<T, N>* rhs,
                                  FixedPointTensor<T, N>* ret) const {
-    mul_trunc(this, rhs, ret, &TensorAdapter<T>::mul);
+    mul_trunc(this, rhs, ret, [](
+            const TensorAdapter<T>* lhs,
+            const TensorAdapter<T>* rhs,
+            TensorAdapter<T>* ret) {
+        lhs->mul(rhs, ret);
+        });
 }
 
 #ifdef USE_ABY3_TRUNC1 //use aby3 trunc1
@@ -326,11 +331,11 @@ void FixedPointTensor<T, N>::mul_trunc(const FixedPointTensor<T, N>* lhs,
     auto temp1 = tensor_factory()->template create<T>(ret->shape());
 
     // use mul_func to fit both element_wise mul and mat mul
-    (lhs->share(0)->*mul_func)(rhs->share(0), temp.get());
-    (lhs->share(0)->*mul_func)(rhs->share(1), temp1.get());
+    mul_func(lhs->share(0), rhs->share(0), temp.get());
+    mul_func(lhs->share(0), rhs->share(1), temp1.get());
     temp1->add(temp.get(), temp1.get());
 
-    (lhs->share(1)->*mul_func)(rhs->share(0), temp.get());
+    mul_func(lhs->share(1), rhs->share(0), temp.get());
     temp1->add(r_zero.get(), temp1.get());
     temp->add(temp1.get(), temp.get());
 
@@ -395,15 +400,24 @@ void FixedPointTensor<T, N>::dot_mul(const CTensor<T, N1...>* rhs,
 
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::mat_mul(const FixedPointTensor<T, N>* rhs,
-                                     FixedPointTensor<T, N>* ret) const {
-    mul_trunc(this, rhs, ret, &TensorAdapter<T>::mat_mul);
+                                     FixedPointTensor<T, N>* ret,
+                                     bool trans_lhs,
+                                     bool trans_rhs) const {
+    mul_trunc(this, rhs, ret, [trans_lhs, trans_rhs](
+            const TensorAdapter<T>* lhs,
+            const TensorAdapter<T>* rhs,
+            TensorAdapter<T>* ret) {
+        lhs->mat_mul(rhs, ret, trans_lhs, trans_rhs);
+        });
 }
 
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::mat_mul(const TensorAdapter<T>* rhs,
-                                     FixedPointTensor<T, N>* ret) const {
-    _share[0]->mat_mul(rhs, ret->_share[0]);
-    _share[1]->mat_mul(rhs, ret->_share[1]);
+                                     FixedPointTensor<T, N>* ret,
+                                     bool trans_lhs,
+                                     bool trans_rhs) const {
+    _share[0]->mat_mul(rhs, ret->_share[0], trans_lhs, trans_rhs);
+    _share[1]->mat_mul(rhs, ret->_share[1], trans_lhs, trans_rhs);
     truncate(ret, ret, rhs->scaling_factor());
 }
 

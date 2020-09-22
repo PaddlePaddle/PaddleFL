@@ -64,7 +64,9 @@ public:
   void div(const TensorAdapter<T> *rhs, TensorAdapter<T> *ret) const override;
 
   void mat_mul(const TensorAdapter<T> *rhs,
-               TensorAdapter<T> *ret) const override;
+               TensorAdapter<T> *ret,
+               bool trans_lhs = false,
+               bool trans_rhs = false) const override;
 
   void bitwise_xor(const TensorAdapter<T> *rhs,
                    TensorAdapter<T> *ret) const override;

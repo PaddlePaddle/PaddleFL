@@ -22,6 +22,8 @@
 #include "paddle/fluid/platform/hostdevice.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
+#include "glog/logging.h"
+
 namespace aby3 {
 
 template <typename T>
@@ -98,7 +100,9 @@ void PaddleTensor<T>::div(const TensorAdapter<T> *rhs,
 
 template <typename T>
 void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
-                              TensorAdapter<T> *ret) const {
+                              TensorAdapter<T> *ret,
+                              bool trans_lhs,
+                              bool trans_rhs) const {
   auto rhs_ = dynamic_cast<const PaddleTensor<T> *>(rhs);
   auto ret_ = dynamic_cast<PaddleTensor<T> *>(ret);
 
@@ -106,43 +110,88 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
   auto &mat_b = rhs_->_tensor;
   auto &mat_out = ret_->_tensor;
 
-  // tensor with dims like [ m, n ] or [ 1, m, n ] is matrix
+  // tensor with dims like [ h, w ] or [ batch_size , h, w ] is matrix
   auto is_matrix = [](const paddle::framework::Tensor &t) -> bool {
-    return t.dims().size() == 2 || t.dims().size() == 3 && t.dims()[0] == 1;
+    return t.dims().size() == 2 || t.dims().size() == 3;
   };
-
-  PADDLE_ENFORCE(is_matrix(mat_a) && is_matrix(mat_b) && is_matrix(mat_out),
-                 "The input and output of matmul must be matrix.");
 
   PADDLE_ENFORCE(mat_a.place() == mat_b.place() &&
                      mat_a.place() == mat_out.place(),
                  "The places of matrices must be same");
 
-  auto dim_a = mat_a.dims();
-  auto dim_b = mat_b.dims();
-  auto dim_out = mat_out.dims();
+  PADDLE_ENFORCE(is_matrix(mat_a) && is_matrix(mat_b) && is_matrix(mat_out),
+                 "The input and output of matmul must be matrix "
+                 "or batched matrix.");
 
-  PADDLE_ENFORCE_EQ(dim_a[dim_a.size() - 1], dim_b[dim_b.size() - 2]);
+  PADDLE_ENFORCE(mat_a.dims().size() >= mat_b.dims().size(),
+                 "Only following dims are supported: "
+                 "Mat A is [BatchSize, H, W] and Mat B is [BatchSize, H, W]."
+                 "Mat A is [BatchSize, H, W] and Mat B is [H, W]."
+                 "Mat A is [H, W] and Mat B is [H, W].");
 
-  using EigenMatrix = paddle::framework::EigenMatrix<T>;
+  using EigenTensor = paddle::framework::EigenTensor<T, 3>;
+  using EigenTensor4 = paddle::framework::EigenTensor<T, 4>;
+  using EigenTensor2 = paddle::framework::EigenTensor<T, 2>;
+
+  auto to_const_eigen_tensor = [](const paddle::framework::Tensor &t) {
+      auto dims = t.dims();
+      if (dims.size() == 2) {
+          dims = paddle::framework::make_ddim({1, dims[0], dims[1]});
+      }
+      return EigenTensor::From(t, dims);
+  };
+
+  auto to_eigen_tensor = [](paddle::framework::Tensor &t) {
+      auto dims = t.dims();
+      if (dims.size() == 2) {
+          dims = paddle::framework::make_ddim({1, dims[0], 1, dims[1]});
+      } else { // dims.size() == 3
+          dims = paddle::framework::make_ddim({dims[0], dims[1], 1, dims[2]});
+      }
+      return EigenTensor4::From(t, dims);
+  };
+
+
+  auto &place = *eigen_device();
+
+  auto t_a = to_const_eigen_tensor(mat_a);
+  auto t_b = to_const_eigen_tensor(mat_b);
+  auto t_c = to_eigen_tensor(mat_out);
+
+  PADDLE_ENFORCE(t_a.dimension(2 - trans_lhs) == t_b.dimension(1 + trans_rhs),
+                 "W_A != H_B.");
+
+  auto batch_size = t_a.dimension(0);
+  auto batch_size_b = t_b.dimension(0);
+
+  PADDLE_ENFORCE(batch_size_b == batch_size || batch_size_b == 1,
+                 "Mat B BatchSize mismatched.");
+
+  PADDLE_ENFORCE(t_c.dimension(0) == batch_size,
+                 "Result Mat BatchSize mismatched.");
+
+  auto hc = t_c.dimension(1);
+  auto wc = t_c.dimension(3);
 
   // matrix product of tensor contractions
   // please refer to
   // github.com/eigenteam/eigen-git-mirror/blob/master/unsupported/Eigen/CXX11/src/Tensor/README.md
-  // flatten tensor to 2d, 1 for num_col_dims, assum input dims are 2
-  typename EigenMatrix::ConstType mat_lhs =
-      EigenMatrix::Reshape(mat_a, dim_a.size() - 1);
-  typename EigenMatrix::ConstType mat_rhs =
-      EigenMatrix::Reshape(mat_b, dim_b.size() - 1);
-  typename EigenMatrix::Type mat_ret =
-      EigenMatrix::Reshape(mat_out, dim_out.size() - 1);
 
-  auto &place = *eigen_device();
-
-  Eigen::array<Eigen::IndexPair<int>, 1> product_dims = {
-      Eigen::IndexPair<int>(1, 0)};
-
-  mat_ret.device(place) = mat_lhs.contract(mat_rhs, product_dims);
+  if (batch_size_b == 1) {
+      Eigen::array<Eigen::IndexPair<int>, 1> axis = {
+          Eigen::IndexPair<int>(2 - trans_lhs, 1 + trans_rhs)};
+    t_c.device(place) = t_a.contract(t_b, axis);
+  } else {
+      Eigen::array<Eigen::IndexPair<int>, 1> axis = {
+          Eigen::IndexPair<int>(1 - trans_lhs, 0 + trans_rhs)};
+// #pragma omp parallel num_threads(4)
+#pragma omp for
+      for (int i = 0; i < batch_size; ++i) {
+          Eigen::TensorMap<Eigen::Tensor<T, 2, Eigen::RowMajor, Eigen::DenseIndex>>
+              t_c_chip(t_c.data() + i * hc * wc, hc, wc);
+          t_c_chip.device(place) = t_a.chip(i, 0).contract(t_b.chip(i, 0), axis);
+      }
+  }
 }
 
 template <typename T>

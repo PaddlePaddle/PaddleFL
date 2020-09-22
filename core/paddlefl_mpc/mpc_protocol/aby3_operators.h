@@ -104,7 +104,8 @@ public:
         lhs_->mul(rhs_, out_);
     }
 
-    void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
+    void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
+                bool trans_lhs = false, bool trans_rhs = false) override {
 
         auto lhs_tuple = from_tensor(lhs);
         auto rhs_tuple = from_tensor(rhs);
@@ -114,7 +115,7 @@ public:
         auto rhs_ = std::get<0>(rhs_tuple).get();
         auto out_ = std::get<0>(out_tuple).get();
 
-        lhs_->mat_mul(rhs_, out_);
+        lhs_->mat_mul(rhs_, out_, trans_lhs, trans_rhs);
     }
 
     void scale(const Tensor *lhs, const double factor, Tensor *out) override {

@@ -103,10 +103,16 @@ public:
     void sum(FixedPointTensor* ret) const;
 
     // mat_mul with FixedPointTensor
-    void mat_mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const;
+    void mat_mul(const FixedPointTensor* rhs,
+                 FixedPointTensor* ret,
+                 bool trans_lhs = false,
+                 bool trans_rhs = false) const;
 
     // mat_mul with TensorAdapter
-    void mat_mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
+    void mat_mul(const TensorAdapter<T>* rhs,
+                 FixedPointTensor* ret,
+                 bool trans_lhs = false,
+                 bool trans_rhs = false) const;
 
     // exp approximate: exp(x) = \lim_{n->inf} (1+x/n)^n
     // where n = 2^ite
