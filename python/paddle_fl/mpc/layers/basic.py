@@ -23,6 +23,7 @@ from ..mpc_layer_helper import MpcLayerHelper
 __all__ = [
     'elementwise_add',
     'elementwise_sub',
+    'elementwise_mul',
 ]
 
 
@@ -91,15 +92,40 @@ def elementwise_sub(x, y, axis=-1, act=None, name=None):
     But the output only shares the LoD information with input $x$.
     Args:
         x (MpcVariable): The first input Tensor/LoDTensor of elementwise_sub_op.
-        y (MpcVariable): The second input Tensor/LoDTensor of elementwise_add_op. 
+        y (MpcVariable): The second input Tensor/LoDTensor of elementwise_sub_op. 
                          The dimensions of must be less than or equal to the dimensions of x.
-        axis: If X.dimension != Y.dimension, Y.dimension must be a subsequence of x.dimension. 
+        axis: If X.dimension != Y.dimension, Y.dimension must be a subsequence of x.dimension. (TODO)
               And axis is the start dimension index for broadcasting Y onto X.
         act (string, optional): Activation applied to the output. Default is None.
         name (string, optional): Name of the output. Default is None. It is used to print debug info for developers.
     Returns:
-       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of elementwise add op.
+       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of elementwise sub op.
 
     Examples: todo
     """
     return _elementwise_op(MpcLayerHelper('elementwise_sub', **locals()))
+
+
+def elementwise_mul(x, y, axis=-1, act=None, name=None):
+    """
+    elementwise_mul Operator.
+    This operator is used to perform subtraction for input $x$ and $y$.
+    The equation is:
+    ..  math::
+        Out = x * y
+    Both the input $x$ and $y$ can carry the LoD (Level of Details) information, or not. 
+    But the output only shares the LoD information with input $x$.
+    Args:
+        x (MpcVariable): The first input Tensor/LoDTensor of elementwise_mul_op.
+        y (MpcVariable): The second input Tensor/LoDTensor of elementwise_mul_op. 
+                         The dimensions of must be equal to the dimensions of x.
+        axis: If X.dimension != Y.dimension, Y.dimension must be equal or (less than) (TODO) a subsequence of x.dimension. 
+              And axis is the start dimension index for broadcasting Y onto X.
+        act (string, optional): Activation applied to the output. Default is None.
+        name (string, optional): Name of the output. Default is None. It is used to print debug info for developers.
+    Returns:
+       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of elementwise mul op.
+
+    Examples: todo
+    """
+    return _elementwise_op(MpcLayerHelper('elementwise_mul', **locals()))
