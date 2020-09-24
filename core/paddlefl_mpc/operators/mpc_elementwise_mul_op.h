@@ -71,8 +71,6 @@ template <typename DeviceContext, typename T>
 class MpcElementwiseMulKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext &ctx) const override{
-        VLOG(3) << "********************";
-        VLOG(3) << "MpcElementwiseMulKernel";
         auto *in_x_t = ctx.Input<framework::LoDTensor>("X");
         auto *in_y_t = ctx.Input<framework::LoDTensor>("Y");
         auto *out_t = ctx.Output<framework::LoDTensor>("Out");
@@ -96,8 +94,6 @@ template <typename DeviceContext, typename T>
 class MpcElementwiseMulGradKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext &ctx) const override {
-        VLOG(3) << "********************";
-        VLOG(3) << "MpcElementwiseMulGradKernel";
         auto *in_x_t = ctx.Input<framework::LoDTensor>("X");
         auto *in_y_t = ctx.Input<framework::LoDTensor>("Y");
         auto *dout = ctx.Input<framework::LoDTensor>(framework::GradVarName("Out"));
