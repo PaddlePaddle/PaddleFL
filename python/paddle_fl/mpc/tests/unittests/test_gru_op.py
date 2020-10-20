@@ -201,7 +201,7 @@ class TestGRUOp(OpTest):
 
         self.attrs = {
             'activation': self.act_state,
-            'gate_activation': 'sigmoid_high_precision',
+            'gate_activation': 'sigmoid',
             'is_reverse': self.is_reverse,
             'origin_mode': self.origin_mode
         }
@@ -265,7 +265,8 @@ class TestGRUOpWithInitial(TestGRUOp):
         place = core.CPUPlace()
         self.check_grad_with_place(
             place, ['Input', 'Weight', 'H0'], ['Hidden'],
-            max_relative_error=50, check_dygraph=False)
+            max_relative_error=50, check_dygraph=False,
+            transpose_input_list=["Input"])
 
 
 class TestGRUOpWithBias(TestGRUOp):
@@ -284,7 +285,8 @@ class TestGRUOpWithBias(TestGRUOp):
         place = core.CPUPlace()
         self.check_grad_with_place(
             place, ['Input', 'Weight', 'Bias'], ['Hidden'],
-            max_relative_error=50, check_dygraph=False)
+            max_relative_error=50, check_dygraph=False,
+            transpose_input_list=["Input"])
 
 """
 class TestGRUOpReverse(TestGRUOp):
