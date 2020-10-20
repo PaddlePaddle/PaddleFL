@@ -877,8 +877,6 @@ class OpTest(unittest.TestCase):
         def __get_elem__(tensor, i):
             if tensor_to_check_dtype == np.float16:
                 numpy_tensor = np.array(tensor).astype(np.float16)
-                if input_to_check in transpose_input_list:
-                    numpy_tensor = np.transpose(numpy_tensor, [1, 0, 2])
                 numpy_tensor = numpy_tensor.flatten()
                 return numpy_tensor[i]
             elif tensor_to_check_dtype == np.int64:
