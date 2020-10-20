@@ -369,7 +369,7 @@ class OpTest(unittest.TestCase):
                 build_strategy=build_strategy, places=place)
             program = compiled_prog
         # Manager() can not store LoDTensor directly
-        # So, sue one additional element to store output lod
+        # So, use one additional element to store output lod
         return_results = [Manager().list() for _ in range(len(fetch_list) + 1)]
 
         def closure(**kwargs):
@@ -743,7 +743,7 @@ class OpTest(unittest.TestCase):
         fetch_list = [g for p, g in param_grad_list]
 
         # Manager() can not store LoDTensor directly
-        # So, sue one additional element to store output lod
+        # So, use one additional element to store output lod
         return_results = [Manager().list() for _ in range(len(fetch_list) + 1)]
 
         def closure(**kwargs):
@@ -877,6 +877,8 @@ class OpTest(unittest.TestCase):
         def __get_elem__(tensor, i):
             if tensor_to_check_dtype == np.float16:
                 numpy_tensor = np.array(tensor).astype(np.float16)
+                if input_to_check in transpose_input_list:
+                    numpy_tensor = np.transpose(numpy_tensor, [1, 0, 2])
                 numpy_tensor = numpy_tensor.flatten()
                 return numpy_tensor[i]
             elif tensor_to_check_dtype == np.int64:
@@ -901,7 +903,6 @@ class OpTest(unittest.TestCase):
                 shape = numpy_tensor.shape
                 numpy_tensor = numpy_tensor.flatten()
                 numpy_tensor[i] = e
-                numpy_tensor[tensor_size + i] = e
                 numpy_tensor = numpy_tensor.reshape(shape)
                 if input_to_check in transpose_input_list:
                     numpy_tensor = np.transpose(numpy_tensor, [1, 0, 2])
@@ -921,19 +922,25 @@ class OpTest(unittest.TestCase):
 
             # get one input element throw it's index i.
             origin = __get_elem__(tensor_to_check, i)
-            # add delta to it, run op and then get the sum of the result tensor.
+            origin1 = __get_elem__(tensor_to_check, tensor_size + i)
+            # add delta to (shares0, shares1), run op and then get the sum of the result tensor.
             x_pos = origin + delta
+            x_pos1 = origin1 + delta
             __set_elem__(tensor_to_check, i, x_pos)
+            __set_elem__(tensor_to_check, tensor_size + i, x_pos1)
             y_pos = get_output()
 
             if in_place:
                 set_input(scope, op, inputs, place)
 
             x_neg = origin - delta
+            x_neg1 = origin1 - delta
             __set_elem__(tensor_to_check, i, x_neg)
+            __set_elem__(tensor_to_check, tensor_size + i, x_neg1)
             y_neg = get_output()
 
             __set_elem__(tensor_to_check, i, origin)
+            __set_elem__(tensor_to_check, tensor_size + i, origin1)
             gradient_flat[i] = (y_pos - y_neg) / delta_origin / 2
 
         return gradient_flat.reshape(input_plain_shape)
