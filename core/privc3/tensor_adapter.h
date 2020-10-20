@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 namespace aby3 {
 
@@ -36,6 +37,22 @@ public:
     virtual void reshape(const std::vector<size_t>& shape) = 0;
 
     virtual size_t numel() const = 0;
+
+    // for debug only
+    friend std::ostream& operator<<(std::ostream& os, const TensorAdapter* tensor) {
+      auto shape = tensor->shape();
+      os << "shape: [";
+      for (auto& i : shape) {
+        os << i <<", ";
+      }
+      os << "]" << std::endl;
+      os << "data:"<< std::endl;
+      for(int i = 0; i < tensor->numel(); ++i) {
+        os << *(tensor->data() + i) <<", ";
+      }
+      os << std::endl;
+      return os;
+    }
 
     virtual void copy(TensorAdapter* ret) const {
         // TODO: check shape equals
