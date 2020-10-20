@@ -130,6 +130,10 @@ public:
     // implemented with ref to tfe[https://github.com/tf-encrypted/tf-encrypted]
     void sigmoid_chebyshev(FixedPointTensor* ret) const;
 
+    // element-wise sigmoid using long-div and exp
+    // higher precision but higher time cost
+    void sigmoid_high_precision(FixedPointTensor<T, N>* ret) const;
+
     // softmax axis = -1
     void softmax(FixedPointTensor* ret,
                  bool use_relu = false,

@@ -595,6 +595,22 @@ void test_fixedt_sigmoid_chebyshev_fixed(size_t p,
     result->reveal(out);
 }
 
+void test_fixedt_sigmoid_high_precision_fixed(size_t p,
+               std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in,
+               TensorAdapter<int64_t>* out) {
+    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> temp;
+    for (int i = 0; i < 4; i++) {
+        temp.emplace_back(gen(out->shape()));
+    }
+
+    test_fixedt_gen_shares(p, in[0], temp);
+
+    Fix64N16* lhs = new Fix64N16(temp[0].get(), temp[1].get());
+    Fix64N16* result = new Fix64N16(temp[2].get(), temp[3].get());
+    lhs->sigmoid_high_precision(result);
+    result->reveal(out);
+}
+
 void test_fixedt_exp_fixed(size_t p,
                std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in,
                TensorAdapter<int64_t>* out) {
@@ -3113,6 +3129,55 @@ TEST_F(FixedTensorTest, sigmoid_chebyshev) {
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.03));
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.03));
     EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.03));
+}
+
+TEST_F(FixedTensorTest, sigmoid_high_precision) {
+
+    std::vector<size_t> shape = {2, 2};
+    // larger error when input < -3 or >4
+    std::vector<double> in0_val = {1.0, 2.0, -3.0, 4.0};
+    std::vector<double> res_val = {0.73105, 0.88079, 0.0474, 0.9820};
+    std::vector<std::shared_ptr<TensorAdapter<int64_t>>> in = {gen(shape)};
+
+    test_fixedt_gen_paddle_tensor<int64_t, 16>(in0_val,
+                                shape, _cpu_ctx).copy(in[0].get());
+    //not copy scaling factor in copy funtion
+    dynamic_cast<PaddleTensor<int64_t>*>(in[0].get())->
+                                scaling_factor() = 16;
+
+    auto out0 = _s_tensor_factory->create<int64_t>(shape);
+    auto out1 = _s_tensor_factory->create<int64_t>(shape);
+    auto out2 = _s_tensor_factory->create<int64_t>(shape);
+
+    PaddleTensor<int64_t> result =
+            test_fixedt_gen_paddle_tensor<int64_t, 16>(res_val, shape, _cpu_ctx);
+
+    _t[0] = std::thread([this, in, out0]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[0], [&](){
+            test_fixedt_sigmoid_high_precision_fixed(0, in, out0.get());
+        });
+
+    });
+    _t[1] = std::thread([this, in, out1]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[1], [&](){
+            test_fixedt_sigmoid_high_precision_fixed(1, in, out1.get());
+        });
+
+    });
+    _t[2] = std::thread([this, in, out2]() mutable {
+        g_ctx_holder::template run_with_context(_exec_ctx.get(), _mpc_ctx[2], [&](){
+            test_fixedt_sigmoid_high_precision_fixed(2, in, out2.get());
+        });
+
+    });
+
+    _t[0].join();
+    _t[1].join();
+    _t[2].join();
+
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), out1.get(), 0.003));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out1.get(), out2.get(), 0.003));
+    EXPECT_TRUE(test_fixedt_check_tensor_eq(out0.get(), &result, 0.003));
 }
 
 TEST_F(FixedTensorTest, sigmoid) {

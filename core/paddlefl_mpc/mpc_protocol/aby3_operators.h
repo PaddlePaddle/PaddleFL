@@ -182,6 +182,16 @@ public:
         op_->sigmoid_chebyshev(out_);
     }
 
+    void sigmoid_high_precision(const Tensor *op, Tensor *out) override {
+        auto op_tuple = from_tensor(op);
+        auto out_tuple = from_tensor(out);
+
+        auto op_ = std::get<0>(op_tuple).get();
+        auto out_ = std::get<0>(out_tuple).get();
+
+        op_->sigmoid_high_precision(out_);
+    }
+
     void softmax(const Tensor *op, Tensor *out, bool use_relu, bool use_long_div) override {
         auto op_tuple = from_tensor(op);
         auto out_tuple = from_tensor(out);
@@ -401,6 +411,22 @@ public:
         lhs_->long_div(rhs_, out_);
 
     }
+
+    void reveal(const Tensor *in, Tensor* out) override {
+        
+        auto out_dims = framework::slice_ddim(in->dims(), 1, in->dims().size());
+        Tensor temp;
+        temp.mutable_data<int64_t>(out_dims, ContextHolder::device_ctx()->GetPlace());
+        auto out_ptr = out->mutable_data<double>(out_dims, ContextHolder::device_ctx()->GetPlace());
+        auto in_tuple = from_tensor(in);
+        auto out_ = std::make_shared<PaddleTensor>(ContextHolder::device_ctx(), temp);
+        auto in_ = std::get<0>(in_tuple).get();
+
+        in_->reveal(out_.get());
+        std::transform(out_->data(), out_->data() + out_->numel(), out_ptr,
+                       [](int64_t in) {
+                           return in / pow(2, ABY3_SCALING_FACTOR); });
+    };
 
 private:
     template <typename T>

@@ -599,6 +599,30 @@ void FixedPointTensor<T, N>::sigmoid(FixedPointTensor<T, N>* ret) const {
     this->polynomial_piecewise(coeff.get(), break_point.get(), ret);
 }
 
+// sigmoid(x) = 1 / (1 + exp(-x))
+template< typename T, size_t N>
+void FixedPointTensor<T, N>::sigmoid_high_precision(FixedPointTensor<T, N>* ret) const {
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (int i = 0; i < 2; ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>(ret->shape()));
+    }
+    auto tensor_one_share0 = tensor_factory()->template create<T>(shape());
+    auto tensor_one_share1 = tensor_factory()->template create<T>(shape());
+    auto tensor_one = tensor_factory()->template create<T>(shape());
+    assign_to_tensor(tensor_one.get(), (T) (1.0 * pow(2, N)));
+    tensor_one->scaling_factor() = N;
+    assign_to_tensor(tensor_one_share0.get(), (T) (1.0 * pow(2, N) / 3.0));
+    assign_to_tensor(tensor_one_share1.get(), (T) (1.0 * pow(2, N) / 3.0));
+    
+    FixedPointTensor tensor_one_ft(tensor_one_share0.get(), tensor_one_share1.get());
+    FixedPointTensor out(temp[0].get(), temp[1].get());
+    this->negative(&out);
+    out.exp(&out);
+    out.add(tensor_one.get(), &out);
+    tensor_one_ft.long_div(&out, ret);
+}
+
 template< typename T, size_t N>
 void FixedPointTensor<T, N>::sigmoid_enhanced(FixedPointTensor<T, N>* ret) const {
     //utilize polynomial_piecewise

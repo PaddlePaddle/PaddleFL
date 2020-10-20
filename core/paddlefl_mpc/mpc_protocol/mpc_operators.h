@@ -54,6 +54,9 @@ public:
 
     virtual void sigmoid_chebyshev(const Tensor *op, Tensor *out) = 0;
 
+    // high precision implement of sigmoid
+    virtual void sigmoid_high_precision(const Tensor *op, Tensor *out) {};
+
     virtual void softmax(const Tensor *op, Tensor *out, bool use_relu, bool use_long_div) = 0;
 
     virtual void gt(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
@@ -99,6 +102,13 @@ public:
     virtual void calc_precision_recall(const Tensor* tp_fp_fn, Tensor* out) = 0;
 
     virtual void div(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
+
+    // online reveal, only for debug
+    // e.g.
+    // Tensor tensor_to_print;
+    // reveal(tensor_in, tensor_to_print);
+    // std::cout << tensor_to_print;
+    virtual void reveal(const Tensor *in, Tensor* out) {};
 };
 
 } // mpc
