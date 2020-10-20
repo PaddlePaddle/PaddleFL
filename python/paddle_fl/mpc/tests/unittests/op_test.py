@@ -901,6 +901,7 @@ class OpTest(unittest.TestCase):
                 shape = numpy_tensor.shape
                 numpy_tensor = numpy_tensor.flatten()
                 numpy_tensor[i] = e
+                numpy_tensor[tensor_size + i] = e
                 numpy_tensor = numpy_tensor.reshape(shape)
                 if input_to_check in transpose_input_list:
                     numpy_tensor = np.transpose(numpy_tensor, [1, 0, 2])
