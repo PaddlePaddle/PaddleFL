@@ -41,7 +41,7 @@ role = int(role)
 
 # data preprocessing
 BATCH_SIZE = 128
-epoch_num = 5
+epoch_num = 1
 
 x = pfl_mpc.data(name='x', shape=[BATCH_SIZE, 1, 28, 28], dtype='int64')
 y = pfl_mpc.data(name='y', shape=[BATCH_SIZE, 10], dtype='int64')
@@ -125,17 +125,18 @@ exe.run(fluid.default_startup_program())
 
 mpc_model_basedir = "./mpc_model/"
 
-step = 0
-start_time = time.time()
 logger.info('MPC training start...')
 for epoch_id in range(epoch_num):
+    step = 0
+    epoch_start_time = time.time()
     for sample in loader():
         step += 1
+        step_start_time = time.time()
         results = exe.run(feed=sample, fetch_list=[softmax])
+        step_end_time = time.time()
         if step % 100 == 0:
-            end_time = time.time()
             logger.info('MPC training of epoch_id={} step={},  cost time in seconds:{}'
-                        .format(epoch_id, step, (end_time - start_time)))
+                        .format(epoch_id, step, (step_end_time - step_start_time)))
     
     # For each epoch: infer or save infer program
     #infer()
@@ -147,9 +148,9 @@ for epoch_id in range(epoch_num):
         main_program=infer_program,
         model_filename="__model__")
 
-end_time = time.time()
-logger.info('MPC training of epoch_num={} batch_size={}, cost time in seconds:{}'
-      .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
+    epoch_end_time = time.time()
+    logger.info('MPC training of epoch_id={} batch_size={}, cost time in seconds:{}'
+      .format(epoch_num, BATCH_SIZE, (epoch_end_time - epoch_start_time)))
 
 # infer
 infer()
