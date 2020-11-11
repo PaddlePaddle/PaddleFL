@@ -75,7 +75,7 @@ for epoch_id in range(epoch_num):
         mpc_loss = exe.run(feed=sample, fetch_list=[avg_loss])
         step_end = time.time()
 
-        if step % 50 == 0:
+        if step % 5 == 0:
             print('Epoch={}, Step={}, batch_cost={:.4f} s, Loss={},'.format(epoch_id, step,
                                                       (step_end - step_start), mpc_loss))
             with open(loss_file, 'ab') as f:
@@ -83,7 +83,7 @@ for epoch_id in range(epoch_num):
         step += 1
     end_time = time.time()
     print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
-      .format(epoch_num, BATCH_SIZE, (end_time - start_time)))
+      .format(epoch_id, BATCH_SIZE, (end_time - start_time)))
 
 prediction_file = "/tmp/uci_prediction.part{}".format(role)
 for sample in loader():
