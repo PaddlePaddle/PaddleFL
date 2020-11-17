@@ -21,6 +21,7 @@ import mpc_data_utils as mdu
 from paddle.fluid.data_feeder import check_type, check_dtype
 import paddle.fluid.layers.utils as utils
 from paddle.fluid.initializer import Constant
+from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.framework import Variable
 from ..framework import MpcVariable
@@ -35,6 +36,8 @@ __all__ = [
     'softmax_with_cross_entropy',
     'pool2d',
     'batch_norm',
+    'reshape',
+    'mean_normalize',
 ]
 
 
@@ -550,3 +553,220 @@ def batch_norm(input,
         type="mpc_batch_norm", inputs=inputs, outputs=outputs, attrs=attrs)
 
     return helper.append_activation(batch_norm_out)
+
+
+def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
+    """
+    This operator changes the shape of ``x`` without changing its data.
+
+    The target shape can be given by ``shape`` or ``actual_shape``.
+    When ``shape`` and ``actual_shape`` are set at the same time,
+    ``actual_shape`` has a higher priority than ``shape``
+    but at this time ``shape`` can only be an integer list or tuple, and ``shape`` still should be set correctly to
+    guarantee shape inference in compile-time.
+
+    Some tricks exist when specifying the target shape.
+
+    1. -1 means the value of this dimension is inferred from the total element
+    number of x and remaining dimensions. Thus one and only one dimension can
+    be set -1.
+
+    2. 0 means the actual dimension value is going to be copied from the
+    corresponding dimension of x. The index of 0s in shape can not exceed
+    the dimension of x.
+
+    Args:
+        x(Variable): A ``Tensor`` or ``LoDTensor`` . The data type is ``int64``.
+        shape(list|tuple|Variable): Define the target shape. At most one dimension of the target shape can be -1.
+                        The data type is ``int32`` . If ``shape`` is a list or tuple, the elements of it should be integers or Tensors with shape [1].
+                        If ``shape`` is an Variable, it should be an 1-D Tensor .
+        actual_shape(variable, optional): An 1-D ``Tensor`` or ``LoDTensor`` . The data type is ``int32`` . If provided, reshape
+                                according to this given shape rather than ``shape`` specifying shape.
+                                That is to say ``actual_shape`` has a higher priority
+                                than ``shape(list|tuple)`` but not ``shape(Variable)``. \
+                                This argument ``actual_shape`` will be removed in a future version. \
+        act (str, optional): The non-linear activation to be applied to the reshaped input. Default None.
+        inplace(bool, optional): If ``inplace`` is True, the input and output of ``layers.reshape``
+                       are the same variable. Otherwise, the input and output of
+                       ``layers.reshape`` are different variable. Default False. Note that if ``x``
+                       is more than one OPs' input, ``inplace`` must be False.
+        name(str, optional): The default value is None. Normally there is no need for user to set this property.
+                            For more information, please refer to :ref:`api_guide_Name` .
+
+    Returns:
+        Variable: A ``Tensor`` or ``LoDTensor``. The data type is same as ``x``. It is a new tensor variable if ``inplace`` is ``False``, otherwise it is ``x``. If ``act`` is None, return the reshaped tensor variable, otherwise return the activated tensor variable.
+
+
+    Examples:
+        .. code-block:: python
+            import paddle_fl.mpc as pfl_mpc
+
+            pfl_mpc.init("aby3", int(args.role), "localhost", args.server, int(args.port))
+            data_1 = pfl_mpc.data(name='x', shape=[3, 3], dtype='int64')
+            op_reshape = pfl_mpc.layers.reshape(data_1, [2, 1, 9])
+    """
+
+    check_mpc_variable_and_dtype(
+        x, 'x', ['int64'], 'reshape')
+    check_type(shape, 'shape', (list, tuple, Variable), 'reshape')
+    check_type(actual_shape, 'actual_shape', (Variable, type(None)), 'reshape')
+
+    helper = MpcLayerHelper("reshape2", **locals())
+    _helper = LayerHelper("reshape2", **locals())
+
+    def get_new_shape_tensor(list_shape):
+        new_shape_tensor = []
+        for dim in list_shape:
+            if isinstance(dim, Variable):
+                dim.stop_gradient = True
+                new_shape_tensor.append(dim)
+            else:
+                assert (isinstance(dim, int))
+                temp_out = _helper.create_variable_for_type_inference('int32')
+                fill_constant([1], 'int32', dim, force_cpu=True, out=temp_out)
+                new_shape_tensor.append(temp_out)
+        return new_shape_tensor
+
+    def get_attr_shape(list_shape):
+        unk_dim_idx = -1
+        attrs_shape = []
+        for dim_idx, dim_size in enumerate(list_shape):
+            if isinstance(dim_size, Variable):
+                attrs_shape.append(-1)
+            else:
+                attrs_shape.append(dim_size)
+                if dim_size == -1:
+                    assert unk_dim_idx == -1, (
+                        "Only one dimension value of 'shape' in reshape can "
+                        "be -1. But received shape[%d] is also -1." % dim_idx)
+                    unk_dim_idx = dim_idx
+                elif dim_size == 0:
+                    assert dim_idx < len(x.shape), (
+                        "The index of 0 in `shape` must be less than "
+                        "the input tensor X's dimensions. "
+                        "But received shape[%d] = 0, X's dimensions = %d." %
+                        (dim_idx, len(x.shape)))
+                else:
+                    assert dim_size > 0, (
+                        "Each dimension value of 'shape' in reshape must not "
+                        "be negative except one unknown dimension. "
+                        "But received shape[%d] = %s." %
+                        (dim_idx, str(dim_size)))
+        return attrs_shape
+
+    inputs = {"X": x}
+    attrs = {}
+    if isinstance(shape, Variable):
+        shape.stop_gradient = True
+        inputs["Shape"] = shape
+    elif isinstance(shape, (list, tuple)):
+        assert len(shape) > 0, ("The size of 'shape' in reshape can't be zero, "
+                                "but received %s." % len(shape))
+        attrs["shape"] = get_attr_shape(shape)
+
+        if utils._contain_var(shape):
+            inputs['ShapeTensor'] = get_new_shape_tensor(shape)
+        elif isinstance(actual_shape, Variable):
+            actual_shape.stop_gradient = True
+            inputs["Shape"] = actual_shape
+
+    out = x if inplace else helper.create_mpc_variable_for_type_inference(
+        dtype=x.dtype)
+    x_shape = helper.create_mpc_variable_for_type_inference(dtype=x.dtype)
+    helper.append_op(
+        type="reshape2",
+        inputs=inputs,
+        attrs=attrs,
+        outputs={"Out": out,
+                 "XShape": x_shape})
+
+    return helper.append_activation(out)
+
+
+def mean_normalize(f_min, f_max, f_mean, sample_num):
+    '''
+    Mean normalization is a method used to normalize the range of independent
+    variables or features of data.
+    Refer to:
+    https://en.wikipedia.org/wiki/Feature_scaling#Mean_normalization
+
+    Args:
+        f_min (Variable): A 2-D tensor with shape [P, N], where P is the party
+                          num and N is the feature num. Each row contains the
+                          local min feature val of N features.
+        f_max (Variable): A 2-D tensor with shape [P, N], where P is the party
+                          num and N is the feature num. Each row contains the
+                          local max feature val of N features.
+        f_mean (Variable): A 2-D tensor with shape [P, N], where P is the party
+                           num and N is the feature num. Each row contains the
+                           local min feature val of N features.
+        sample_num (Variable): A 1-D tensor with shape [P], where P is the
+                               party num. Each element contains sample num
+                               of party_i.
+
+    Returns:
+        f_range (Variable): A 1-D tensor with shape [N], where N is the
+                            feature num. Each element contains global
+                            range of feature_i.
+        f_mean_out (Variable): A 1-D tensor with shape [N], where N is the
+                               feature num. Each element contains global
+                               range of feature_i.
+    Examples:
+        .. code-block:: python
+            import paddle_fl.mpc as pfl_mpc
+
+            pfl_mpc.init("aby3", role, "localhost", redis_server, redis_port)
+
+            # 2 for share, 4 for 4 party, 100 for feat_num
+            input_size = [2, 4, 100]
+
+            mi = pfl_mpc.data(name='mi', shape=input_size, dtype='int64')
+            ma = pfl_mpc.data(name='ma', shape=input_size, dtype='int64')
+            me = pfl_mpc.data(name='me', shape=input_size, dtype='int64')
+            sn = pfl_mpc.data(name='sn', shape=input_size[:-1], dtype='int64')
+
+            out0, out1 = pfl_mpc.layers.mean_normalize(f_min=mi, f_max=ma,
+                    f_mean=me, sample_num=sn)
+
+            exe = fluid.Executor(place=fluid.CPUPlace())
+
+            # feed encrypted data
+            f_range, f_mean = exe.run(feed={'mi': f_min, 'ma': f_max,
+            'me': f_mean, 'sn': sample_num}, fetch_list=[out0, out1])
+    '''
+    helper = MpcLayerHelper("mean_normalize", **locals())
+
+    # dtype = helper.input_dtype()
+    dtype = 'int64'
+
+    check_dtype(dtype, 'f_min', ['int64'], 'mean_normalize')
+    check_dtype(dtype, 'f_max', ['int64'], 'mean_normalize')
+    check_dtype(dtype, 'f_mean', ['int64'], 'mean_normalize')
+    check_dtype(dtype, 'sample_num', ['int64'], 'mean_normalize')
+
+    f_range = helper.create_mpc_variable_for_type_inference(dtype=f_min.dtype)
+    f_mean_out= helper.create_mpc_variable_for_type_inference(dtype=f_min.dtype)
+
+    # to avoid circular dependencies
+    from .math import reduce_sum
+
+    total_num = reduce_sum(sample_num)
+
+    op_type = 'mean_normalize'
+
+    helper.append_op(
+        type='mpc_' + op_type,
+        inputs={
+            "Min": f_min,
+            "Max": f_max,
+            "Mean": f_mean,
+            "SampleNum": sample_num,
+            "TotalNum": total_num,
+            },
+        outputs={
+            "Range": f_range,
+            "MeanOut": f_mean_out,
+             },
+        )
+
+    return f_range, f_mean_out

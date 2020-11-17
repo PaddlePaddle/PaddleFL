@@ -338,7 +338,7 @@ def _transpile_type_and_shape(block):
     for op in block.ops:
         if _is_supported_op(op.type):
             if op.type == 'fill_constant':
-                op._set_attr(name='shape', val=(2L, 1L))
+                op._set_attr(name='shape', val=(2, 1))
                 # set default MPC value for fill_constant OP
                 op._set_attr(name='value', val=MPC_ONE_SHARE)
                 op._set_attr(name='dtype', val=3)
@@ -482,7 +482,7 @@ def decrypt_model(mpc_model_dir, plain_model_path, mpc_model_filename=None, plai
             new_type = str(mpc_op.type)[len(MPC_OP_PREFIX):]
             mpc_op.desc.set_type(new_type)
         elif mpc_op.type == 'fill_constant':
-            mpc_op._set_attr(name='shape', val=(1L))
+            mpc_op._set_attr(name='shape', val=(1))
             mpc_op._set_attr(name='value', val=1.0)
             mpc_op._set_attr(name='dtype', val=5)
 

@@ -182,6 +182,16 @@ public:
         op_->sigmoid_chebyshev(out_);
     }
 
+    void sigmoid_high_precision(const Tensor *op, Tensor *out) override {
+        auto op_tuple = from_tensor(op);
+        auto out_tuple = from_tensor(out);
+
+        auto op_ = std::get<0>(op_tuple).get();
+        auto out_ = std::get<0>(out_tuple).get();
+
+        op_->sigmoid_high_precision(out_);
+    }
+
     void softmax(const Tensor *op, Tensor *out, bool use_relu, bool use_long_div) override {
         auto op_tuple = from_tensor(op);
         auto out_tuple = from_tensor(out);
@@ -328,6 +338,17 @@ public:
         a_->max_pooling(out_, b_);
     }
 
+    void max(const Tensor* in, Tensor* out) override {
+
+        auto a_tuple = from_tensor(in);
+        auto a_ = std::get<0>(a_tuple).get();
+
+        auto out_tuple = from_tensor(out);
+        auto out_ = std::get<0>(out_tuple).get();
+
+        a_->max_pooling(out_, nullptr);
+    }
+
     void inverse_square_root(const Tensor* in, Tensor* out) override {
         auto x_tuple = from_tensor(in);
         auto x_ = std::get<0>(x_tuple).get();
@@ -337,6 +358,75 @@ public:
 
         x_->inverse_square_root(y_);
     }
+
+    // only support pred for 1 in binary classification for now
+    void predicts_to_indices(const Tensor* in,
+                             Tensor* out,
+                             float threshold = 0.5) override {
+        auto x_tuple = from_tensor(in);
+        auto x_ = std::get<0>(x_tuple).get();
+
+        auto y_tuple = from_tensor(out);
+        auto y_ = std::get<0>(y_tuple).get();
+
+        FixedTensor::preds_to_indices(x_, y_, threshold);
+    }
+
+    void calc_tp_fp_fn(const Tensor* indices,
+                       const Tensor* labels,
+                       Tensor* out) override {
+        auto idx_tuple = from_tensor(indices);
+        auto idx = std::get<0>(idx_tuple).get();
+
+        auto lbl_tuple = from_tensor(labels);
+        auto lbl = std::get<0>(lbl_tuple).get();
+
+        auto out_tuple = from_tensor(out);
+        auto out_ = std::get<0>(out_tuple).get();
+
+        FixedTensor::calc_tp_fp_fn(idx, lbl, out_);
+    }
+
+    void calc_precision_recall(const Tensor* tp_fp_fn,
+                               Tensor* out) override {
+        auto in_tuple = from_tensor(tp_fp_fn);
+        auto in = std::get<0>(in_tuple).get();
+
+        PaddleTensor out_(ContextHolder::device_ctx(), *out);
+        out_.scaling_factor() = ABY3_SCALING_FACTOR;
+
+        FixedTensor::calc_precision_recall(in, &out_);
+    }
+
+    void div(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
+
+        auto lhs_tuple = from_tensor(lhs);
+        auto rhs_tuple = from_tensor(rhs);
+        auto out_tuple = from_tensor(out);
+
+        auto lhs_ = std::get<0>(lhs_tuple).get();
+        auto rhs_ = std::get<0>(rhs_tuple).get();
+        auto out_ = std::get<0>(out_tuple).get();
+
+        lhs_->long_div(rhs_, out_);
+
+    }
+
+    void reveal(const Tensor *in, Tensor* out) override {
+        
+        auto out_dims = framework::slice_ddim(in->dims(), 1, in->dims().size());
+        Tensor temp;
+        temp.mutable_data<int64_t>(out_dims, ContextHolder::device_ctx()->GetPlace());
+        auto out_ptr = out->mutable_data<double>(out_dims, ContextHolder::device_ctx()->GetPlace());
+        auto in_tuple = from_tensor(in);
+        auto out_ = std::make_shared<PaddleTensor>(ContextHolder::device_ctx(), temp);
+        auto in_ = std::get<0>(in_tuple).get();
+
+        in_->reveal(out_.get());
+        std::transform(out_->data(), out_->data() + out_->numel(), out_ptr,
+                       [](int64_t in) {
+                           return in / pow(2, ABY3_SCALING_FACTOR); });
+    };
 
 private:
     template <typename T>

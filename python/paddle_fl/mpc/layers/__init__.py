@@ -18,6 +18,7 @@ mpc layers:
     matrix: 'mul'
     ml:     'fc', 'relu', 'softmax'(todo)
     compare:'greater_than', 'greater_equal', 'less_than', 'less_equal', 'equal', 'not_equal'
+    metric_op:'precision_recall'
 """
 
 from . import basic
@@ -34,6 +35,10 @@ from . import conv
 from .conv import conv2d
 from . import rnn
 from .rnn import *
+from . import metric_op
+from .metric_op import *
+from . import tensor
+from .tensor import *
 
 __all__ = []
 __all__ += basic.__all__
@@ -42,3 +47,5 @@ __all__ += matrix.__all__
 __all__ += ml.__all__
 __all__ += compare.__all__
 __all__ += conv.__all__
+__all__ += metric_op.__all__
+__all__ += tensor.__all__

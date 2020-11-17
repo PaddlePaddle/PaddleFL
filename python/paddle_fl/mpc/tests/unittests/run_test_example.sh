@@ -20,15 +20,22 @@ TEST_MODULES=("test_datautils_aby3"
 "test_op_fc"
 "test_op_relu"
 "test_op_compare"
-"test_input_embedding"
+"test_op_embedding"
 "test_op_softmax_with_cross_entropy"
 "test_op_batch_norm"
 "test_op_conv"
 "test_op_pool"
+"test_op_metric"
+"test_data_preprocessing"
+"test_op_reshape"
+"test_op_reduce_sum"
+"test_op_elementwise_mul"
+"test_gru_op"
 )
 
 # run unittest
 for MODULE in ${TEST_MODULES[@]}
 do
+    echo Test Module $MODULE
     $PYTHON_TEST $MODULE
 done

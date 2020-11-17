@@ -21,7 +21,6 @@ namespace common {
 PseudorandomNumberGenerator::PseudorandomNumberGenerator(const block &seed)
     : _ctr(0), _now_byte(0) {
   set_seed(seed);
-  refill_buffer();
 }
 
 void PseudorandomNumberGenerator::set_seed(const block &b) {
@@ -59,4 +58,10 @@ void PseudorandomNumberGenerator::get_array(void *res, size_t len) {
   }
 }
 
+template <>
+bool PseudorandomNumberGenerator::get<bool>() {
+    uint8_t data;
+    get_array(&data, sizeof(data));
+    return data & 1;
+}
 } // namespace common

@@ -140,13 +140,13 @@ class OpTest(unittest.TestCase):
 
         target = kwargs['target']
 
-        partys = []
+        parties = []
 
         for role in range(self.party_num):
             kwargs.update({'role': role})
-            partys.append(Aby3Process(target=target, kwargs=kwargs))
-            partys[-1].start()
-        for party in partys:
+            parties.append(Aby3Process(target=target, kwargs=kwargs))
+            parties[-1].start()
+        for party in parties:
             party.join()
             if party.exception:
                 return party.exception
@@ -368,8 +368,9 @@ class OpTest(unittest.TestCase):
             compiled_prog = fluid.CompiledProgram(program).with_data_parallel(
                 build_strategy=build_strategy, places=place)
             program = compiled_prog
-
-        return_results = [Manager().list() for _ in range(len(fetch_list))]
+        # Manager() can not store LoDTensor directly
+        # So, use one additional element to store output lod
+        return_results = [Manager().list() for _ in range(len(fetch_list) + 1)]
 
         def closure(**kwargs):
             role = kwargs['role']
@@ -385,18 +386,36 @@ class OpTest(unittest.TestCase):
             executor.run()
             outs = executor.run(program,
                             feed=feed_map,
-                            fetch_list=fetch_list)
-
+                            fetch_list=fetch_list,
+                            return_numpy=False)
+            lod = []
             for idx in range(len(fetch_list)):
-                return_results[idx].append(outs[idx])
+                return_results[idx].append(np.array(outs[idx]))
+
+                lod_i = outs[idx].lod()
+                lod_concat = []
+                for i in lod_i:
+                    lod_concat.append(i)
+                lod.append(lod_concat)
+            return_results[len(fetch_list)].append(lod)
 
         ret = self.multi_party_run(target=closure)
         self.assertEqual(ret[0], True)
 
         outs = []
-
+        lod = np.array(return_results[len(fetch_list)])
         for idx in range(len(fetch_list)):
-            outs.append(aby3.reconstruct(np.array(return_results[idx])))
+            t = fluid.LoDTensor()
+            reveal_data = aby3.reconstruct(np.array(return_results[idx]))
+            t.set(reveal_data, place)
+            lod_idx = lod[0][idx]
+            
+            try:
+                t.set_lod(lod_idx)
+            except Exception as e:
+                pass
+
+            outs.append(t)
 
         self.op = op
         self.program = original_program
@@ -613,7 +632,7 @@ class OpTest(unittest.TestCase):
                 return ("%s error, %s variable %s max gradient diff %f over limit %f, "
                     "the first error element is %d, expected %f, but got %f.") \
                     % (self.op_type, msg_prefix, name, max_diff, max_relative_error,
-                    offset, a.flatten()[offset], b.flatten()[offset])
+                    offset, a.flatten()[offset], np.array(b).flatten()[offset])
 
             self.assertLessEqual(max_diff, max_relative_error, err_msg())
 
@@ -631,7 +650,8 @@ class OpTest(unittest.TestCase):
                               in_place=False,
                               max_relative_error=0.005,
                               user_defined_grads=None,
-                              check_dygraph=True):
+                              check_dygraph=True,
+                              transpose_input_list=[]):
         self.scope = core.Scope()
         op_inputs = self.inputs if hasattr(self, "inputs") else dict()
         op_outputs = self.outputs if hasattr(self, "outputs") else dict()
@@ -673,7 +693,8 @@ class OpTest(unittest.TestCase):
                 input_to_check,
                 output_names,
                 delta=numeric_grad_delta,
-                in_place=in_place) for input_to_check in inputs_to_check
+                in_place=in_place,
+                transpose_input_list=transpose_input_list) for input_to_check in inputs_to_check
         ]
         analytic_grads = self._get_gradient(inputs_to_check, place,
                                             output_names, no_grad_set)
@@ -721,7 +742,9 @@ class OpTest(unittest.TestCase):
 
         fetch_list = [g for p, g in param_grad_list]
 
-        return_results = [Manager().list() for _ in range(len(fetch_list))]
+        # Manager() can not store LoDTensor directly
+        # So, use one additional element to store output lod
+        return_results = [Manager().list() for _ in range(len(fetch_list) + 1)]
 
         def closure(**kwargs):
             role = kwargs['role']
@@ -737,18 +760,39 @@ class OpTest(unittest.TestCase):
             executor.run()
             outs = executor.run(prog,
                             feed=feed_dict,
-                            fetch_list=fetch_list)
-
+                            fetch_list=fetch_list,
+                            return_numpy=False)
+            # append lod information in last position
+            lod = []
             for idx in range(len(fetch_list)):
-                return_results[idx].append(outs[idx])
+                return_results[idx].append(np.array(outs[idx]))
+                lod_i = outs[idx].lod()
+                lod_concat = []
+                for i in lod_i:
+                    lod_concat.append(i)
+                lod.append(lod_concat)
+            return_results[len(fetch_list)].append(lod)
 
         ret = self.multi_party_run(target=closure)
         self.assertEqual(ret[0], True)
 
         outs = []
 
+        lod = np.array(return_results[len(fetch_list)])
+        # from numpy array to LoDTensor
         for idx in range(len(fetch_list)):
-            outs.append(aby3.reconstruct(np.array(return_results[idx])))
+            t = fluid.LoDTensor()
+            reveal_data = aby3.reconstruct(np.array(return_results[idx]))
+            t.set(reveal_data, place)
+            lod_idx = lod[0][idx]
+            # TODO: fix: exception throw because some output lod error in gru op
+            # out.set_lod(out.lod()) will throw exception
+            try:
+                t.set_lod(lod_idx)
+            except Exception as e:
+                pass
+
+            outs.append(t)
         return outs
 
     def get_numeric_gradient(self,
@@ -759,22 +803,29 @@ class OpTest(unittest.TestCase):
                              input_to_check,
                              output_names,
                              delta=0.005,
-                             in_place=False):
+                             in_place=False,
+                             transpose_input_list=[]):
         # FIXME: change this method by compile time concepts
         set_input(scope, op, inputs, place)
 
         def product(dim):
             return six.moves.reduce(lambda a, b: a * b, dim, 1)
 
-        reveal = lambda x: (2**-16 * np.array(x))[0].astype('float32')
-
+        delta_origin = delta
         tensor_to_check = scope.find_var(input_to_check).get_tensor()
-        tensor_to_check = reveal(tensor_to_check)
+        input_shape = tensor_to_check.shape()
+        
+        # some input with lod need to transpose at begin
+        # it is be reconstructed here first
+        if input_to_check in transpose_input_list:
+            tensor_to_check = np.transpose(tensor_to_check, [1, 0, 2])
         tensor_to_check_  = fluid.LoDTensor()
         tensor_to_check_.set(tensor_to_check, fluid.CPUPlace())
         tensor_to_check = tensor_to_check_
-        tensor_size = product(tensor_to_check.shape())
+
+        tensor_size = int(product(input_shape) / 2)
         tensor_to_check_dtype = tensor_to_check._dtype()
+        input_plain_shape = tensor_to_check.shape()[1:]
         if tensor_to_check_dtype == core.VarDesc.VarType.FP32:
             tensor_to_check_dtype = np.float32
         elif tensor_to_check_dtype == core.VarDesc.VarType.FP64:
@@ -783,6 +834,9 @@ class OpTest(unittest.TestCase):
             tensor_to_check_dtype = np.float16
             # set delta as np.float16, will automatic convert to float32, float64
             delta = np.array(delta).astype(np.float16)
+        elif tensor_to_check_dtype == core.VarDesc.VarType.INT64:
+            tensor_to_check_dtype = np.int64
+            delta = np.array(delta * 2**16 / 3).astype(np.int64)
         else:
             raise ValueError("Not supported data type " + str(
                 tensor_to_check_dtype))
@@ -807,7 +861,7 @@ class OpTest(unittest.TestCase):
 
                 for name in output_names:
                     out  = np.array(scope.find_var(name).get_tensor())
-                    return_results[name].append(out[0])
+                    return_results[name].append(out)
 
             ret = self.multi_party_run(target=closure)
             self.assertEqual(ret[0], True)
@@ -816,13 +870,17 @@ class OpTest(unittest.TestCase):
                 plain = aby3.reconstruct(np.array(return_results[output_name]))
                 sum.append(plain.mean())
 
-            return tensor_to_check_dtype(np.array(sum).sum() / len(output_names))
+            return (np.array(sum).sum() / len(output_names)).astype(np.float)
 
-        gradient_flat = np.zeros(shape=(tensor_size, ), dtype=tensor_to_check_dtype)
+        gradient_flat = np.zeros(shape=(tensor_size, ), dtype = np.float)
 
         def __get_elem__(tensor, i):
             if tensor_to_check_dtype == np.float16:
                 numpy_tensor = np.array(tensor).astype(np.float16)
+                numpy_tensor = numpy_tensor.flatten()
+                return numpy_tensor[i]
+            elif tensor_to_check_dtype == np.int64:
+                numpy_tensor = np.array(tensor).astype(np.int64)
                 numpy_tensor = numpy_tensor.flatten()
                 return numpy_tensor[i]
             elif tensor_to_check_dtype == np.float32:
@@ -838,6 +896,17 @@ class OpTest(unittest.TestCase):
                 numpy_tensor[i] = e
                 numpy_tensor = numpy_tensor.reshape(shape)
                 tensor.set(numpy_tensor, place)
+            elif tensor_to_check_dtype == np.int64:
+                numpy_tensor = np.array(tensor).astype(np.int64)
+                shape = numpy_tensor.shape
+                numpy_tensor = numpy_tensor.flatten()
+                numpy_tensor[i] = e
+                numpy_tensor = numpy_tensor.reshape(shape)
+                if input_to_check in transpose_input_list:
+                    numpy_tensor = np.transpose(numpy_tensor, [1, 0, 2])
+                    numpy_tensor = np.array(numpy_tensor).reshape(input_shape)
+                tensor_input_origin = scope.find_var(input_to_check).get_tensor()
+                tensor_input_origin.set(numpy_tensor, place)
             elif tensor_to_check_dtype == np.float32:
                 tensor._set_float_element(i, e)
             else:
@@ -851,19 +920,25 @@ class OpTest(unittest.TestCase):
 
             # get one input element throw it's index i.
             origin = __get_elem__(tensor_to_check, i)
-            # add delta to it, run op and then get the sum of the result tensor.
+            origin1 = __get_elem__(tensor_to_check, tensor_size + i)
+            # add delta to (shares0, shares1), run op and then get the sum of the result tensor.
             x_pos = origin + delta
+            x_pos1 = origin1 + delta
             __set_elem__(tensor_to_check, i, x_pos)
+            __set_elem__(tensor_to_check, tensor_size + i, x_pos1)
             y_pos = get_output()
 
             if in_place:
                 set_input(scope, op, inputs, place)
 
             x_neg = origin - delta
+            x_neg1 = origin1 - delta
             __set_elem__(tensor_to_check, i, x_neg)
+            __set_elem__(tensor_to_check, tensor_size + i, x_neg1)
             y_neg = get_output()
 
             __set_elem__(tensor_to_check, i, origin)
-            gradient_flat[i] = (y_pos - y_neg) / delta / 2
+            __set_elem__(tensor_to_check, tensor_size + i, origin1)
+            gradient_flat[i] = (y_pos - y_neg) / delta_origin / 2
 
-        return gradient_flat.reshape(tensor_to_check.shape())
+        return gradient_flat.reshape(input_plain_shape)

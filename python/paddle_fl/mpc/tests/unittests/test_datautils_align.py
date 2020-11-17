@@ -17,14 +17,16 @@ This module test align in aby3 module.
 """
 
 import unittest
-from multiprocessing import Process
+import multiprocessing as mp
 
 import paddle_fl.mpc.data_utils.alignment as alignment
 
 
+
 class TestDataUtilsAlign(unittest.TestCase):
 
-    def run_align(self, input_set, party_id, endpoints, is_receiver):
+    @staticmethod
+    def run_align(input_set, party_id, endpoints, is_receiver, ret_list):
         """
         Call align function in data_utils.
         :param input_set:
@@ -37,7 +39,7 @@ class TestDataUtilsAlign(unittest.TestCase):
                                  party_id=party_id,
                                  endpoints=endpoints,
                                  is_receiver=is_receiver)
-        self.assertEqual(result, {'0'})
+        ret_list.append(result)
 
     def test_align(self):
         """
@@ -49,14 +51,27 @@ class TestDataUtilsAlign(unittest.TestCase):
         set_1 = {'0', '10', '11', '111'}
         set_2 = {'0', '30', '33', '333'}
 
-        party_0 = Process(target=self.run_align, args=(set_0, 0, endpoints, True))
-        party_1 = Process(target=self.run_align, args=(set_1, 1, endpoints, False))
-        party_2 = Process(target=self.run_align, args=(set_2, 2, endpoints, False))
+        mp.set_start_method('spawn')
+
+        manager = mp.Manager()
+        ret_list = manager.list()
+
+        party_0 = mp.Process(target=self.run_align, args=(set_0, 0, endpoints, True, ret_list))
+        party_1 = mp.Process(target=self.run_align, args=(set_1, 1, endpoints, False, ret_list))
+        party_2 = mp.Process(target=self.run_align, args=(set_2, 2, endpoints, False, ret_list))
 
         party_1.start()
         party_2.start()
         party_0.start()
+
         party_0.join()
+        party_1.join()
+        party_2.join()
+
+        self.assertEqual(3, len(ret_list))
+        self.assertEqual(ret_list[0], ret_list[1])
+        self.assertEqual(ret_list[0], ret_list[2])
+        self.assertEqual({'0'}, ret_list[0])
 
 
 if __name__ == '__main__':

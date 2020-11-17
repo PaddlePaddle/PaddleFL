@@ -340,7 +340,7 @@ class MpcGRUCPUKernel : public MpcOpKernel<T> {
 
     if (h0) {
       // reordered h0 based on lod
-      ordered_h0.Resize(h0->dims());
+      ordered_h0.mutable_data<T>(h0->dims(), place);
       for (int i = 0; i < 2; ++i) {
           Tensor h0_s;
           Tensor ordered_h0_s;

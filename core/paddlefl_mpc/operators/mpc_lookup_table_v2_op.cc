@@ -41,7 +41,6 @@ public:
         auto table_dims = ctx->GetInputDim("W");
         auto ids_dims = ctx->GetInputDim("Ids");
         int ids_rank = ids_dims.size();
-        VLOG(5) << "ids rank is " << ids_rank << std::endl;
         PADDLE_ENFORCE_EQ(
             table_dims.size(), 3,
             "ShapeError: The dimensions of the 'mpc lookup table' must be 3. "

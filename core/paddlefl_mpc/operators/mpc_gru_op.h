@@ -61,6 +61,14 @@ inline void ReorderInitState(const DeviceContext& ctx,
     row_shuffle(ctx, src, index_lod, dst, indexed_src);
 }
 
+template<typename T>
+inline void ReduceTensorDims(const framework::ExecutionContext& context,
+                                    const Tensor& in, Tensor& out);
+
+template<typename T>
+inline void InverseReduceTensorDims(const framework::ExecutionContext& context,
+                                    const Tensor& in, Tensor& out);
+
 template<typename DeviceContext, typename T>
 inline void ComputGRUUint(const framework::ExecutionContext& context,
                           std::vector<Tensor>& gate_t,
@@ -82,6 +90,13 @@ inline void ComputGRUUint(const framework::ExecutionContext& context,
     auto mpc_operator = mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators();
     if (has_hidden_prev) {
         // compute update gate and reset gate: gate_t += hidden_prev_t matmul gate_weight
+        auto hidden_prev_data = hidden_prev_t.mutable_data<T>(context.GetPlace());
+        // Resize hidden_prev_t as same to gate_t[idx]
+        std::copy(hidden_prev_data + hidden_prev_t.numel() / 2,
+                  hidden_prev_data + (hidden_prev_t.numel() + gate_t[0].numel()) / 2,
+                 hidden_prev_data + gate_t[0].numel() / 2);
+        hidden_prev_t.Resize(gate_t[0].dims());
+
         mpc_operator->matmul(&hidden_prev_t, &weight_t[0], &u_h_t);
         mpc_operator->add(&u_h_t, &gate_t[0], &gate_t[0]);
 
@@ -107,6 +122,11 @@ inline void ComputGRUUint(const framework::ExecutionContext& context,
                                   std::placeholders::_2);
     } else if (active_gate == "sigmoid_enhanced") {
         activ_functor = std::bind(&paddle::mpc::MpcOperators::sigmoid_enhanced,
+                                  mpc_operator.get(),
+                                  std::placeholders::_1,
+                                  std::placeholders::_2);
+    } else if (active_gate == "sigmoid_high_precision") {
+        activ_functor = std::bind(&paddle::mpc::MpcOperators::sigmoid_high_precision,
                                   mpc_operator.get(),
                                   std::placeholders::_1,
                                   std::placeholders::_2);
@@ -200,7 +220,6 @@ inline void Split3Dim(const framework::ExecutionContext& context,
     }
 }
 
-
 template<typename DeviceContext, typename T>
 inline void Concat3Dim(const framework::ExecutionContext& context,
                        Tensor* output,
@@ -211,7 +230,7 @@ inline void Concat3Dim(const framework::ExecutionContext& context,
     std::vector<int64_t> output_dim{input_dims[0], input_dims[1], input_dims[2] * 3};
     output->mutable_data<T>(framework::make_ddim(output_dim), context.GetPlace());
     auto& dev_ctx = context. template device_context<DeviceContext>();
-    concat(dev_ctx, input, 3, output);
+    concat(dev_ctx, input, 2, output);
 }
 
 template<typename DeviceContext, typename T>
@@ -286,12 +305,12 @@ inline void ConcatWeight(const framework::ExecutionContext& context,
                 splitted_weights_dims[1],
                 splitted_weights_dims[2] * 2}),
         place);
-    concat(dev_ctx, update_weight_list, 3, &update_weights);
+    concat(dev_ctx, update_weight_list, 2, &update_weights);
     // Concat candidate weight
     for (int i = 0; i < 2; ++i) {
         Tensor weight_s = weight->Slice(i, i + 1);
         Tensor update_weights_s = update_weights.Slice(i, i + 1);
-        Tensor reset_weight_s = splitted_weights[i].Slice(i, i + 1);
+        Tensor reset_weight_s = splitted_weights[2].Slice(i, i + 1);
 
         T* weight_s_data = weight_s.mutable_data<T>(place);
         T* update_weights_s_data = update_weights_s.data<T>();
@@ -299,7 +318,7 @@ inline void ConcatWeight(const framework::ExecutionContext& context,
 
         size_t numel_update = update_weights_s.numel();
         memcpy(weight_s_data, update_weights_s_data, numel_update * sizeof(T));
-        memcpy(weight_s_data + numel_update, reset_weight_s_data, reset_weight_s.numel());
+        memcpy(weight_s_data + numel_update, reset_weight_s_data, reset_weight_s.numel() * sizeof(T));
     }
 }
 
@@ -379,14 +398,14 @@ inline void GRUUnitGradCompute(const framework::ExecutionContext& context,
     std::vector<int> trans_axis{0, 2, 1};
     if (has_hidden_prev && has_hidden_prev_grad) {
         auto res_hidden_dims = mpc_reset_hidden_prev_grad_t.dims();
-        // (B, D) * (D, D)^T + (B, D) :
-        //reset_hidden_prev_grad = batch_gate_grad[2] * state_weight[2] + reset_hidden_prev_grad
-        Tensor tmp;
-        tmp.mutable_data<T>(res_hidden_dims, context.GetPlace());
+        // (B, D) * (D, D)^T :
+        //reset_hidden_prev_grad = batch_gate_grad[2] * state_weight[2]
+        Tensor weight_trans;
+        weight_trans.mutable_data<T>(mpc_splitted_weights_t[2].dims(), context.GetPlace());
 
-        transpose(dev_ctx, mpc_splitted_weights_t[2], &tmp, trans_axis);
-        mpc_operator->matmul(&mpc_splitted_gate_t[2], &tmp, &tmp);
-        mpc_operator->add(&mpc_reset_hidden_prev_grad_t, &tmp, &mpc_reset_hidden_prev_grad_t);
+        transpose(dev_ctx, mpc_splitted_weights_t[2], &weight_trans, trans_axis);
+
+        mpc_operator->matmul(&mpc_splitted_gate_grad_t[2], &weight_trans, &mpc_reset_hidden_prev_grad_t);
 
         if (has_weight_grad) {
             // (B, D)^T * (B, D) + (D, D)
@@ -456,9 +475,11 @@ inline void BackwardStateGrad(const framework::ExecutionContext& context,
     math::SetConstant<DeviceContext, T> zero;
     auto& dev_ctx = context.template device_context<DeviceContext>();
     if (!has_hidden_prev) {
+        mpc_hidden_prev_t.mutable_data<T>(mpc_splitted_gate_t[0].dims(), context.GetPlace());
         zero(dev_ctx, &mpc_hidden_prev_t, static_cast<T>(0));
     }
     if (!has_hidden_prev_grad) {
+        mpc_hidden_prev_grad_t.mutable_data<T>(mpc_splitted_gate_grad_t[0].dims(), context.GetPlace());
         zero(dev_ctx, &mpc_hidden_prev_grad_t, static_cast<T>(0));
     }
 
@@ -523,10 +544,10 @@ inline void BackwarsResetGrad(const framework::ExecutionContext& context,
     }
     // batch_gate_grad[1] = reset_hidden_grad * hidden_prev
     mpc_operator->mul(&mpc_reset_hidden_prev_grad_t, &mpc_hidden_prev_t, &mpc_splitted_gate_grad_t[1]);
-    // hidden_prev_grad += reset_hidden_grad * batch_gate_grad[1]
+    // hidden_prev_grad += reset_hidden_grad * batch_gate[1]
     Tensor tmp;
     tmp.mutable_data<T>(mpc_hidden_prev_grad_t.dims(), context.GetPlace());
-    mpc_operator->mul(&mpc_reset_hidden_prev_grad_t, &mpc_splitted_gate_grad_t[1], &tmp);
+    mpc_operator->mul(&mpc_reset_hidden_prev_grad_t, &mpc_splitted_gate_t[1], &tmp);
     mpc_operator->add(&mpc_hidden_prev_grad_t, &tmp, &mpc_hidden_prev_grad_t);
     // batch_gate_grad[0] = sigmoid_grad(batch_gate_grad[0], batch_gate[0])
     ComputeSigmoidGrad<T>(context, mpc_splitted_gate_grad_t[0],
@@ -539,15 +560,55 @@ inline void BackwarsResetGrad(const framework::ExecutionContext& context,
 template<typename T>
 inline void ComputeSigmoidGrad(const framework::ExecutionContext& context,
                                Tensor& dy, Tensor& y, Tensor& dx) {
-    // dx = dy * (1.0 - y * y);
+    // dx = dy * y * (1 - y)
     PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_protocol,
                             "Protocol %s is not yet created in MPC Protocol.");
     auto mpc_operator = mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators();
     Tensor tmp;
     tmp.mutable_data<T>(dx.dims(), context.GetPlace());
-    mpc_operator->mul(&y, &y, &tmp);
-    mpc_operator->mul(&dy, &tmp, &tmp);
-    mpc_operator->sub(&dy, &tmp, &dx);
+    mpc_operator->mul(&dy, &y, &tmp);
+    Tensor tmp1;
+    tmp1.mutable_data<T>(dx.dims(), context.GetPlace());
+    mpc_operator->mul(&tmp, &y, &tmp1);
+    mpc_operator->sub(&tmp, &tmp1, &dx);
+}
+
+template<typename T>
+inline void ReduceTensorDims(const framework::ExecutionContext& context,
+                                    const Tensor& in, Tensor& out) {
+    auto dims = out.dims();
+    auto in_numel = in.numel();
+    auto given_numel = out.numel();
+    PADDLE_ENFORCE_GE(in_numel, given_numel,
+                      "product of input tensor dims must great than outs dims.");
+    auto in_data = in.data<T>();
+    auto out_data = out.mutable_data<T>(context.GetPlace());
+
+    std::copy(in_data,
+                in_data + given_numel / 2,
+                out_data);
+    std::copy(in_data + in_numel / 2,
+                in_data + (in_numel + given_numel) / 2,
+                out_data + given_numel / 2);
+}
+
+template<typename T>
+inline void InverseReduceTensorDims(const framework::ExecutionContext& context,
+                                    const Tensor& in, Tensor& out) {
+    auto dims = out.dims();
+    auto in_numel = in.numel();
+    auto given_numel = out.numel();
+    PADDLE_ENFORCE_LE(in_numel, given_numel,
+                      "product of input tensor dims must less than out dims.");
+    auto in_data = in.data<T>();
+    auto out_data = out.mutable_data<T>(context.GetPlace());
+
+    std::copy(in_data,
+                in_data + in_numel / 2,
+                out_data);
+    std::copy(in_data + in_numel / 2,
+                in_data + in_numel,
+                out_data + given_numel / 2);
 }
 
 template <typename DeviceContext, typename T>
@@ -576,8 +637,8 @@ public:
         auto hidden_dims = hidden->dims();
         auto gate_lod = batch_gate->lod();
         const auto& place = context.GetPlace();
-        bool has_hidden_prev = false;
-        bool has_hidden_prev_grad = false;
+        bool has_hidden_prev = true;
+        bool has_hidden_prev_grad = true;
         bool has_weight_grad = false;
 
         math::LoDTensor2BatchFunctor<DeviceContext, T> to_batch;
@@ -630,6 +691,7 @@ public:
             lod_hidden_grad_s.set_lod(gate_lod);
             lod_batch_hidden_grad_s.set_lod(gate_lod);
             to_batch(dev_ctx, lod_hidden_grad_s, &lod_batch_hidden_grad_s, false, is_reverse);
+            batch_hidden_grad.set_lod(lod_batch_hidden_grad_s.lod());
         }
         if (weight_grad) {
             T* gate_weight_grad =
@@ -641,13 +703,12 @@ public:
         std::vector<Tensor> mpc_splitted_weights_t;
         SplitWeight<DeviceContext, T>(context, mpc_splitted_weights_t, *weight);
 
-        auto batch_starts = gate_lod[0];
+        auto batch_starts = batch_hidden_grad.lod()[0];
         size_t num_batch = batch_starts.size() - 1;
         for (int n = static_cast<int>(num_batch) - 1; n >= 0; n--) {
             int bstart = static_cast<int>(batch_starts[n]);
             int bend = static_cast<int>(batch_starts[n + 1]);
             int cur_batch_size = bend - bstart;
-            int bstart_pre = static_cast<int>(batch_starts[n - 1]);
 
             // Split mpc tensors
             Tensor mpc_hidden_grad_t;
@@ -655,6 +716,8 @@ public:
             Tensor mpc_hidden_prev_grad_t;
             Tensor mpc_reset_hidden_prev_t;
             Tensor mpc_reset_hidden_prev_grad_t;
+            Tensor mpc_resize_hidden_prev_grad_t;
+            Tensor mpc_resize_hidden_prev_t;
             std::vector<Tensor> splitted_batch_gate_t;
             std::vector<Tensor> mpc_splitted_gate_t;
             std::vector<Tensor> splitted_batch_gate_grad_t;
@@ -671,6 +734,8 @@ public:
 
             Split3Dim<DeviceContext, T>(context, splitted_batch_gate_grad_t, batch_gate_grad);
             Split3Dim<DeviceContext, T>(context, splitted_batch_gate_t, *batch_gate);
+            mpc_splitted_gate_grad_t.resize(3);
+            mpc_splitted_gate_t.resize(3);
             for (int i = 0; i < 3; ++i) {
                 ToMpcBatchTensor<DeviceContext, T>(context, mpc_splitted_gate_grad_t[i],
                                                    splitted_batch_gate_grad_t[i], bstart, bend);
@@ -678,29 +743,43 @@ public:
                                                    splitted_batch_gate_t[i], bstart, bend);
             }
             if (n == 0) {
+                has_hidden_prev = false;
+                has_hidden_prev_grad = false;
                 if (h0) {
                     // hidden_prev_t = ordered_h0
                     mpc_hidden_prev_t.mutable_data<T>(
                                              ordered_h0.dims(), place);
                     framework::TensorCopy(ordered_h0, place, &mpc_hidden_prev_t);
+                    mpc_resize_hidden_prev_t.mutable_data<T>(mpc_splitted_gate_t[0].dims(), place);
+                    ReduceTensorDims<T>(context, mpc_hidden_prev_t, mpc_resize_hidden_prev_t);
                     has_hidden_prev = true;
                     if (h0_grad) {
                         // hidden_prev_grad_t = ordered_h0_grad
                         mpc_hidden_prev_grad_t.mutable_data<T>(
                                                       ordered_h0_grad.dims(), place);
                         framework::TensorCopy(ordered_h0_grad, place, &mpc_hidden_prev_grad_t);
+                        mpc_resize_hidden_prev_grad_t.mutable_data<T>(mpc_splitted_gate_t[0].dims(), place);
+                        ReduceTensorDims<T>(context, mpc_hidden_prev_grad_t, mpc_resize_hidden_prev_grad_t);
                         has_hidden_prev_grad = true;
                     }
                 }
             } else {
+                int bstart_pre = static_cast<int>(batch_starts[n - 1]);
                 ToMpcBatchTensor<DeviceContext, T>(context, mpc_hidden_prev_t, *batch_hidden, bstart_pre, bstart);
                 ToMpcBatchTensor<DeviceContext, T>(context, mpc_hidden_prev_grad_t, batch_hidden_grad, bstart_pre, bstart);
+                // hidden_prev and its grad may have differen batch shape with this time slot
+                mpc_resize_hidden_prev_grad_t.mutable_data<T>(mpc_splitted_gate_t[0].dims(), place);
+                ReduceTensorDims<T>(context, mpc_hidden_prev_grad_t, mpc_resize_hidden_prev_grad_t);
 
+                mpc_resize_hidden_prev_t.mutable_data<T>(mpc_splitted_gate_t[0].dims(), place);
+                ReduceTensorDims<T>(context, mpc_hidden_prev_t, mpc_resize_hidden_prev_t);
             }
+            input_grad->mutable_data<T>(context.GetPlace());
+
             // compute GRUUnitGrad
             GRUUnitGradCompute<DeviceContext, T>(context,
                                                  mpc_splitted_gate_t, mpc_splitted_gate_grad_t,
-                                                 mpc_hidden_prev_t, mpc_hidden_prev_grad_t,
+                                                 mpc_resize_hidden_prev_t, mpc_resize_hidden_prev_grad_t,
                                                  mpc_splitted_weights_t, mpc_splitted_weights_grad_t,
                                                  mpc_reset_hidden_prev_t, mpc_reset_hidden_prev_grad_t,
                                                  mpc_hidden_grad_t, origin_mode, has_hidden_prev,
@@ -712,9 +791,17 @@ public:
             Tensor mpc_batch_gate_grad_t;
             Concat3Dim<DeviceContext, T>(context, &mpc_batch_gate_grad_t, mpc_splitted_gate_grad_t);
             ConcatBatchOne<DeviceContext, T>(context, &batch_gate_grad, mpc_batch_gate_grad_t, bstart, bend);
-            ConcatBatchOne<DeviceContext, T>(context, &batch_hidden_grad, mpc_hidden_prev_grad_t, bstart_pre, bstart);
+            if (n != 0) {
+                int bstart_pre = static_cast<int>(batch_starts[n - 1]);
+                // apply update of mpc_resize_hidden_prev_t to mpc_hidden_prev_t
+                InverseReduceTensorDims<T>(context, mpc_resize_hidden_prev_t, mpc_hidden_prev_t);
+                // apply update of mpc_resize_hidden_prev_grad_t to mpc_hidden_prev_t
+                InverseReduceTensorDims<T>(context, mpc_resize_hidden_prev_grad_t, mpc_hidden_prev_grad_t);
+                ConcatBatchOne<DeviceContext, T>(context, &batch_hidden_grad, mpc_hidden_prev_grad_t, bstart_pre, bstart);
+            }
             ConcatBatchOne<DeviceContext, T>(context, &batch_reset_hidden_prev_grad, mpc_reset_hidden_prev_grad_t, bstart, bend);
         }
+        
         if (input_grad) {
             // batch to lodTensor for mpc input_grad
             input_grad->mutable_data<T>(context.GetPlace());
@@ -754,6 +841,7 @@ public:
                 Tensor ordered_h0_grad_s;
                 SliceAndReshape(&ordered_h0_grad, ordered_h0_grad_s, i);
                 Tensor h0_grad_s;
+                h0_grad->mutable_data<T>(h0->dims(), place);
                 SliceAndReshape(h0_grad, h0_grad_s, i);
                 ReorderInitState<DeviceContext, T>(dev_ctx, ordered_h0_grad_s, order,
                                                    &h0_grad_s, false);

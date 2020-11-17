@@ -85,9 +85,9 @@ protected:
 }  // namespace paddle
 
 namespace ops = paddle::operators;
-REGISTER_OPERATOR(mpc_mean, ops::MpcMeanOp, 
+REGISTER_OPERATOR(mpc_mean, ops::MpcMeanOp,
                  ops::MpcMeanOpMaker, 
-                 ops::MpcMeanOpInferVarType, 
+                 ops::MpcMeanOpInferVarType,
                  ops::MpcMeanOpGradMaker<paddle::framework::OpDesc>);
 
 REGISTER_OPERATOR(mpc_mean_grad, ops::MpcMeanGradOp);
