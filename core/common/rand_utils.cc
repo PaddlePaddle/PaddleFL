@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tensor_adapter_factory.h"
+#include "rand_utils.h"
 
-namespace aby3 {
+#include <fstream>
 
-template <>
-std::shared_ptr<TensorAdapter<int64_t>> TensorAdapterFactory::create() {
-  return create_int64_t();
+namespace common {
+
+block block_from_dev_urandom() {
+  block ret;
+  std::ifstream in("/dev/urandom");
+  in.read(reinterpret_cast<char *>(&ret), sizeof(ret));
+  return ret;
 }
 
-template <>
-std::shared_ptr<TensorAdapter<int64_t>>
-TensorAdapterFactory::create(const std::vector<size_t> &shape) {
-  return create_int64_t(shape);
-}
-
-} // namespace aby3
+} // namespace common

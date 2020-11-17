@@ -18,8 +18,22 @@
 #include "core/privc/privc_context.h"
 namespace privc {
 
-void PrivCContext::set_triplet_generator(std::shared_ptr<TripletGenerator<int64_t, SCALING_N>>& tripletor) {
-    _tripletor = tripletor;
+PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> network,
+                block seed):
+                AbstractContext::AbstractContext(party, network) {
+  set_num_party(2);
+
+  if (common::equals(seed, common::g_zero_block)) {
+    seed = common::block_from_dev_urandom();
+  }
+  set_random_seed(seed, 0);
+  _tripletor = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(
+                                                &_prng,
+                                                this->gen_random_private<block>(),
+                                                this->network(),
+                                                this->party(),
+                                                this->next_party());
+  _tripletor->init();
 }
 
 std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> PrivCContext::triplet_generator() {

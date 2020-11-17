@@ -21,27 +21,27 @@
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "core/privc3/prng_utils.h"
-#include "core/privc/crypto.h"
-#include "core/psi/naorpinkas_ot.h"
-#include "core/psi/ot_extension.h"
-#include "core/privc3/tensor_adapter.h"
+#include "core/common/prng.h"
+#include "core/common/crypto.h"
+#include "core/common/naorpinkas_ot.h"
+#include "core/common/ot_extension.h"
+#include "core/common/tensor_adapter.h"
 
 namespace privc {
 
 using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
-using block = psi::block;
-using NaorPinkasOTsender = psi::NaorPinkasOTsender;
-using NaorPinkasOTreceiver = psi::NaorPinkasOTreceiver;
+using block = common::block;
+using NaorPinkasOTsender = common::NaorPinkasOTsender;
+using NaorPinkasOTreceiver = common::NaorPinkasOTreceiver;
 
 template<typename T>
-using OTExtSender = psi::OTExtSender<T>;
+using OTExtSender = common::OTExtSender<T>;
 template<typename T>
-using OTExtReceiver = psi::OTExtReceiver<T>;
+using OTExtReceiver = common::OTExtReceiver<T>;
 
 template <typename T>
-using TensorAdapter = aby3::TensorAdapter<T>;
+using TensorAdapter = common::TensorAdapter<T>;
 
 template<size_t N>
 inline int64_t fixed64_mult(const int64_t a, const int64_t b) {
@@ -67,7 +67,7 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                          size_t word_width = 8 * sizeof(uint64_t)) {
         for (uint64_t idx = 0; idx < word_width; idx += 1) {
             auto ot_instance = ot_ext_recver.get_ot_instance();
-            block choice = (input >> idx) & 1 ? psi::OneBlock : psi::ZeroBlock;
+            block choice = (input >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
 
             t0_buffer.emplace_back(ot_instance[0]);
             ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
@@ -99,12 +99,17 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
 template<typename T, size_t N>
 class TripletGenerator {
 public:
-  TripletGenerator(std::shared_ptr<AbstractContext>& circuit_context) :
-        _base_ot_choices(circuit_context->gen_random_private<block>()),
+  TripletGenerator(common::PseudorandomNumberGenerator* prng,
+                   block base_ot_choices, AbstractNetwork* net,
+                   size_t party, size_t next_party) :
+        //_base_ot_choices(circuit_context->gen_random_private<block>()),
+        _prng(prng),
+        _base_ot_choices(base_ot_choices),
         _np_ot_sender(sizeof(block) * 8),
-        _np_ot_recver(sizeof(block) * 8, block_to_string(_base_ot_choices)) {
-      _privc_ctx = circuit_context;
-  };
+        _np_ot_recver(sizeof(block) * 8, block_to_string(_base_ot_choices)),
+        _net(net),
+        _party(party),
+        _next_party(next_party) {};
 
   void init();
 
@@ -151,19 +156,16 @@ protected:
 
 private:
 
-  std::shared_ptr<AbstractContext> privc_ctx() {
-      return _privc_ctx;
-  }
   AbstractNetwork* net() {
-      return _privc_ctx->network();
+      return _net;
   }
 
   size_t party() {
-    return privc_ctx()->party();
+    return _party;
   }
 
   size_t next_party() {
-    return privc_ctx()->next_party();
+    return _next_party;
   }
   // gen triplet for int64_t type
   std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input);
@@ -172,6 +174,8 @@ private:
                                                  const std::vector<uint64_t> &input1
                                                  = std::vector<uint64_t>());
 
+  template<typename U> U gen_random_private() { return _prng->get<U>(); }
+
   const block _base_ot_choices;
 
   NaorPinkasOTsender _np_ot_sender;
@@ -179,7 +183,11 @@ private:
 
   OTExtSender<block> _ot_ext_sender;
   OTExtReceiver<block> _ot_ext_recver;
-  std::shared_ptr<AbstractContext> _privc_ctx;
+  //std::shared_ptr<AbstractContext> _privc_ctx;
+  common::PseudorandomNumberGenerator* _prng;
+  AbstractNetwork* _net;
+  size_t _party;
+  size_t _next_party;
 };
 
 } // namespace privc

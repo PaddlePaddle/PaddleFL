@@ -26,7 +26,7 @@
 #include "tensor_adapter.h"
 #include "tensor_adapter_factory.h"
 
-namespace aby3 {
+namespace common {
 
 template <typename T> class PaddleTensor : public TensorAdapter<T> {
 public:
@@ -53,7 +53,7 @@ public:
     return &_tensor;
   }
 
-  paddle::framework::Tensor* paddle_tensor() {
+  paddle::framework::Tensor* mutable_paddle_tensor() {
     return &_tensor;
   }
 
@@ -124,7 +124,7 @@ public:
     paddle::operators::math::Transpose<paddle::platform::CPUDeviceContext, T, Rank> trans;
     trans(*(dynamic_cast<const paddle::platform::CPUDeviceContext*>(_device_ctx)),
           _tensor,
-          dynamic_cast<PaddleTensor<T>*>(ret)->paddle_tensor(),
+          dynamic_cast<PaddleTensor<T>*>(ret)->mutable_paddle_tensor(),
           axis);
   }
 
@@ -167,6 +167,6 @@ private:
   const paddle::platform::DeviceContext *_device_ctx;
 };
 
-} // namespace aby3
+} // namespace common
 
 #include "paddle_tensor_impl.h"

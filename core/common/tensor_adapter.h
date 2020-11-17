@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace aby3 {
+namespace common {
 
 template <typename T>
 class TensorAdapter {
@@ -96,4 +96,4 @@ inline void assign_to_tensor(TensorAdapter<T>* input, T assign_num) {
                    input->data(), [assign_num](T) { return assign_num; });
 }
 
-} // namespace aby3
+} // namespace common

@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include "paddle_tensor.h"
 
-#include <smmintrin.h>
+namespace common {
 
-namespace psi {
-
-using block = __m128i;
-
-const block g_zero_block = _mm_set_epi64x(0, 0);
-
-block block_from_dev_urandom();
-
-inline bool equals(const block &lhs, const block &rhs) {
-  block neq = _mm_xor_si128(lhs, rhs);
-  return _mm_test_all_zeros(neq, neq);
+std::shared_ptr<TensorAdapter<int64_t>>
+PaddleTensorFactory::create_int64_t(const std::vector<size_t> &shape) {
+  auto ret = std::make_shared<PaddleTensor<int64_t>>(_device_ctx);
+  ret->reshape(shape);
+  return ret;
 }
 
-} // namespace psi
+std::shared_ptr<TensorAdapter<int64_t>> PaddleTensorFactory::create_int64_t() {
+  auto ret = std::make_shared<PaddleTensor<int64_t>>(_device_ctx);
+  return ret;
+}
+
+} // namespace common

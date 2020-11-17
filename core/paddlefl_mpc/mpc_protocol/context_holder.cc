@@ -28,7 +28,7 @@ thread_local std::shared_ptr<AbstractContext> ContextHolder::current_mpc_ctx;
 
 thread_local const ExecutionContext *ContextHolder::current_exec_ctx;
 
-thread_local std::shared_ptr<aby3::TensorAdapterFactory>
+thread_local std::shared_ptr<common::TensorAdapterFactory>
     ContextHolder::_s_current_tensor_factory;
 
 } // mpc

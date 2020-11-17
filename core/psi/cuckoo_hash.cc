@@ -14,6 +14,8 @@
 
 #include "cuckoo_hash.h"
 
+using common::block;
+
 namespace psi {
 CuckooHasher::CuckooHasher(size_t input_size)
     : _bin_num(1.2 * input_size), _cuckoo_size(input_size) {

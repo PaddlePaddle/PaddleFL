@@ -12,17 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rand_utils.h"
+#include "crypto.h"
 
-#include <fstream>
+#include <cstring>
+#include <string>
 
-namespace psi {
+#include "gtest/gtest.h"
 
-block block_from_dev_urandom() {
-  block ret;
-  std::ifstream in("/dev/urandom");
-  in.read(reinterpret_cast<char *>(&ret), sizeof(ret));
-  return ret;
+namespace common {
+
+TEST(crypto, hash_block) {
+
+    block in = ZeroBlock;
+
+    for (size_t i = 0; i < 1e6; ++i) {
+        hash_block(in);
+    }
 }
 
-} // namespace psi
+TEST(crypto, hash_blocks) {
+
+    block in = ZeroBlock;
+
+    for (size_t i = 0; i < 1e6; ++i) {
+        hash_blocks({in, in});
+    }
+}
+
+};

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "core/privc/triplet_generator.h"
-#include "core/privc/crypto.h"
+#include "core/common/crypto.h"
 #include "core/privc/privc_context.h"
 
 namespace privc {
@@ -22,7 +22,7 @@ template<typename T, size_t N>
 void TripletGenerator<T, N>::init() {
   auto np_ot_send_pre = [&]() {
     std::array<std::array<std::array<unsigned char,
-        psi::POINT_BUFFER_LEN>, 2>, OT_SIZE> send_buffer;
+        common::g_point_buffer_len>, 2>, OT_SIZE> send_buffer;
 
     for (uint64_t idx = 0; idx < OT_SIZE; idx += 1) {
       send_buffer[idx] = _np_ot_sender.send_pre(idx);
@@ -31,7 +31,7 @@ void TripletGenerator<T, N>::init() {
   };
 
   auto np_ot_send_post = [&]() {
-      std::array<std::array<unsigned char, psi::POINT_BUFFER_LEN>, OT_SIZE> recv_buffer;
+      std::array<std::array<unsigned char, common::g_point_buffer_len>, OT_SIZE> recv_buffer;
 
       net()->recv(next_party(), recv_buffer.data(), sizeof(recv_buffer));
 
@@ -42,9 +42,9 @@ void TripletGenerator<T, N>::init() {
 
   auto np_ot_recv = [&]() {
       std::array<std::array<std::array<unsigned char,
-          psi::POINT_BUFFER_LEN>, 2>, OT_SIZE> recv_buffer;
+          common::g_point_buffer_len>, 2>, OT_SIZE> recv_buffer;
 
-      std::array<std::array<unsigned char, psi::POINT_BUFFER_LEN>, OT_SIZE> send_buffer;
+      std::array<std::array<unsigned char, common::g_point_buffer_len>, OT_SIZE> send_buffer;
 
       net()->recv(next_party(), recv_buffer.data(), sizeof(recv_buffer));
 
@@ -115,10 +115,10 @@ void TripletGenerator<T, N>::fill_triplet_buffer_impl(const Type2Type<int64_t>) 
 
   std::for_each(a.data(), a.data() + a.size(),
                 [this](uint64_t& val) {
-                  val = privc_ctx()-> template gen_random_private<uint64_t>(); });
+                  val = this-> template gen_random_private<uint64_t>(); });
   std::for_each(b.data(), b.data() + b.size(),
                 [this](uint64_t& val) {
-                  val = privc_ctx()-> template gen_random_private<uint64_t>(); });
+                  val = this-> template gen_random_private<uint64_t>(); });
 
   std::vector<uint64_t> ab0;
   std::vector<uint64_t> ab1;
@@ -128,8 +128,8 @@ void TripletGenerator<T, N>::fill_triplet_buffer_impl(const Type2Type<int64_t>) 
       return gen_product(v);
   };
 
-  ab0 = gen_p(privc_ctx()->party() == 0 ? a : b);
-  ab1 = gen_p(privc_ctx()->party() == 0 ? b : a);
+  ab0 = gen_p(this->party() == 0 ? a : b);
+  ab1 = gen_p(this->party() == 0 ? b : a);
 
   for (uint64_t i = 0; i < a.size(); i += 1) {
     std::array<int64_t, 3> item = {
@@ -149,13 +149,13 @@ void TripletGenerator<T, N>::fill_penta_triplet_buffer_impl(const Type2Type<int6
 
   std::for_each(a.data(), a.data() + a.size(),
                 [this](uint64_t& val) {
-                  val = privc_ctx()-> template gen_random_private<uint64_t>(); });
+                  val = this-> template gen_random_private<uint64_t>(); });
   std::for_each(b.data(), b.data() + b.size(),
                 [this](uint64_t& val) {
-                  val = privc_ctx()-> template gen_random_private<uint64_t>(); });
+                  val = this-> template gen_random_private<uint64_t>(); });
   std::for_each(alpha.data(), alpha.data() + alpha.size(),
                 [this](uint64_t& val) {
-                  val = privc_ctx()-> template gen_random_private<uint64_t>(); });
+                  val = this-> template gen_random_private<uint64_t>(); });
 
   std::vector<std::pair<uint64_t, uint64_t>> ab0;
   std::vector<std::pair<uint64_t, uint64_t>> ab1;
@@ -212,7 +212,7 @@ std::vector<uint64_t> TripletGenerator<T, N>::gen_product(
 
           q ^= (round_ot_mask & _base_ot_choices);
 
-          auto s = psi::hash_blocks({q, q ^ _base_ot_choices});
+          auto s = common::hash_blocks({q, q ^ _base_ot_choices});
           uint64_t s0 = *reinterpret_cast<uint64_t *>(&s.first);
           uint64_t s1 = *reinterpret_cast<uint64_t *>(&s.second);
 
@@ -247,7 +247,7 @@ std::vector<uint64_t> TripletGenerator<T, N>::gen_product(
       for (size_t idx = 0; idx < word_width; idx += 1) {
         const uint64_t& round_ot_msg = ot_msg.at(ot_msg_idx);
 
-        auto t0_hash = psi::hash_block(t0_buffer[b_idx * word_width + idx]);
+        auto t0_hash = common::hash_block(t0_buffer[b_idx * word_width + idx]);
 
         uint64_t key = *reinterpret_cast<uint64_t *>(&t0_hash);
 
@@ -302,7 +302,7 @@ TripletGenerator<T, N>::gen_product(size_t ot_sender,
 
                 q ^= (round_ot_mask & _base_ot_choices);
 
-                auto s = psi::hash_blocks({q, q ^ _base_ot_choices});
+                auto s = common::hash_blocks({q, q ^ _base_ot_choices});
                 uint64_t* s0 = reinterpret_cast<uint64_t *>(&s.first);
                 uint64_t* s1 = reinterpret_cast<uint64_t *>(&s.second);
 
@@ -339,7 +339,7 @@ TripletGenerator<T, N>::gen_product(size_t ot_sender,
             for (size_t idx = 0; idx < word_width; idx += 1) {
                 const std::pair<uint64_t, uint64_t>& round_ot_msg = ot_msg.at(ot_msg_idx);
 
-                auto t0_hash = psi::hash_block(t0_buffer[b_idx * word_width + idx]);
+                auto t0_hash = common::hash_block(t0_buffer[b_idx * word_width + idx]);
 
                 uint64_t* key = reinterpret_cast<uint64_t *>(&t0_hash);
 

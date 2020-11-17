@@ -25,7 +25,7 @@ limitations under the License. */
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "fixedpoint_tensor.h"
 #include "core/privc/triplet_generator.h"
-#include "core/privc3/paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 
 namespace privc {
 
@@ -63,13 +63,7 @@ public:
             ti.join();
         }
 
-        for (size_t i = 0; i < 2; ++i) {
-            _t[i] = std::thread(&FixedTensorTest::init_triplet, this, i);
-        }
-        for (auto& ti : _t) {
-            ti.join();
-        }
-        _s_tensor_factory = std::make_shared<aby3::PaddleTensorFactory>(&_cpu_ctx);
+        _s_tensor_factory = std::make_shared<common::PaddleTensorFactory>(&_cpu_ctx);
     }
     std::shared_ptr<paddle::mpc::MeshNetwork> gen_network(size_t idx) {
         return std::make_shared<paddle::mpc::MeshNetwork>(idx,
@@ -82,13 +76,6 @@ public:
         auto net = gen_network(idx);
         net->init();
         _mpc_ctx[idx] = std::make_shared<PrivCContext>(idx, net);
-    }
-
-    void init_triplet(size_t idx) {
-        std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor
-                    = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(_mpc_ctx[idx]);
-        tripletor->init();
-        std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_triplet_generator(tripletor);
     }
 
     std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {

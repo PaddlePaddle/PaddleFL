@@ -434,7 +434,7 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         m[1]->add(tmp[0], m[1]);
 
         ObliviousTransfer::ot(idx0, idx1, idx2, null_arg[0],
-                    const_cast<const aby3::TensorAdapter<T>**>(m),
+                    const_cast<const common::TensorAdapter<T>**>(m),
                     tmp, null_arg[0]);
 
         // ret0 = s2
@@ -447,7 +447,7 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         aby3_ctx()->template gen_zero_sharing_arithmetic(*(ret->mutable_share(0)));
         // ret1 = a * b + s0
         ObliviousTransfer::ot(idx0, idx1, idx2, share(1),
-                    const_cast<const aby3::TensorAdapter<T>**>(null_arg),
+                    const_cast<const common::TensorAdapter<T>**>(null_arg),
                     tmp, ret->mutable_share(1));
         aby3_ctx()->network()->template send(idx0, *(ret->share(0)));
         aby3_ctx()->network()->template send(idx2, *(ret->share(1)));
@@ -456,7 +456,7 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         aby3_ctx()->template gen_zero_sharing_arithmetic(*(ret->mutable_share(1)));
         // ret1 = s2
         ObliviousTransfer::ot(idx0, idx1, idx2, share(0),
-                    const_cast<const aby3::TensorAdapter<T>**>(null_arg),
+                    const_cast<const common::TensorAdapter<T>**>(null_arg),
                     tmp, null_arg[0]);
 
         aby3_ctx()->network()->template send(idx0, *(ret->share(1)));

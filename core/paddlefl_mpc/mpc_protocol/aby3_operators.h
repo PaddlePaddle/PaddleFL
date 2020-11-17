@@ -25,7 +25,7 @@ limitations under the License. */
 #include "core/privc3/aby3_context.h"
 #include "core/privc3/fixedpoint_tensor.h"
 #include "core/privc3/boolean_tensor.h"
-#include "core/privc3/paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 
 namespace paddle {
 namespace mpc {
@@ -36,7 +36,7 @@ using aby3::ABY3Context;
 const size_t ABY3_SCALING_FACTOR = FIXED_POINTER_SCALING_FACTOR;
 using FixedTensor = aby3::FixedPointTensor<int64_t, ABY3_SCALING_FACTOR>;
 using BoolTensor = aby3::BooleanTensor<int64_t>;
-using PaddleTensor = aby3::PaddleTensor<int64_t>;
+using PaddleTensor = common::PaddleTensor<int64_t>;
 
 class Aby3OperatorsImpl : public MpcOperators {
 public:

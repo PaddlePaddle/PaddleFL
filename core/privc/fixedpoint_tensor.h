@@ -18,14 +18,15 @@
 
 #include "privc_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "../privc3/paddle_tensor.h"
+#include "../common/paddle_tensor.h"
 #include "./triplet_generator.h"
+#include "core/common/tensor_adapter_factory.h"
 
 namespace privc {
 
 template<typename T>
-using TensorAdapter = aby3::TensorAdapter<T>;
-using TensorAdapterFactory = aby3::TensorAdapterFactory;
+using TensorAdapter = common::TensorAdapter<T>;
+using TensorAdapterFactory = common::TensorAdapterFactory;
 
 template<size_t N>
 inline void fixed64_tensor_mult(const TensorAdapter<int64_t>* lhs,
@@ -71,7 +72,7 @@ public:
     //convert TensorAdapter to shares
     static void share(const TensorAdapter<T>* input,
                       TensorAdapter<T>* output_shares[2],
-                      block seed = psi::g_zero_block);
+                      block seed = common::g_zero_block);
 
     // element-wise add with FixedPointTensor
     void add(const FixedPointTensor* rhs, FixedPointTensor* ret) const;

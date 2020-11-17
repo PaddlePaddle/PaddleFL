@@ -19,11 +19,18 @@
 #include "boolean_tensor.h"
 #include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 #include "boolean_tensor.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 
 namespace aby3 {
+
+template<typename T>
+using TensorAdapter = common::TensorAdapter<T>;
+using TensorAdapterFactory = common::TensorAdapterFactory;
+template<typename T>
+using PaddleTensor = common::PaddleTensor<T>;
+using PaddleTensorFactory = common::PaddleTensorFactory;
 
 template<typename T, size_t N>
 class FixedPointTensor {

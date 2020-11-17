@@ -22,9 +22,9 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
-#include "../psi/aes.h"
+#include "./aes.h"
 
-namespace psi {
+namespace common {
 
 typedef unsigned char u8;
 typedef unsigned long long u64;
@@ -57,5 +57,5 @@ static inline block double_block(block bl) {
     return _mm_xor_si128(bl,tmp);
 }
 
-} // namespace psi
+} // namespace common
 

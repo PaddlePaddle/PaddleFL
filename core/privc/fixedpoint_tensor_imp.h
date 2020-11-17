@@ -18,8 +18,8 @@
 #include <algorithm>
 
 #include "paddle/fluid/platform/enforce.h"
-#include "../privc3/prng.h"
-#include "../privc3/paddle_tensor.h"
+#include "../common/prng.h"
+#include "core/common/paddle_tensor.h"
 
 namespace privc {
 
@@ -73,8 +73,8 @@ void FixedPointTensor<T, N>::share(const TensorAdapter<T>* input,
                                     TensorAdapter<T>* output_shares[2],
                                     block seed) {
 
-    if (psi::equals(seed, psi::g_zero_block)) {
-        seed = psi::block_from_dev_urandom();
+    if (common::equals(seed, common::g_zero_block)) {
+        seed = common::block_from_dev_urandom();
     }
     //set seed of prng[2]
     privc_ctx()->set_random_seed(seed, 2);
@@ -134,11 +134,9 @@ void FixedPointTensor<T, N>::mul_impl(const FixedPointTensor<T, N>* rhs,
     auto triplet = tensor_factory()->template create<T>(triplet_shape);
     tripletor()->get_triplet(triplet.get());
 
-    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
-    for (int i = 0; i < 8; ++i) {
-        temp.emplace_back(
-            tensor_factory()->template create<T>(ret->shape()));
-    }
+    size_t tmp_size = 8;
+    auto temp = tensor_factory()->template malloc_tensor<T>(tmp_size, ret->shape());
+
     FixedPointTensor<T, N> a(temp[0].get());
     FixedPointTensor<T, N> b(temp[1].get());
     FixedPointTensor<T, N> c(temp[2].get());
@@ -217,192 +215,115 @@ template<typename T_>
 void FixedPointTensor<T, N>::mat_mul_impl(const FixedPointTensor<T, N>* rhs,
                                  FixedPointTensor<T, N>* ret,
                                  const Type2Type<int64_t>) const {
-    // A * B, assume A.shape = [a, b], B.shape = [b, c]
-    size_t row = ret->shape()[0];
-    size_t col = ret->shape()[1];
-    PADDLE_ENFORCE_EQ(row, shape()[0], "invalid result shape for mat mul");
-    PADDLE_ENFORCE_EQ(col, rhs->shape()[1], "invalid result shape for mat mul");
+    // A dot B, assume A.shape = [a, b], B.shape = [b, c]
+    // expand A and B to shape [a, c, b], and element-wise cal A * B
+    // than reduce result shape to [a, c]
+    size_t a = ret->shape()[0];
+    size_t b = shape()[1];
+    size_t c = ret->shape()[1];
+    std::vector<size_t> expand_shape({a, c, b});
+    PADDLE_ENFORCE_EQ(a, shape()[0], "invalid result shape for mat mul");
+    PADDLE_ENFORCE_EQ(c, rhs->shape()[1], "invalid result shape for mat mul");
     PADDLE_ENFORCE_EQ(shape()[1], rhs->shape()[0], "invalid input shape for mat mul");
 
-    //transpose rhs
-    auto shape_trans = rhs->shape();
-    std::swap(shape_trans[0], shape_trans[1]);
-    auto trans_rhs = tensor_factory()->template create<T>(shape_trans);
-    const aby3::PaddleTensor<T>* p_rhs = dynamic_cast<const aby3::PaddleTensor<T>*>(rhs->share());
-    const_cast<aby3::PaddleTensor<T>*>(p_rhs)->template Transpose<2>(std::vector<int>({1, 0}), trans_rhs.get());
+    // equal to shape = [3, a, c, b] triplet
+    std::vector<size_t> triplet_shape{3, a, c, b};
+    auto triplet = tensor_factory()->template create<T>(triplet_shape);
+    tripletor()->get_triplet(triplet.get());
 
-    //get penta triplet, shape = [5, a, c, b]
-    std::vector<size_t> penta_triplet_shape{5, shape()[0], shape_trans[0], shape_trans[1]};
-    auto penta_triplet = tensor_factory()->template create<T>(penta_triplet_shape);
-    tripletor()->get_penta_triplet(penta_triplet.get());
-
-    // get triplet[idx0][idx1][idx2], shape = [b]
-    auto access_triplet = [&penta_triplet, &penta_triplet_shape](size_t idx0,
-                                                                 size_t idx1,
-                                                                 size_t idx2,
-                                                                 TensorAdapter<T>* ret) {
-      size_t numel = penta_triplet->numel();
-      auto& shape = penta_triplet_shape;
-      int64_t* tripl_ptr = penta_triplet->data();
-      size_t cal_idx_begin = idx0 * numel / shape[0]
-                             + idx1 * numel / (shape[0] * shape[1])
-                             + idx2 * numel / (shape[0] * shape[1] * shape[2]);
-      std::copy(tripl_ptr + cal_idx_begin,
-                tripl_ptr + cal_idx_begin + shape[3],
-                ret->data());
-    };
-
-    auto slice_and_reshape = [](const TensorAdapter<T>* input, int idx, TensorAdapter<T>* ret) {
-      input->slice(idx, idx + 1, ret);
-      auto shape = ret->shape();
-      shape.erase(shape.begin());
-      ret->reshape(shape);
-    };
-
-    std::vector<int64_t> buffer_e;
-    std::vector<int64_t> buffer_f;
-    buffer_e.resize(col * row * shape()[1]);
-    buffer_f.resize(col * row * shape()[1]);
-    int64_t* buffer_e_ptr = buffer_e.data();
-    int64_t* buffer_f_ptr = buffer_f.data();
-
-    // cal share <e>, <f>
-    for (int i = 0; i < row; ++i) {
-      auto lhs_v = tensor_factory()->template create<T>({shape()[1]});
-      slice_and_reshape(share(), i, lhs_v.get());
-
-      for (int j = 0; j < col; ++j) {
-        std::vector<size_t> shape_v{ shape()[1] };
-        std::vector<std::shared_ptr<TensorAdapter<T>>> temp_triplet_i_j;
-        for (int k = 0; k < 5; ++k) {
-            temp_triplet_i_j.emplace_back(
-                tensor_factory()->template create<T>(shape_v));
-        }
-
-        auto& a_i_j = temp_triplet_i_j[0];
-        auto& alpha_i_j = temp_triplet_i_j[1];
-        auto& b_i_j = temp_triplet_i_j[2];
-        auto& c_i_j = temp_triplet_i_j[3];
-        auto& alpha_c_i_j = temp_triplet_i_j[4];
-
-        access_triplet(0, i, j / 2, a_i_j.get());
-        access_triplet(1, i, j / 2, alpha_i_j.get());
-        access_triplet(2, i, j / 2, b_i_j.get());
-        access_triplet(3, i, j / 2, c_i_j.get());
-        access_triplet(4, i, j / 2, alpha_c_i_j.get());
-
-        auto e_v = tensor_factory()->template create<T>(shape_v);
-        auto f_v = tensor_factory()->template create<T>(shape_v);
-
-        auto rhs_v = tensor_factory()->template create<T>(shape_v);
-        slice_and_reshape(trans_rhs.get(), j, rhs_v.get());
-        if (j % 2 == 0) {
-          lhs_v->sub(a_i_j.get(), e_v.get());
-        } else {
-          lhs_v->sub(alpha_i_j.get(), e_v.get());
-        }
-        rhs_v->sub(b_i_j.get(), f_v.get());
-
-        std::copy(e_v->data(), e_v->data() + shape_v[0], buffer_e_ptr);
-        std::copy(f_v->data(), f_v->data() + shape_v[0], buffer_f_ptr);
-        buffer_e_ptr += shape_v[0];
-        buffer_f_ptr += shape_v[0];
-      }
+    // parser triplet
+    std::vector<std::shared_ptr<TensorAdapter<T>>> triplets;
+    for (int i = 0; i < 3; ++i) {
+        triplets.emplace_back(tensor_factory()->template create<T>(expand_shape));
+        triplet->slice(i, i + 1, triplets[i].get());
+        triplets[i]->reshape(expand_shape);
     }
 
-    // reveal all e and f
-    std::vector<int64_t> remote_buffer_e;
-    std::vector<int64_t> remote_buffer_f;
-    remote_buffer_e.resize(col * row * shape()[1]);
-    remote_buffer_f.resize(col * row * shape()[1]);
+    // expand lhs
+    auto lhs_tile = tensor_factory()
+                      ->template create<T>(std::vector<size_t>({c, a, b}));
+    for (int i = 0; i < c; ++i) {
+        std::copy(share()->data(), share()->data() + numel(),
+                  lhs_tile->data() + i * numel());
+    }
+    //auto shape_trans = std::vector<size_t>({a, c, b});
+    auto lhs_expand = tensor_factory()->template create<T>(expand_shape);
+    std::dynamic_pointer_cast<common::PaddleTensor<T>>(lhs_tile)
+          ->template Transpose<3>(std::vector<int>({1, 0, 2}), lhs_expand.get());
+    
+    // expand rhs
+    auto rhs_expand = tensor_factory()
+                      ->template create<T>(expand_shape);
+    auto rhs_tile = tensor_factory()
+                      ->template create<T>(std::vector<size_t>({c, b}));
+    const common::PaddleTensor<T>* p_rhs = dynamic_cast<const common::PaddleTensor<T>*>(rhs->share());
+    const_cast<common::PaddleTensor<T>*>(p_rhs)->template Transpose<2>(std::vector<int>({1, 0}), rhs_tile.get());
+    for (int i = 0; i < a; ++i) {
+        std::copy(rhs_tile->data(), rhs_tile->data() + rhs_tile->numel(),
+                  rhs_expand->data() + i * rhs_tile->numel());
+    }
+
+    // calc <e> and <f>
+    auto share_e = tensor_factory()
+                      ->template create<T>(expand_shape);
+    auto share_f = tensor_factory()
+                      ->template create<T>(expand_shape);
+    lhs_expand->sub(triplets[0].get(), share_e.get());
+    rhs_expand->sub(triplets[1].get(), share_f.get());
+
+    // reconstruct  e, f
+    auto share_e_f = tensor_factory()
+                      ->template create<T>(std::vector<size_t>({2, a, c, b}));
+    auto remote_share_e_f = tensor_factory()
+                      ->template create<T>(std::vector<size_t>({2, a, c, b}));
+    std::copy(share_e->data(), share_e->data() + share_e->numel(),
+              share_e_f->data());
+    std::copy(share_f->data(), share_f->data() + share_f->numel(),
+              share_e_f->data() + share_e->numel());
     if (party() == 0) {
-      net()->send(next_party(), buffer_e.data(), buffer_e.size() * sizeof(int64_t));
-      net()->send(next_party(), buffer_f.data(), buffer_f.size() * sizeof(int64_t));
-      net()->recv(next_party(), remote_buffer_e.data(), remote_buffer_e.size() * sizeof(int64_t));
-      net()->recv(next_party(), remote_buffer_f.data(), remote_buffer_f.size() * sizeof(int64_t));
+      net()->template send(next_party(), *share_e_f);
+      net()->template recv(next_party(), *remote_share_e_f);
     } else {
-      net()->recv(next_party(), remote_buffer_e.data(), remote_buffer_e.size() * sizeof(int64_t));
-      net()->recv(next_party(), remote_buffer_f.data(), remote_buffer_f.size() * sizeof(int64_t));
-      net()->send(next_party(), buffer_e.data(), buffer_e.size() * sizeof(int64_t));
-      net()->send(next_party(), buffer_f.data(), buffer_f.size() * sizeof(int64_t));
+      net()->template recv(next_party(), *remote_share_e_f);
+      net()->template send(next_party(), *share_e_f);
+    }
+    auto& e_and_f = share_e_f;
+    share_e_f->add(remote_share_e_f.get(), e_and_f.get());
+
+    auto e = tensor_factory()
+                ->template create<T>(expand_shape);
+    auto f = tensor_factory()
+                ->template create<T>(expand_shape);
+    e_and_f->slice(0, 1, e.get());
+    e_and_f->slice(1, 2, f.get());
+    e->reshape(expand_shape);
+    f->reshape(expand_shape);
+
+    // calc z = f<a> + e<b> + <c> or z = ef + f<a> + e<b> + <c>
+    auto z = tensor_factory()
+                ->template create<T>(expand_shape);
+
+    fixed64_tensor_mult<N>(f.get(), triplets[0].get(), z.get());
+    auto eb = tensor_factory()
+                ->template create<T>(expand_shape);
+    fixed64_tensor_mult<N>(e.get(), triplets[1].get(), eb.get());
+    z->add(eb.get(), z.get());
+    z->add(triplets[2].get(), z.get());
+    if (party() == 0) {
+        auto ef = tensor_factory()
+                ->template create<T>(expand_shape);
+        fixed64_tensor_mult<N>(e.get(), f.get(), ef.get());
+        z->add(ef.get(), z.get());
     }
 
-    std::vector<int64_t> e;
-    std::vector<int64_t> f;
-    e.resize(col * row * shape()[1]);
-    f.resize(col * row * shape()[1]);
-    std::transform(buffer_e.begin(), buffer_e.end(),
-                   remote_buffer_e.begin(), e.begin(),
-                   std::plus<int64_t>());
-    std::transform(buffer_f.begin(), buffer_f.end(),
-                   remote_buffer_f.begin(), f.begin(),
-                   std::plus<int64_t>());
-
-    int64_t* e_ptr = e.data();
-    int64_t* f_ptr = f.data();
-    auto result = tensor_factory()->template create<T>(ret->shape());
-    int64_t* res_ptr = result->data();
-
-    // cal z = f<a> + e<b> + <c> or z = ef + f<a> + e<b> + <c>
-    for (int i = 0; i < row; ++i) {
-      for (int j = 0; j < col; ++j) {
-        std::vector<size_t> shape_v{ shape()[1] };
-        std::vector<std::shared_ptr<TensorAdapter<T>>> temp_triplet_i_j;
-        for (int k = 0; k < 5; ++k) {
-            temp_triplet_i_j.emplace_back(
-                tensor_factory()->template create<T>(shape_v));
-        }
-
-        auto& a_i_j = temp_triplet_i_j[0];
-        auto& alpha_i_j = temp_triplet_i_j[1];
-        auto& b_i_j = temp_triplet_i_j[2];
-        auto& c_i_j = temp_triplet_i_j[3];
-        auto& alpha_c_i_j = temp_triplet_i_j[4];
-
-        access_triplet(0, i, j / 2, a_i_j.get());
-        access_triplet(1, i, j / 2, alpha_i_j.get());
-        access_triplet(2, i, j / 2, b_i_j.get());
-        access_triplet(3, i, j / 2, c_i_j.get());
-        access_triplet(4, i, j / 2, alpha_c_i_j.get());
-
-        auto e_v = tensor_factory()->template create<T>(shape_v);
-        auto f_v = tensor_factory()->template create<T>(shape_v);
-
-        std::copy(e_ptr, e_ptr + shape_v[0], e_v->data());
-        std::copy(f_ptr, f_ptr + shape_v[0], f_v->data());
-        e_ptr += shape_v[0];
-        f_ptr += shape_v[0];
-
-        auto z_v = tensor_factory()->template create<T>(shape_v);
-        fixed64_tensor_mult<N>(e_v.get(), b_i_j.get(), z_v.get());
-        if (party() == 0) {
-          auto ef = tensor_factory()->template create<T>(shape_v);
-          fixed64_tensor_mult<N>(e_v.get(), f_v.get(), ef.get());
-          z_v->add(ef.get(), z_v.get());
-        }
-        auto fa = tensor_factory()->template create<T>(shape_v);
-        if (j % 2 == 0) {
-          fixed64_tensor_mult<N>(f_v.get(), a_i_j.get(), fa.get());
-          z_v->add(c_i_j.get(), z_v.get());
-        } else {
-          fixed64_tensor_mult<N>(f_v.get(), alpha_i_j.get(), fa.get());
-          z_v->add(alpha_c_i_j.get(), z_v.get());
-        }
-        z_v->add(fa.get(), z_v.get());
-
-        auto sum_v = [&z_v] () -> int64_t {
-          int64_t sum = 0;
-          for (int i = 0; i < z_v->numel(); ++i) {
-            sum += *(z_v->data() + i);
-          }
-          return sum;
-        };
-        *res_ptr = sum_v();
-        ++res_ptr;
-      }
+    // reduce expand shape (a, c, b) to (a, c)
+    auto ret_ptr = ret->mutable_share()->data();
+    for (int i = 0; i < a * c; ++i) {
+        *(ret_ptr + i) = 0;
+        std::for_each(z->data() + i * b, z->data() + (i + 1) * b, [&ret_ptr, &i] (T n) {
+                        *(ret_ptr + i) += n;
+                    });
     }
-
-    result->copy(ret->mutable_share());
 }
 
 } // namespace privc

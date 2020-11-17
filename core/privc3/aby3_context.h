@@ -33,12 +33,12 @@ public:
                  AbstractContext::AbstractContext(party, network) {
     set_num_party(3);
 
-    if (psi::equals(seed, psi::g_zero_block)) {
-      seed = psi::block_from_dev_urandom();
+    if (common::equals(seed, common::g_zero_block)) {
+      seed = common::block_from_dev_urandom();
     }
 
-    if (psi::equals(seed2, psi::g_zero_block)) {
-      seed2 = psi::block_from_dev_urandom();
+    if (common::equals(seed2, common::g_zero_block)) {
+      seed2 = common::block_from_dev_urandom();
     }
     set_random_seed(seed, 0);
     // seed2 is private

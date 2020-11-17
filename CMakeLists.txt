@@ -90,6 +90,7 @@ if (USE_ABY3_TRUNC1)
     add_compile_definitions(USE_ABY3_TRUNC1)
 endif(USE_ABY3_TRUNC1)
 
+add_subdirectory(core/common)
 add_subdirectory(core/privc)
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)
@@ -109,7 +110,8 @@ set_property(TARGET fluid_framework PROPERTY IMPORTED_LOCATION ${FLUID_LIB})
 
 # generate dynamic .so lib
 add_library(paddle_enc SHARED
-    $<TARGET_OBJECTS:privc3_o>
+    $<TARGET_OBJECTS:common_o>
+    $<TARGET_OBJECTS:mpc_tensor_o>
     $<TARGET_OBJECTS:mpc_protocol_o>
     $<TARGET_OBJECTS:mpc_ops_o>)
 

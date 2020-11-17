@@ -18,7 +18,7 @@
 
 #include "aes.h"
 
-namespace psi {
+namespace common {
 
 class PseudorandomNumberGenerator {
 
@@ -79,5 +79,5 @@ private:
 
     void refill_buffer();
 };
-} // namespace psi
+} // namespace common
 

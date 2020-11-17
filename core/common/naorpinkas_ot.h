@@ -23,7 +23,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
-namespace psi {
+namespace common {
 
 const int g_curve_id = NID_secp160k1;
 const int g_point_buffer_len = 21;
@@ -96,4 +96,4 @@ private:
   std::vector<EC_POINT *> _c;
   std::vector<EC_POINT *> _gr;
 };
-} // namespace psi
+} // namespace common

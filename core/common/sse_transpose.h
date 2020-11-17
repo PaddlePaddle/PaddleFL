@@ -12,31 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "crypto.h"
+#pragma once
 
-#include <cstring>
-#include <string>
+#include <array>
 
-#include "gtest/gtest.h"
+#include <emmintrin.h>
 
-namespace psi {
+namespace common {
 
-TEST(crypto, hash_block) {
+using block = __m128i;
 
-    block in = ZeroBlock;
+void sse_transpose128(std::array<block, 128> &in_out);
 
-    for (size_t i = 0; i < 1e6; ++i) {
-        hash_block(in);
-    }
-}
-
-TEST(crypto, hash_blocks) {
-
-    block in = ZeroBlock;
-
-    for (size_t i = 0; i < 1e6; ++i) {
-        hash_blocks({in, in});
-    }
-}
-
-};
+} // namespace common

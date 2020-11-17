@@ -17,15 +17,15 @@
 #include <memory>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
-#include "core/privc3/prng_utils.h"
+#include "core/common/prng.h"
 #include "paddle/fluid/platform/enforce.h"
 
 namespace paddle {
 
 namespace mpc {
 
-using block = psi::block;
-using PseudorandomNumberGenerator = psi::PseudorandomNumberGenerator;
+using block = common::block;
+using PseudorandomNumberGenerator = common::PseudorandomNumberGenerator;
 
 class AbstractContext {
 public:

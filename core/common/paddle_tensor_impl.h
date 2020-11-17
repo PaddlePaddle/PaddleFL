@@ -22,7 +22,7 @@
 #include "paddle/fluid/platform/hostdevice.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
-namespace aby3 {
+namespace common {
 
 template <typename T>
 void PaddleTensor<T>::reshape(const std::vector<size_t> &shape) {
@@ -274,4 +274,4 @@ void PaddleTensor<T>::slice(size_t begin_idx, size_t end_idx,
   ret->scaling_factor() = scaling_factor();
 }
 
-} // namespace aby3
+} // namespace common

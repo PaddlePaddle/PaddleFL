@@ -21,7 +21,7 @@
 #include "paddle/fluid/platform/device_context.h"
 #include "paddle/fluid/framework/tensor.h"
 
-namespace aby3 {
+namespace common {
 
 using paddle::platform::CPUDeviceContext;
 using paddle::framework::Tensor;
@@ -298,4 +298,4 @@ TEST_F(PaddleTensorTest, slice_test) {
     EXPECT_EQ(2, ret->data()[0]);
     EXPECT_EQ(3, ret->data()[1]);
 }
-} // namespace aby3
+} // namespace common
