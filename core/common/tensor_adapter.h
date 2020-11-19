@@ -94,6 +94,21 @@ public:
 
     virtual void logical_rshift(size_t rhs, TensorAdapter* ret) const = 0;
 
+    virtual void add128(const TensorAdapter<T> *rhs,
+                        TensorAdapter<T> *ret,
+                        bool lhs_128,
+                        bool rhs_128) const = 0;
+
+    virtual void sub128(const TensorAdapter<T> *rhs,
+                        TensorAdapter<T> *ret,
+                        bool lhs_128,
+                        bool rhs_128) const = 0;
+
+    virtual void mul128_with_truncate(const TensorAdapter<T> *rhs,
+                                      TensorAdapter<T> *ret,
+                                      bool lhs_128,
+                                      bool rhs_128) const = 0;
+
     // when using an integer type T as fixed-point number
     // value of T val is interpreted as val / 2 ^ scaling_factor()
     virtual size_t scaling_factor() const = 0;

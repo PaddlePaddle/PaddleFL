@@ -222,6 +222,7 @@ void FixedPointTensor<T, N>::mat_mul_impl(const FixedPointTensor<T, N>* rhs,
     size_t b = shape()[1];
     size_t c = ret->shape()[1];
     std::vector<size_t> expand_shape({a, c, b});
+    std::vector<size_t> expand128_shape({2, a, c, b});
     PADDLE_ENFORCE_EQ(a, shape()[0], "invalid result shape for mat mul");
     PADDLE_ENFORCE_EQ(c, rhs->shape()[1], "invalid result shape for mat mul");
     PADDLE_ENFORCE_EQ(shape()[1], rhs->shape()[0], "invalid input shape for mat mul");
@@ -265,17 +266,17 @@ void FixedPointTensor<T, N>::mat_mul_impl(const FixedPointTensor<T, N>* rhs,
 
     // calc <e> and <f>
     auto share_e = tensor_factory()
-                      ->template create<T>(expand_shape);
+                      ->template create<T>(expand128_shape);
     auto share_f = tensor_factory()
-                      ->template create<T>(expand_shape);
-    lhs_expand->sub(triplets[0].get(), share_e.get());
-    rhs_expand->sub(triplets[1].get(), share_f.get());
+                      ->template create<T>(expand128_shape);
+    lhs_expand->sub128(triplets[0].get(), share_e.get(), false, false);
+    rhs_expand->sub128(triplets[1].get(), share_f.get(), false, false);
 
     // reconstruct  e, f
     auto share_e_f = tensor_factory()
-                      ->template create<T>(std::vector<size_t>({2, a, c, b}));
+                      ->template create<T>(std::vector<size_t>({4, a, c, b}));
     auto remote_share_e_f = tensor_factory()
-                      ->template create<T>(std::vector<size_t>({2, a, c, b}));
+                      ->template create<T>(std::vector<size_t>({4, a, c, b}));
     std::copy(share_e->data(), share_e->data() + share_e->numel(),
               share_e_f->data());
     std::copy(share_f->data(), share_f->data() + share_f->numel(),
@@ -288,41 +289,47 @@ void FixedPointTensor<T, N>::mat_mul_impl(const FixedPointTensor<T, N>* rhs,
       net()->template send(next_party(), *share_e_f);
     }
     auto& e_and_f = share_e_f;
-    share_e_f->add(remote_share_e_f.get(), e_and_f.get());
+    share_e_f->add128(remote_share_e_f.get(), e_and_f.get(), true, true);
 
     auto e = tensor_factory()
-                ->template create<T>(expand_shape);
+                ->template create<T>(expand128_shape);
     auto f = tensor_factory()
-                ->template create<T>(expand_shape);
-    e_and_f->slice(0, 1, e.get());
-    e_and_f->slice(1, 2, f.get());
-    e->reshape(expand_shape);
-    f->reshape(expand_shape);
+                ->template create<T>(expand128_shape);
+    
+    
+    e_and_f->slice(0, 2, e.get());
+    e_and_f->slice(2, 4, f.get());
 
     // calc z = f<a> + e<b> + <c> or z = ef + f<a> + e<b> + <c>
     auto z = tensor_factory()
                 ->template create<T>(expand_shape);
 
-    fixed64_tensor_mult<N>(f.get(), triplets[0].get(), z.get());
+    f->scaling_factor() = N;
+    f->mul128_with_truncate(triplets[0].get(), z.get(), true, false);
     auto eb = tensor_factory()
                 ->template create<T>(expand_shape);
-    fixed64_tensor_mult<N>(e.get(), triplets[1].get(), eb.get());
+
+    e->scaling_factor() = N;
+    e->mul128_with_truncate(triplets[1].get(), eb.get(), true, false);
     z->add(eb.get(), z.get());
     z->add(triplets[2].get(), z.get());
     if (party() == 0) {
         auto ef = tensor_factory()
                 ->template create<T>(expand_shape);
-        fixed64_tensor_mult<N>(e.get(), f.get(), ef.get());
+        e->mul128_with_truncate(f.get(), ef.get(), true, true);
         z->add(ef.get(), z.get());
     }
 
     // reduce expand shape (a, c, b) to (a, c)
     auto ret_ptr = ret->mutable_share()->data();
     for (int i = 0; i < a * c; ++i) {
-        *(ret_ptr + i) = 0;
-        std::for_each(z->data() + i * b, z->data() + (i + 1) * b, [&ret_ptr, &i] (T n) {
-                        *(ret_ptr + i) += n;
+        T trunc_sum = 0;
+        T* z_ptr = z->data();
+        std::for_each(z_ptr + i * b, z_ptr + (i + 1) * b,
+                   [&trunc_sum] (T n) {
+                        trunc_sum += n;
                     });
+        *(ret_ptr + i) = trunc_sum;
     }
 }
 

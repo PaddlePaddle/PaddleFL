@@ -135,7 +135,7 @@ void TripletGenerator<T, N>::fill_triplet_buffer_impl(const Type2Type<int64_t>) 
     std::array<int64_t, 3> item = {
           static_cast<int64_t>(a[i]),
           static_cast<int64_t>(b[i]),
-          static_cast<int64_t>(fixed64_mult<N>(a[i], b[i]) + ab0[i] + ab1[i])};
+          static_cast<int64_t>(signedfixed128_mult<N>(a[i], b[i]) + ab0[i] + ab1[i])};
     _triplet_buffer.push(std::move(item));
   }
 }
@@ -181,8 +181,8 @@ void TripletGenerator<T, N>::fill_penta_triplet_buffer_impl(const Type2Type<int6
           static_cast<int64_t>(a[i]),
           static_cast<int64_t>(alpha[i]),
           static_cast<int64_t>(b[i]),
-          static_cast<int64_t>(fixed64_mult<N>(a[i], b[i]) + ab0[i].first + ab1[i].first),
-          static_cast<int64_t>(fixed64_mult<N>(alpha[i], b[i]) + ab0[i].second + ab1[i].second)};
+          static_cast<int64_t>(signedfixed128_mult<N>(a[i], b[i]) + ab0[i].first + ab1[i].first),
+          static_cast<int64_t>(signedfixed128_mult<N>(alpha[i], b[i]) + ab0[i].second + ab1[i].second)};
       _penta_triplet_buffer.push(std::move(item));
   }
 }

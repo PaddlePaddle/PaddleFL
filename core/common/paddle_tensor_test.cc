@@ -298,4 +298,129 @@ TEST_F(PaddleTensorTest, slice_test) {
     EXPECT_EQ(2, ret->data()[0]);
     EXPECT_EQ(3, ret->data()[1]);
 }
+
+TEST_F(PaddleTensorTest, add128_test) {
+    std::vector<size_t> shape0 = { 2, 2 };
+    std::vector<size_t> shape1 = { 2, 2 };
+    std::vector<size_t> shape2 = { 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 4; ++i) {
+        pt0->data()[i] = 0;
+        pt1->data()[i] = 0;
+    }
+
+    pt0->data()[2] = 1;
+    pt1->data()[2] = 1;
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->add128(pt1.get(), pt2.get(), true, true);
+    // | 0 1| + | 0 1| = | 0 2|
+    std::vector<int64_t> res = { 0, 0, 0, 2};
+    EXPECT_EQ(pt2->data()[0], 0);
+    EXPECT_EQ(pt2->data()[1], 0);
+    EXPECT_EQ(pt2->data()[2], 2);
+    EXPECT_EQ(pt2->data()[3], 0);
+}
+
+TEST_F(PaddleTensorTest, sub128_test1) {
+    std::vector<size_t> shape0 = { 2, 2 };
+    std::vector<size_t> shape1 = { 2, 2 };
+    std::vector<size_t> shape2 = { 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 4; ++i) {
+        pt0->data()[i] = 0;
+        pt1->data()[i] = 0;
+    }
+
+    pt0->data()[2] = 2;
+    pt1->data()[2] = 1;
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->sub128(pt1.get(), pt2.get(), true, true);
+    // | 0 2| - | 0 1| = | 0 1|
+    EXPECT_EQ(pt2->data()[0], 0);
+    EXPECT_EQ(pt2->data()[1], 0);
+    EXPECT_EQ(pt2->data()[2], 1);
+    EXPECT_EQ(pt2->data()[3], 0);
+}
+
+TEST_F(PaddleTensorTest, mul128_test1) {
+    std::vector<size_t> shape0 = { 2, 2 };
+    std::vector<size_t> shape1 = { 2, 2 };
+    std::vector<size_t> shape2 = { 1, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 4; ++i) {
+        pt0->data()[i] = 0;
+        pt1->data()[i] = 0;
+    }
+
+    pt0->data()[2] = 2;
+    pt1->data()[2] = 1;
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), true, true);
+    // | 0 2| * | 0 1| = | 0 2|
+    EXPECT_EQ(pt2->data()[0], 0);
+    EXPECT_EQ(pt2->data()[1], 2);
+}
+
+TEST_F(PaddleTensorTest, mul128_test2) {
+    std::vector<size_t> shape0 = { 1, 2 };
+    std::vector<size_t> shape1 = { 1, 2 };
+    std::vector<size_t> shape2 = { 1, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 2; ++i) {
+        pt0->data()[i] = 0;
+        pt1->data()[i] = 0;
+    }
+
+    pt0->data()[1] = 2;
+    pt1->data()[1] = 1;
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), false, false);
+    // | 0 2| * | 0 1| = | 0 2|
+    EXPECT_EQ(pt2->data()[0], 0);
+    EXPECT_EQ(pt2->data()[1], 2);
+}
+
+TEST_F(PaddleTensorTest, mul128_test3) {
+    std::vector<size_t> shape0 = { 1, 2 };
+    std::vector<size_t> shape1 = { 2, 2 };
+    std::vector<size_t> shape2 = { 1, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 4; ++i) {
+        pt1->data()[i] = 0;
+    }
+
+    pt0->data()[1] = 2;
+    pt0->data()[0] = 0;
+    pt1->data()[2] = 1;
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), false, true);
+    // | 0 2| * | 0 1| = | 0 2|
+    EXPECT_EQ(pt2->data()[0], 0);
+    EXPECT_EQ(pt2->data()[1], 2);
+}
+
+TEST_F(PaddleTensorTest, mul128_test4) {
+    std::vector<size_t> shape0 = { 2, 2 };
+    std::vector<size_t> shape1 = { 1, 2 };
+    std::vector<size_t> shape2 = { 1, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 4; ++i) {
+        pt0->data()[i] = 0;
+    }
+
+    pt1->data()[0] = 0;
+    pt1->data()[1] = 2;
+    pt0->data()[2] = 1;
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), true, false);
+    // | 0 1| * | 0 2| = | 0 2|
+    EXPECT_EQ(pt2->data()[0], 0);
+    EXPECT_EQ(pt2->data()[1], 2);
+}
 } // namespace common

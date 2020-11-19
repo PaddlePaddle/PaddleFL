@@ -52,8 +52,15 @@ inline int64_t fixed64_mult(const int64_t a, const int64_t b) {
 }
 
 template<size_t N>
+inline int64_t signedfixed128_mult(int64_t a, int64_t b) {
+    int res[4];
+    *reinterpret_cast<__int128_t *>(res) = (__int128_t)a * (__int128_t)b;
+    return *reinterpret_cast<int64_t *>(&res[1]);
+}
+
+template<size_t N>
 inline uint64_t lshift(uint64_t lhs, size_t rhs) {
-    return fixed64_mult<N>(lhs, (uint64_t)1 << rhs);
+    return signedfixed128_mult<N>(lhs, (uint64_t)1 << rhs);
 }
 
 inline std::string block_to_string(const block &b) {

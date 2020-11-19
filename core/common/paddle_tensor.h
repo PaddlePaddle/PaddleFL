@@ -76,6 +76,21 @@ public:
   void mat_mul(const TensorAdapter<T> *rhs,
                TensorAdapter<T> *ret) const override;
 
+  void add128(const TensorAdapter<T> *rhs,
+              TensorAdapter<T> *ret,
+              bool lhs_128,
+              bool rhs_128) const override;
+
+  void sub128(const TensorAdapter<T> *rhs,
+              TensorAdapter<T> *ret,
+              bool lhs_128,
+              bool rhs_128) const override;
+
+  void mul128_with_truncate(const TensorAdapter<T> *rhs,
+                            TensorAdapter<T> *ret,
+                            bool lhs_128,
+                            bool rhs_128) const override;
+
   void bitwise_xor(const TensorAdapter<T> *rhs,
                    TensorAdapter<T> *ret) const override;
 
