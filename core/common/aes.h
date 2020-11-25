@@ -20,7 +20,7 @@
 #include <openssl/aes.h>
 #endif
 
-namespace psi {
+namespace common {
 
 using block = __m128i;
 
@@ -50,5 +50,5 @@ private:
 #endif
 };
 
-} // namespace psi
+} // namespace common
 

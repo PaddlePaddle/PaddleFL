@@ -19,7 +19,7 @@
 
 #include "tensor_adapter.h"
 
-namespace aby3 {
+namespace common {
 
 class TensorAdapterFactory {
 public:
@@ -36,6 +36,10 @@ public:
 
   template <typename T>
   std::shared_ptr<TensorAdapter<T>> create(const std::vector<size_t> &shape);
+
+  template <typename T>
+  std::vector<std::shared_ptr<TensorAdapter<T>>> malloc_tensor(size_t size,
+                                              const std::vector<size_t>& shape);
 };
 
-} // namespace aby3
+} // namespace common

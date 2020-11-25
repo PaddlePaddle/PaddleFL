@@ -12,20 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "paddle_tensor.h"
+#include "tensor_adapter_factory.h"
 
-namespace aby3 {
+namespace common {
 
+template <>
+std::shared_ptr<TensorAdapter<int64_t>> TensorAdapterFactory::create() {
+  return create_int64_t();
+}
+
+template <>
 std::shared_ptr<TensorAdapter<int64_t>>
-PaddleTensorFactory::create_int64_t(const std::vector<size_t> &shape) {
-  auto ret = std::make_shared<PaddleTensor<int64_t>>(_device_ctx);
-  ret->reshape(shape);
+TensorAdapterFactory::create(const std::vector<size_t> &shape) {
+  return create_int64_t(shape);
+}
+
+template <>
+std::vector<std::shared_ptr<TensorAdapter<int64_t>>>
+TensorAdapterFactory::malloc_tensor(size_t size, const std::vector<size_t>& shape) {
+  std::vector<std::shared_ptr<TensorAdapter<int64_t>>> ret;
+  for (int i = 0; i < size; ++i) {
+     ret.emplace_back(create<int64_t>(shape));
+  }
   return ret;
 }
 
-std::shared_ptr<TensorAdapter<int64_t>> PaddleTensorFactory::create_int64_t() {
-  auto ret = std::make_shared<PaddleTensor<int64_t>>(_device_ctx);
-  return ret;
-}
-
-} // namespace aby3
+} // namespace common

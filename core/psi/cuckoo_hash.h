@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#include "utils.h"
+#include "../common/utils.h"
 
 namespace psi {
 
@@ -51,10 +51,10 @@ public:
   std::vector<Bin> _stash;
 
   void insert_item(size_t item_idx,
-                   const std::array<std::vector<block>, 4> &hash_tab,
+                   const std::array<std::vector<common::block>, 4> &hash_tab,
                    size_t hash_idx = 0, size_t tried = 0);
 
-  void insert_all(const std::array<std::vector<block>, 4> &hash_tab);
+  void insert_all(const std::array<std::vector<common::block>, 4> &hash_tab);
 };
 class SimpleHasher {
 
@@ -71,7 +71,7 @@ public:
 
   std::vector<std::vector<Bin>> _table;
 
-  void insert_all(const std::array<std::vector<block>, 4> &hash_tab);
+  void insert_all(const std::array<std::vector<common::block>, 4> &hash_tab);
 };
 
 } // namespace psi

@@ -16,7 +16,7 @@
 
 #include <cstring>
 
-namespace psi {
+namespace common {
 
 PseudorandomNumberGenerator::PseudorandomNumberGenerator(const block &seed)
     : _ctr(0), _now_byte(0) {
@@ -64,4 +64,4 @@ bool PseudorandomNumberGenerator::get<bool>() {
     get_array(&data, sizeof(data));
     return data & 1;
 }
-} // namespace smc
+} // namespace common

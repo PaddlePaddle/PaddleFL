@@ -14,14 +14,19 @@
 
 #pragma once
 
-#include <array>
+#include <smmintrin.h>
 
-#include <emmintrin.h>
-
-namespace psi {
+namespace common {
 
 using block = __m128i;
 
-void sse_transpose128(std::array<block, 128> &in_out);
+const block g_zero_block = _mm_set_epi64x(0, 0);
 
-} // namespace psi
+block block_from_dev_urandom();
+
+inline bool equals(const block &lhs, const block &rhs) {
+  block neq = _mm_xor_si128(lhs, rhs);
+  return _mm_test_all_zeros(neq, neq);
+}
+
+} // namespace common

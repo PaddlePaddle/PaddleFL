@@ -20,7 +20,7 @@
 #include "prng.h"
 #include "utils.h"
 
-namespace psi {
+namespace common {
 
 // implementation of ot extension
 // generates ot masks
@@ -99,6 +99,6 @@ private:
 
   size_t _now_idx;
 };
-} // namespace psi
+} // namespace common
 
 #include "ot_extension_impl.h"

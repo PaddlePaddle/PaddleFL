@@ -23,7 +23,7 @@
 
 #include "paddle/fluid/framework/operator.h"
 #include "core/privc3/aby3_context.h"
-#include "core/privc3/paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 
 namespace paddle {
 namespace mpc {
@@ -68,10 +68,10 @@ public:
     return &current_exec_ctx->device_context();
   }
 
-  static std::shared_ptr<aby3::TensorAdapterFactory> tensor_factory() {
+  static std::shared_ptr<common::TensorAdapterFactory> tensor_factory() {
     if (!_s_current_tensor_factory) {
       _s_current_tensor_factory =
-          std::make_shared<aby3::PaddleTensorFactory>(device_ctx());
+          std::make_shared<common::PaddleTensorFactory>(device_ctx());
     }
     return _s_current_tensor_factory;
   }
@@ -81,7 +81,7 @@ private:
 
   thread_local static const ExecutionContext *current_exec_ctx;
 
-  thread_local static std::shared_ptr<aby3::TensorAdapterFactory>
+  thread_local static std::shared_ptr<common::TensorAdapterFactory>
       _s_current_tensor_factory;
 };
 

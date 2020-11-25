@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rand_utils.h"
+#pragma once
 
-#include <fstream>
+#include <array>
 
-namespace psi {
+#include <emmintrin.h>
 
-block block_from_dev_urandom() {
-  block ret;
-  std::ifstream in("/dev/urandom");
-  in.read(reinterpret_cast<char *>(&ret), sizeof(ret));
-  return ret;
-}
+namespace common {
 
-} // namespace psi
+using block = __m128i;
+
+void sse_transpose128(std::array<block, 128> &in_out);
+
+} // namespace common

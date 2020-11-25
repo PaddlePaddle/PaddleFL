@@ -21,7 +21,7 @@
 
 #include "net_io.h"
 #include "psi.h"
-#include "rand_utils.h"
+#include "../common/rand_utils.h"
 
 namespace psi {
 
@@ -56,7 +56,7 @@ public:
       return;
     }
 
-    auto random_seed = block_from_dev_urandom();
+    auto random_seed = common::block_from_dev_urandom();
 
     std::unique_ptr<PsiSender> sender;
     {
@@ -66,12 +66,12 @@ public:
     }
 
     // 512 for ot size
-    std::array<std::array<std::array<uint8_t, g_point_buffer_len>, 2>, 512>
+    std::array<std::array<std::array<uint8_t, common::g_point_buffer_len>, 2>, 512>
         recv_input;
 
     _io->recv_data_with_timeout(&recv_input, sizeof(recv_input));
 
-    std::array<std::array<uint8_t, g_point_buffer_len>, 512> send_back;
+    std::array<std::array<uint8_t, common::g_point_buffer_len>, 512> send_back;
     for (size_t i = 0; i < 512; ++i) {
       send_back[i] = sender->np_ot().recv(i, recv_input[i]);
     }
@@ -181,7 +181,7 @@ public:
       return 0;
     }
 
-    auto random_seed = block_from_dev_urandom();
+    auto random_seed = common::block_from_dev_urandom();
 
     std::unique_ptr<PsiReceiver> recver;
     {
@@ -191,14 +191,14 @@ public:
     }
 
     // ot size = 512
-    std::array<std::array<std::array<uint8_t, g_point_buffer_len>, 2>, 512>
+    std::array<std::array<std::array<uint8_t, common::g_point_buffer_len>, 2>, 512>
         to_send;
 
     for (size_t i = 0; i < 512; ++i) {
       to_send[i] = recver->np_ot().send_pre(i);
     }
     _io->send_data(&to_send, sizeof(to_send));
-    std::array<std::array<uint8_t, g_point_buffer_len>, 512> recved;
+    std::array<std::array<uint8_t, common::g_point_buffer_len>, 512> recved;
     _io->recv_data_with_timeout(&recved, sizeof(recved));
     for (size_t i = 0; i < 512; ++i) {
       recver->np_ot().send_post(i, recved[i]);
