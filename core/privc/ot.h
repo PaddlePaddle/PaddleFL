@@ -25,6 +25,8 @@
 #include "core/privc/crypto.h"
 #include "core/psi/naorpinkas_ot.h"
 #include "core/psi/ot_extension.h"
+#include "core/privc/typedef.h"
+
 
 namespace privc {
 
@@ -33,14 +35,11 @@ using AbstractContext = paddle::mpc::AbstractContext;
 using block = psi::block;
 using NaorPinkasOTsender = psi::NaorPinkasOTsender;
 using NaorPinkasOTreceiver = psi::NaorPinkasOTreceiver;
-using u64 = psi::u64;
-using u8 = psi::u8;
 
 template<typename T>
 using OTExtSender = psi::OTExtSender<T>;
 template<typename T>
 using OTExtReceiver = psi::OTExtReceiver<T>;
-
 
 inline std::string block_to_string(const block &b) {
     return std::string(reinterpret_cast<const char *>(&b), sizeof(block));
@@ -51,6 +50,22 @@ inline u8 block_lsb(const block &val) {
     return view[0] & (u8)1;
 };
 
+inline void block_lsb(const TensorBlock* val, TensorAdapter<u8>* ret) {
+    const block* val_ptr = reinterpret_cast<const block*>(val->data());
+    std::transform(val_ptr, val_ptr + ret->numel(), ret->data(),
+                   [](block a) -> u8 {
+                       return block_lsb(a);
+                   });
+};
+
+inline void block_lsb(const TensorBlock* val, TensorAdapter<int64_t>* ret) {
+    const block* val_ptr = reinterpret_cast<const block*>(val->data());
+    std::transform(val_ptr, val_ptr + ret->numel(), ret->data(),
+                   [](block a) -> int64_t {
+                       return (int64_t) block_lsb(a);
+                   });
+};
+
 inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                          uint64_t input,
                          std::vector<block>& ot_masks,
@@ -58,7 +73,7 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                          size_t word_width = 8 * sizeof(uint64_t)) {
         for (uint64_t idx = 0; idx < word_width; idx += 1) {
             auto ot_instance = ot_ext_recver.get_ot_instance();
-            block choice = (input >> idx) & 1 ? psi::OneBlock : psi::ZeroBlock;
+            block choice = (input >> idx) & 1 ? OneBlock : ZeroBlock;
 
             t0_buffer.emplace_back(ot_instance[0]);
             ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
@@ -87,6 +102,40 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
     }
 }
 
+
+template <typename T>
+inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
+                         const TensorAdapter<T>* input,
+                         TensorBlock* ot_masks,
+                         TensorBlock* t0_buffer,
+                         size_t word_width = 8 * sizeof(uint64_t)) {
+    auto shape = input->shape();
+    auto block_shape = get_block_shape(shape);
+    for (uint64_t idx = 0; idx < word_width; idx += 1) {
+        //auto ot_instance = ot_ext_recver.get_ot_instance();
+        auto ot_ins0 = tensor_factory()->template create<int64_t>(block_shape);
+        auto ot_ins1 = tensor_factory()->template create<int64_t>(block_shape);
+        ot_ext_recver.get_ot_instance(ot_ins0.get(), ot_ins1.get());
+        //block choice = (input >> idx) & 1 ? OneBlock : ZeroBlock;
+        auto choice = tensor_factory()->template create<int64_t>(block_shape);
+        block* choice_ptr = reinterpret_cast<block*>(choice->data());
+        std::transform(input->data(), input->data() + input->numel(),
+                       choice_ptr, [&idx](int64_t a) {
+                           return (a >> idx) & 1 ? OneBlock : ZeroBlock;
+                       });
+
+        //t0_buffer.emplace_back(ot_instance[0]);
+        auto t0_buffer_s = tensor_factory()->template create<int64_t>(block_shape);
+        t0_buffer->slice(idx, idx + 1, t0_buffer_s.get());
+        ot_ins0->copy(t0_buffer_s.get());
+        //ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
+        auto ot_masks_s = tensor_factory()->template create<int64_t>(block_shape);
+        ot_masks->slice(idx, idx + 1, ot_masks_s.get());
+        choice->bitwise_xor(ot_ins0.get(), ot_masks_s.get());
+        ot_masks_s->bitwise_xor(ot_ins1.get(), ot_masks_s.get());
+    }
+}
+
 class ObliviousTransfer {
 public:
   ObliviousTransfer(std::shared_ptr<AbstractContext>& circuit_context) :
@@ -105,6 +154,27 @@ public:
   const block& garbled_delta() const { return _garbled_delta; }
 
   u64& garbled_and_ctr() { return _garbled_and_ctr; }
+
+  void base_ot_choice(TensorBlock* ret) const {
+    block* ret_ptr = reinterpret_cast<block*>(ret->data());
+    std::for_each(ret_ptr, ret_ptr + ret->numel() / _g_block_size_expand,
+                    [this](block& a) { a = this->_base_ot_choices; });
+  }
+
+  void garbled_delta(TensorBlock* ret) const {
+    block* ret_ptr = reinterpret_cast<block*>(ret->data());
+    std::for_each(ret_ptr, ret_ptr + ret->numel() / _g_block_size_expand,
+                    [this](block& a) { a = this->_garbled_delta; });
+  }
+
+  void garbled_and_ctr(TensorAdapter<int64_t>* ret) {
+    int64_t* ret_ptr = ret->data();
+    std::for_each(ret_ptr, ret_ptr + ret->numel(),
+                    [this](int64_t& a) mutable {
+                        u64 tmp = ++(this->_garbled_and_ctr);
+                        a = *reinterpret_cast<int64_t*>(&tmp);
+                    });
+  }
 
   void init();
 

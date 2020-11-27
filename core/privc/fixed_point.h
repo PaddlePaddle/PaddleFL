@@ -44,42 +44,47 @@ inline int64_t factorial(unsigned int i) {
 }
 
 template<size_t N>
-class FixedPoint : public privc::Integer {
+class FixedPoint : public privc::IntegerTensor {
 
 public:
-    FixedPoint(Integer &&in) : Integer(in) {}
+    FixedPoint(IntegerTensor &&in) : IntegerTensor(in) {}
 
-    FixedPoint(const Integer &in) : Integer(in) {}
+    FixedPoint(const IntegerTensor &in) : IntegerTensor(in) {}
+    FixedPoint(const std::vector<size_t>& shape) : IntegerTensor(shape) {}
+    FixedPoint(const TensorAdapter<int64_t>* input, size_t party) :
+                IntegerTensor(input, party) {}
 
-    FixedPoint(double in) {
-        _length = sizeof(int64_t) * 8;
-        _bits.resize(_length);
+    FixedPoint(double in, std::vector<size_t> shape) : IntegerTensor(shape) {
         int64_t in_ = double_to_fix64<N>(in);
         for (int i = 0; i < _length; i += 1) {
             if (party() == 0 && in_ >> i & 1) {
-                _bits[i]._share = ot()->garbled_delta();
+                auto* share_i = (*this)[i]->mutable_share();
+                auto garbled_delta = tensor_factory()->template create<int64_t>(share_i->shape());
+                ot()->garbled_delta(garbled_delta.get());
+                garbled_delta->copy(share_i);
             }
         }
     }
-
+    
+/*
     FixedPoint(double input, size_t party)
-        : Integer(double_to_fix64<N>(input), party) {
+        : IntegerTensor(double_to_fix64<N>(input), party) {
     }
 
     double reconstruct() const {
-        return fix64_to_double<N>(Integer::reconstruct());
+        return fix64_to_double<N>(IntegerTensor::reconstruct());
     }
 
     FixedPoint decimal() const {
         FixedPoint res = abs();
         for (int i = N; i < res.size(); i += 1) {
-            res[i]._share = psi::ZeroBlock;
+            res[i]._share = ZeroBlock;
         }
         cond_neg(_bits[size() - 1], res.bits(), res.cbits(), size());
         return res;
     }
-
-    FixedPoint operator*(const FixedPoint &rhs) const {
+*/
+    /*FixedPoint operator*(const FixedPoint &rhs) const {
         if (size() != rhs.size()) {
             throw std::logic_error("op len not match");
         }
@@ -108,7 +113,47 @@ public:
         }
         return res;
     }
+*/
+    void bitwise_mul(const FixedPoint* rhs, FixedPoint* ret) const {
+        if (size() != rhs.size()) {
+            throw std::logic_error("op len not match");
+        }
+        auto shape = shape();
+        FixedPoint res(shape);
 
+        const unsigned int full_size = size() + N;
+        auto shape_mul = shape;
+        shape_mul.replace(shape_mul.begin(), full_size);
+        IntegerTensor l_(shape_mul);
+        IntegerTensor r_(shape_mul);
+        IntegerTensor res_(shape_mul);
+
+        for (int i = 0; i < size(); i += 1) {
+            //l_vec.emplace_back(_bits[i]);
+            //r_vec.emplace_back(rhs[i]);
+            this[i]->share()->copy(l_[i]->mutable_share());
+            rhs[i]->share()->copy(r_[i]->mutable_share());
+
+        }
+
+        for (int i = 0; (unsigned)i < N; i += 1) {
+            //l_vec.emplace_back(_bits[size() - 1]);
+            //r_vec.emplace_back(rhs[size() - 1]);
+            this[size() - 1]->share()->copy(l_[size() + i]->mutable_share());
+            rhs[size() - 1]->share()->copy(r_[size() + i]->mutable_share());
+        }
+
+        mul_full(&res_, &l_, &r_, full_size);
+
+        //for (int i = 0; i < size(); i += 1) {
+        //    res[i] = std::move(res_vec[i + N]);
+        //}
+        //return res;
+        auto ret_ = tensor_factory()->template create<int64_t>(shape);
+        res.share()->slice(N, full_size, ret_.get());
+        ret_->copy(ret);
+    }
+/*
     FixedPoint operator/(const FixedPoint &rhs) const {
         if (size() != rhs.size()) {
             throw std::logic_error("op len not match");
@@ -174,25 +219,55 @@ public:
             exp_dec = exp_dec + var[i] * FixedPoint(1.0 / factorial(i));
         }
         return exp_int_ * exp_dec * exp_dec;
-    }
+    }*/
 
-    FixedPoint relu() const {
-        FixedPoint zero(0.0);
-        return if_then_else(zero.geq(*this), zero, *this);
+    //FixedPoint relu() const {
+    //    FixedPoint zero(0.0);
+    //    return if_then_else(zero.geq(*this), zero, *this);
+    //}
+    void relu(FixedPoint* ret) const {
+        FixedPoint zero(0.0, shape());
+        auto bit_shape = shape();
+        bit_shape.erase(bit_shape.begin());
+        BitTensor cmp(bit_shape);
+        zero.geq(this, &cmp);
+        if_then_else(&cmp, &zero, this, ret);
     }
-
-    int64_t relu_bc() const {
+/*    int64_t relu_bc() const {
         FixedPoint zero(0.0);
         return if_then_else_bc(zero.geq(*this), zero, *this);
     }
+*/
+    void relu_bc(TensorAdapter<int64_t>* ret) {
+        FixedPoint zero(0.0, shape());
+        auto bit_shape = shape();
+        bit_shape.erase(bit_shape.begin());
+        BitTensor cmp(bit_shape);
+        zero.geq(this, &cmp);
+        if_then_else_bc(&cmp, &zero, this, ret);
+    }
 
-    FixedPoint logistic() const {
+/*    FixedPoint logistic() const {
         FixedPoint one(1.0);
         FixedPoint half(0.5);
         FixedPoint t_option = FixedPoint(operator+(half)).relu();
         return if_then_else(one.geq(t_option), t_option, one);
-    }
+    }*/
 
+    void logistic(FixedPoint* ret) const {
+        auto gc_shape = shape();
+        auto bit_shape = gc_shape;
+        bit_shape.erase(bit_shape.begin());
+        FixedPoint one(1.0, gc_shape);
+        FixedPoint half(0.5, gc_shape);
+        FixedPoint tmp(gc_shape);
+        bitwise_add(&half, &tmp);
+        tmp.relu(&tmp);
+        BitTensor cmp(bit_shape);
+        one.geq(&tmp, &cmp);
+        if_then_else(&cmp, &tmp, &one, ret);
+    }
+/*
     static std::vector<FixedPoint> softmax(std::vector<FixedPoint> &&in) {
         if (in.size() == 0) {
             throw std::logic_error("zero input vector size");
@@ -214,20 +289,20 @@ private:
     static FixedPoint exp(const Bit &neg, const Bit *in, int size) {
         FixedPoint res(1.0);
 
-        FixedPoint base = Integer::if_then_else(neg, FixedPoint(1.0 / M_E),
+        FixedPoint base = IntegerTensor::if_then_else(neg, FixedPoint(1.0 / M_E),
                                                 FixedPoint(M_E));
 
         FixedPoint one = res;
 
         for (int i = size - 1; i >= 0; i -= 1) {
-            FixedPoint round = Integer::if_then_else(in[i], base, one);
+            FixedPoint round = IntegerTensor::if_then_else(in[i], base, one);
             res = res * round;
             if (i) {
                 res = res * res;
             }
         }
         return res;
-    }
+    }*/
 };
 
 template<size_t N>

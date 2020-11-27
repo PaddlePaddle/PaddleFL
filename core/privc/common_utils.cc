@@ -12,39 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "core/privc/privc_context.h"
 #include "core/privc3/tensor_adapter_factory.h"
+#include "../privc3/tensor_adapter.h"
+#include "typedef.h"
+#include "ot.h"
+#include "common_utils.h"
 
 namespace privc {
 
-static inline std::shared_ptr<AbstractContext> privc_ctx() {
+static std::shared_ptr<AbstractContext> privc_ctx() {
   return paddle::mpc::ContextHolder::mpc_ctx();
 }
 
-static inline size_t party() {
-    return privc_ctx()->party();
-}
-
-static inline std::shared_ptr<OT> ot() {
+static std::shared_ptr<OT> ot() {
     return std::dynamic_pointer_cast<PrivCContext>(privc_ctx())->ot();
 }
 
-static inline size_t next_party() {
-    return privc_ctx()->next_party();
-}
-static inline AbstractNetwork* net() {
-  return privc_ctx()->network();
-}
-
-static inline std::shared_ptr<aby3::TensorAdapterFactory> tensor_factory() {
+static std::shared_ptr<aby3::TensorAdapterFactory> tensor_factory() {
     return paddle::mpc::ContextHolder::tensor_factory();
 }
 
-static inline std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor() {
+static std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor() {
     return std::dynamic_pointer_cast<PrivCContext>(privc_ctx())->triplet_generator();
+}
+
+static size_t party() {
+    return privc_ctx()->party();
+}
+
+static size_t next_party() {
+    return privc_ctx()->next_party();
+}
+
+static AbstractNetwork* net() {
+  return privc_ctx()->network();
 }
 
 } // namespace privc

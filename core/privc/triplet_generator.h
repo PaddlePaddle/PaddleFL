@@ -26,6 +26,13 @@
 #include "core/common/naorpinkas_ot.h"
 #include "core/common/ot_extension.h"
 #include "core/common/tensor_adapter.h"
+//#include "core/privc3/prng_utils.h"
+//#include "core/privc/crypto.h"
+//#include "core/psi/naorpinkas_ot.h"
+//#include "core/psi/ot_extension.h"
+//#include "core/privc3/tensor_adapter.h"
+#include "core/privc/ot.h"
+#include "core/privc/privc_context.h"
 
 namespace privc {
 

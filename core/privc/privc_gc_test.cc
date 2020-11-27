@@ -102,6 +102,85 @@ public:
 std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {
     return g_ctx_holder::tensor_factory()->template create<int64_t>(shape);
 }
+/*
+void test_closure_gc(int party_flag, std::vector<double>& output) {
+
+    Fix64gc<SCALING_N> af(7.0, 0);
+    Fix64gc<SCALING_N> bf(3.0, 1);
+    Fix64gc<SCALING_N> cf = af;
+    Fix64gc<SCALING_N> df(std::move(cf));
+    df = bf;
+
+    output.emplace_back(af.geq(bf).reconstruct());
+    output.emplace_back(af.equal(bf).reconstruct());
+    Fix64gc<SCALING_N> res = af + bf;
+    output.emplace_back(res.reconstruct());
+    res = af - bf;
+    output.emplace_back(res.reconstruct());
+    res = -af;
+    output.emplace_back(res.reconstruct());
+    res = af * bf;
+    output.emplace_back(res.reconstruct());
+    res = af / bf;
+    output.emplace_back(res.reconstruct());
+    res = af ^ bf;
+    output.emplace_back(res.reconstruct());
+    res = af.abs();
+    output.emplace_back(res.reconstruct());
+    output.emplace_back(af[34].reconstruct());
+
+}
+
+TEST_F(GCTest, gc_closure) {
+
+    std::vector<double> output[2];
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                test_closure_gc(0, output[0]);
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                test_closure_gc(1, output[1]);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    int i = 0;
+
+    auto check_output_equal = [&] () -> bool {
+        if (output[0].size() != output[1].size()) {
+            return false;
+        }
+        for (unsigned int i = 0; i < output[0].size(); i += 1) {
+            if (output[0][i] != output[1][i]) {
+                return false;
+            }
+        }
+        return true;
+     };
+    ASSERT_TRUE(check_output_equal());
+
+    ASSERT_FLOAT_EQ(1, output[0][i++]);
+    ASSERT_FLOAT_EQ(0, output[0][i++]);
+    ASSERT_FLOAT_EQ(10, output[0][i++]);
+    ASSERT_FLOAT_EQ(4, output[0][i++]);
+    ASSERT_FLOAT_EQ(-7, output[0][i++]);
+    ASSERT_FLOAT_EQ(21, output[0][i++]);
+    ASSERT_FLOAT_EQ(7.0 / 3, output[0][i++]);
+    ASSERT_FLOAT_EQ(4, output[0][i++]);
+    ASSERT_FLOAT_EQ(7, output[0][i++]);
+    ASSERT_FLOAT_EQ(1, output[0][i++]);
+}
+*/
 
 void test_closure_gc(int party_flag, std::vector<double>& output) {
 

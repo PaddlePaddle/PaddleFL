@@ -28,4 +28,11 @@ std::shared_ptr<TensorAdapter<int64_t>> PaddleTensorFactory::create_int64_t() {
   return ret;
 }
 
+std::shared_ptr<TensorAdapter<uint8_t>>
+PaddleTensorFactory::create_uint8_t(const std::vector<size_t> &shape) {
+  auto ret = std::make_shared<PaddleTensor<uint8_t>>(_device_ctx);
+  ret->reshape(shape);
+  return ret;
+}
+
 } // namespace common

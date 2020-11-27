@@ -24,6 +24,7 @@
 //#include "core/privc3/paddle_tensor.h"
 #include "core/privc/triplet_generator.h"
 //#include "core/privc/common.h"
+#include "core/privc/common_utils.h"
 
 namespace privc {
 

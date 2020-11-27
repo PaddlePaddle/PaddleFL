@@ -24,6 +24,9 @@
 
 #include "./aes.h"
 
+#include "common_utils.h"
+#include "./tensor_adapter.h"
+
 namespace common {
 
 typedef unsigned char u8;
@@ -31,6 +34,9 @@ typedef unsigned long long u64;
 const block ZeroBlock = _mm_set_epi64x(0, 0);
 const block OneBlock = _mm_set_epi64x(-1, -1);
 const int POINT_BUFFER_LEN = 21;
+using privc::TensorBlock;
+template<typename T>
+using TensorAdapter = aby3::TensorAdapter<T>;
 
 static block double_block(block bl);
 
@@ -38,6 +44,19 @@ static inline block hash_block(const block& x, const block& i = ZeroBlock) {
     static AES pi(ZeroBlock);
     block k = double_block(x) ^ i;
     return pi.ecb_enc_block(k) ^ k;
+}
+
+static inline void hash_block(const TensorBlock* x, TensorBlock* ret,
+                              const TensorBlock* i = nullptr) {
+    for (int j = 0; j < x->numel() / 2; ++j) {
+        block i_block(ZeroBlock);
+        if (i) {
+            i_block = *(reinterpret_cast<const block*>(i->data()) + j);
+        }
+        block x_block = *(reinterpret_cast<const block*>(x->data()) + j);
+        block* ret_block_ptr = reinterpret_cast<block*>(ret->data()) + j;
+        *(ret_block_ptr) = hash_block(x_block, i_block);
+    }
 }
 
 static inline std::pair<block, block> hash_blocks(const std::pair<block, block>& x,
@@ -49,11 +68,43 @@ static inline std::pair<block, block> hash_blocks(const std::pair<block, block>&
     return {c[0] ^ k[0], c[1] ^ k[1]};
 }
 
+static inline void hash_blocks(const std::pair<const TensorBlock*, const TensorBlock*>& x,
+                 std::pair<TensorBlock*, TensorBlock*>& ret,
+                 const std::pair<TensorBlock*, TensorBlock*>& i = {nullptr, nullptr}) {
+    int numel = x.first->numel() / 2;
+    for (int j = 0; j < numel; ++j) {
+        const block* block_ptr_x_first = reinterpret_cast<const block*>(x.first->data());
+        const block* block_ptr_x_second = reinterpret_cast<const block*>(x.second->data());
+        block* block_ptr_ret_first = reinterpret_cast<block*>(ret.first->data());
+        block* block_ptr_ret_second = reinterpret_cast<block*>(ret.second->data());
+        std::pair<block, block> x_pair({*(block_ptr_x_first + j), *(block_ptr_x_second + j)});
+
+        std::pair<block, block> i_pair({ZeroBlock, ZeroBlock});
+        if ((i.first != nullptr) && (i.second != nullptr)) {
+            block* block_ptr_i_first = reinterpret_cast<block*>(i.first->data());
+            block* block_ptr_i_second = reinterpret_cast<block*>(i.second->data());
+            i_pair.first = *(block_ptr_i_first + j);
+            i_pair.second = *(block_ptr_i_second + j);
+        }
+        auto ret_pair = hash_blocks(x_pair, i_pair);
+        *(block_ptr_ret_first + j) = ret_pair.first;
+        *(block_ptr_ret_second + j) = ret_pair.second;
+    }
+}
+
 template <typename T>
 static inline block to_block(const T& val) {
     block ret = ZeroBlock;
     std::memcpy(&ret, &val, std::min(sizeof ret, sizeof val));
     return ret;
+}
+
+template <typename T>
+static inline block to_block(const TensorAdapter<T>* val, TensorBlock* ret) {
+    block* ret_ptr = reinterpret_cast<block*>(ret->data());
+    for (int i = 0; i < val->numel(); ++i) {
+        *(ret_ptr + i) = to_block(*(val->data() + i));
+    }
 }
 
 static inline block double_block(block bl) {

@@ -169,6 +169,9 @@ public:
   std::shared_ptr<TensorAdapter<int64_t>>
   create_int64_t(const std::vector<size_t> &shape) override;
 
+  std::shared_ptr<TensorAdapter<uint8_t>>
+  create_uint8_t(const std::vector<size_t> &shape) override;
+
   std::shared_ptr<TensorAdapter<int64_t>> create_int64_t() override;
 
   PaddleTensorFactory(const paddle::platform::DeviceContext *device_ctx)
