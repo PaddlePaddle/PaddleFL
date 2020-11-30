@@ -18,7 +18,7 @@
 #include <algorithm>
 
 #include "paddle/fluid/platform/enforce.h"
-#include "prng.h"
+#include "core/common/prng.h"
 
 namespace aby3 {
 template<typename T, size_t N>

@@ -19,7 +19,7 @@
 
 #include <emmintrin.h>
 
-namespace psi {
+namespace common {
 
 using block = __m128i;
 
@@ -95,4 +95,4 @@ inline size_t get_mask_size(size_t input, size_t other,
   return (stat_sec_param + std::log2(input * other) + 7) / 8;
 }
 
-} // namespace psi
+} // namespace common

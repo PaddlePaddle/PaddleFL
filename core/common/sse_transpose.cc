@@ -16,7 +16,7 @@
 
 #include <array>
 
-namespace psi {
+namespace common {
 
 void sse_load_sub_square(std::array<block, 2>& out, std::array<block, 128>& in,
                          size_t x, size_t y) {
@@ -60,4 +60,4 @@ void sse_transpose128(std::array<block, 128>& in_out) {
         }
     }
 }
-} // namespace psi
+} // namespace common

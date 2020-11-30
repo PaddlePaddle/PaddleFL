@@ -12,21 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include "rand_utils.h"
 
-#include <smmintrin.h>
+#include <fstream>
 
-namespace psi {
+namespace common {
 
-using block = __m128i;
-
-const block g_zero_block = _mm_set_epi64x(0, 0);
-
-block block_from_dev_urandom();
-
-inline bool equals(const block &lhs, const block &rhs) {
-  block neq = _mm_xor_si128(lhs, rhs);
-  return _mm_test_all_zeros(neq, neq);
+block block_from_dev_urandom() {
+  block ret;
+  std::ifstream in("/dev/urandom");
+  in.read(reinterpret_cast<char *>(&ret), sizeof(ret));
+  return ret;
 }
 
-} // namespace psi
+} // namespace common

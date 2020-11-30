@@ -12,23 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include "paddle_tensor.h"
 
-#include "core/common/prng.h"
-#include "core/common/rand_utils.h"
+namespace common {
 
-namespace aby3 {
-
-using block = common::block;
-
-const block g_zero_block = common::g_zero_block;
-
-using PseudorandomNumberGenerator = common::PseudorandomNumberGenerator;
-
-inline block block_from_dev_urandom() { return common::block_from_dev_urandom(); }
-
-inline bool equals(const block &lhs, const block &rhs) {
-  return common::equals(lhs, rhs);
+std::shared_ptr<TensorAdapter<int64_t>>
+PaddleTensorFactory::create_int64_t(const std::vector<size_t> &shape) {
+  auto ret = std::make_shared<PaddleTensor<int64_t>>(_device_ctx);
+  ret->reshape(shape);
+  return ret;
 }
 
-} // namespace aby3
+std::shared_ptr<TensorAdapter<int64_t>> PaddleTensorFactory::create_int64_t() {
+  auto ret = std::make_shared<PaddleTensor<int64_t>>(_device_ctx);
+  return ret;
+}
+
+} // namespace common

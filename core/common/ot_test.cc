@@ -24,7 +24,7 @@
 
 #include "utils.h"
 
-namespace psi {
+namespace common {
 
 class OTtest : public ::testing::Test {
 
@@ -132,4 +132,4 @@ TEST_F(OTtest, ot_ext_test2) {
   }
 }
 
-} // namespace psi
+} // namespace common

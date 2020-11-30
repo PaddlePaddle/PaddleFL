@@ -26,7 +26,7 @@
 
 #include "boolean_tensor.h"
 #include "fixedpoint_tensor.h"
-#include "paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 #include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
 

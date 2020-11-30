@@ -21,11 +21,20 @@
 #include <vector>
 
 #include "cuckoo_hash.h"
-#include "naorpinkas_ot.h"
-#include "ot_extension.h"
-#include "utils.h"
+#include "../common/naorpinkas_ot.h"
+#include "../common/ot_extension.h"
+#include "../common/utils.h"
 
 namespace psi {
+
+using common::Block512;
+using common::block;
+using common::NaorPinkasOTreceiver;
+using common::NaorPinkasOTsender;
+using common::PseudorandomNumberGenerator;
+using common::OTExtReceiver;
+using common::OTExtSender;
+using common::AES;
 
 class PsiBase {
 public:

@@ -12,19 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "tensor_adapter_factory.h"
+#include "crypto.h"
 
-namespace aby3 {
+#include <cstring>
+#include <string>
 
-template <>
-std::shared_ptr<TensorAdapter<int64_t>> TensorAdapterFactory::create() {
-  return create_int64_t();
+#include "gtest/gtest.h"
+
+namespace common {
+
+TEST(crypto, hash_block) {
+
+    block in = ZeroBlock;
+
+    for (size_t i = 0; i < 1e6; ++i) {
+        hash_block(in);
+    }
 }
 
-template <>
-std::shared_ptr<TensorAdapter<int64_t>>
-TensorAdapterFactory::create(const std::vector<size_t> &shape) {
-  return create_int64_t(shape);
+TEST(crypto, hash_blocks) {
+
+    block in = ZeroBlock;
+
+    for (size_t i = 0; i < 1e6; ++i) {
+        hash_blocks({in, in});
+    }
 }
 
-} // namespace aby3
+};

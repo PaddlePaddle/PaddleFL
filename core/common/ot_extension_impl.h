@@ -20,7 +20,7 @@
 
 #include "sse_transpose.h"
 
-namespace psi {
+namespace common {
 
 template <typename T>
 void OTExtSender<T>::init(const T &choices, const std::vector<block> &msgs,
@@ -153,4 +153,4 @@ template <typename T> std::array<T, 2> OTExtReceiver<T>::get_ot_instance() {
 
   return _recv_msg[_now_idx++];
 }
-} // namespace psi
+} // namespace common

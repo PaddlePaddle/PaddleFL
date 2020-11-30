@@ -18,7 +18,7 @@
 #include <wmmintrin.h>
 #endif
 
-namespace psi {
+namespace common {
 
 #ifdef USE_AES_NI
 static block aes128_key_expansion(block key, block key_rcon) {
@@ -100,4 +100,4 @@ block AES::ecb_enc_block(const block& plaintext) const {
     return ret;
 }
 
-} // namespace psi
+} // namespace common

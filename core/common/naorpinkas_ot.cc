@@ -21,7 +21,7 @@
 #include <openssl/err.h>
 #include <openssl/sha.h>
 
-namespace psi {
+namespace common {
 
 inline void throw_openssl_error() {
   throw std::runtime_error("openssl error: " + std::to_string(ERR_get_error()));
@@ -353,4 +353,4 @@ std::array<uint8_t, g_point_buffer_len> NaorPinkasOTreceiver::recv(
 
   return out_put_pk0;
 }
-} // namespace psi
+} // namespace common

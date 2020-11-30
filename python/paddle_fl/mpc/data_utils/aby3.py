@@ -22,6 +22,7 @@ import paddle
 import paddle.fluid as fluid
 import mpc_data_utils as mdu
 from ..layers import __all__ as all_ops
+from op_extra_desc import add_extra_desc
 
 __all__ = [
     'encrypt',
@@ -345,31 +346,7 @@ def _transpile_type_and_shape(block):
             elif op.type in op_to_skip:
                 pass
             else:
-                if op.type == 'pool2d':
-                    tensor_shape = []
-                    tensor_shape = list(block.var(op.input_arg_names[0]).shape) # tensor_shape[0-2]
-                    ksize_shape = list(op.attr('ksize'))
-                    tensor_shape[3] = ksize_shape[0] * ksize_shape[1]
-                    tensor_shape[4] = block.var(op.output_arg_names[0]).shape[3] * block.var(op.output_arg_names[0]).shape[4]
-                    one_hot_tensor = block.create_var(
-                        name=op.output_arg_names[0] + ".one_hot_tensor",
-                        shape=tensor_shape,
-                        dtype="int64",
-                        lod_level=0)
-                    op.desc.set_output('One_hot_tensor', [op.output_arg_names[0] + ".one_hot_tensor"])
-                if op.type == 'pool2d_grad':
-                    op.desc.set_input('One_hot_tensor', [op.input_arg_names[0] + '.one_hot_tensor'])
-
-                if op.type == 'relu':
-                    derivative = block.create_var(
-                        name=op.output_arg_names[0] + ".relu_derivative", 
-                        shape=block.var(op.output_arg_names[0]).shape, 
-                        dtype="int64", 
-                        lod_level=0)
-                    op.desc.set_output('Derivative', [op.output_arg_names[0] + ".relu_derivative"])
-                if op.type == 'relu_grad':
-                    op.desc.set_input('Derivative', [op.input_arg_names[0] + ".relu_derivative"])
-
+                add_extra_desc(op, block)
                 op.desc.set_type(MPC_OP_PREFIX + op.type)
         else:
             raise NotImplementedError('Operator {} is unsupported.'

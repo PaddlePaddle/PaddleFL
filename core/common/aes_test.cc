@@ -22,7 +22,7 @@
 
 #include "rand_utils.h"
 
-namespace psi {
+namespace common {
 
 TEST(aes, base_test) {
     std::string plain("\x00\x11\x22\x33\x44\x55\x66\x77"
@@ -84,4 +84,4 @@ TEST(aes, bench) {
     std::cerr << d.count() * 1.0 / (rep * bench_size) << " ns per op\n";
 }
 
-} // namespace psi
+} // namespace common

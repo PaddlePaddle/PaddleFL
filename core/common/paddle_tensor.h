@@ -21,10 +21,12 @@
 #include "paddle/fluid/framework/tensor.h"
 #include "paddle/fluid/platform/place.h"
 
+#include "core/paddlefl_mpc/operators/math/math_function.h"
+
 #include "tensor_adapter.h"
 #include "tensor_adapter_factory.h"
 
-namespace aby3 {
+namespace common {
 
 template <typename T> class PaddleTensor : public TensorAdapter<T> {
 public:
@@ -47,6 +49,14 @@ public:
 
   const T *data() const override { return _tensor.data<T>(); }
 
+  const paddle::framework::Tensor* paddle_tensor() const {
+    return &_tensor;
+  }
+
+  paddle::framework::Tensor* mutable_paddle_tensor() {
+    return &_tensor;
+  }
+
   std::vector<size_t> shape() const override {
     return paddle::framework::vectorize<size_t>(_tensor.dims());
   }
@@ -65,6 +75,21 @@ public:
 
   void mat_mul(const TensorAdapter<T> *rhs,
                TensorAdapter<T> *ret) const override;
+
+  void add128(const TensorAdapter<T> *rhs,
+              TensorAdapter<T> *ret,
+              bool lhs_128,
+              bool rhs_128) const override;
+
+  void sub128(const TensorAdapter<T> *rhs,
+              TensorAdapter<T> *ret,
+              bool lhs_128,
+              bool rhs_128) const override;
+
+  void mul128_with_truncate(const TensorAdapter<T> *rhs,
+                            TensorAdapter<T> *ret,
+                            bool lhs_128,
+                            bool rhs_128) const override;
 
   void bitwise_xor(const TensorAdapter<T> *rhs,
                    TensorAdapter<T> *ret) const override;
@@ -109,6 +134,15 @@ public:
                                         const std::vector<size_t> &shape,
                                         size_t scaling_factor);
 
+  template<int Rank>
+  void Transpose(const std::vector<int> axis, TensorAdapter<T>* ret) {
+    paddle::operators::math::Transpose<paddle::platform::CPUDeviceContext, T, Rank> trans;
+    trans(*(dynamic_cast<const paddle::platform::CPUDeviceContext*>(_device_ctx)),
+          _tensor,
+          dynamic_cast<PaddleTensor<T>*>(ret)->mutable_paddle_tensor(),
+          axis);
+  }
+
 private:
   paddle::platform::Place place() const { return _device_ctx->GetPlace(); }
 
@@ -148,6 +182,6 @@ private:
   const paddle::platform::DeviceContext *_device_ctx;
 };
 
-} // namespace aby3
+} // namespace common
 
 #include "paddle_tensor_impl.h"
