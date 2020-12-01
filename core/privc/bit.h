@@ -18,7 +18,7 @@
 #include <limits>
 
 #include "core/privc/privc_context.h"
-#include "core/privc/crypto.h"
+#include "core/common/crypto.h"
 #include "core/privc/triplet_generator.h"
 #include "core/privc/common_utils.h"
 #include "core/privc/ot.h"
@@ -38,7 +38,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret);
 void garbled_share(const TensorAdapter<u8>* val, TensorBlock* ret);
 
 template<typename T>
-inline void if_than_else_plain(const TensorAdapter<T>* val,
+inline void if_then_else_plain(const TensorAdapter<T>* val,
                          const TensorBlock* than_val,
                          const TensorBlock* else_val,
                          TensorBlock* ret) {
@@ -62,8 +62,6 @@ public:
     BitTensor() = delete;
     BitTensor(std::shared_ptr<TensorBlock> share) {
         _share = share;
-        std::for_each(_share->data(), _share->data() + _share->numel(),
-                      [](int64_t& a) { a = 0;});
     }
 
     BitTensor(std::vector<size_t> shape) {
@@ -113,9 +111,10 @@ public:
     BitTensor(TensorAdapter<u8>* val, size_t party_in) {
         auto block_shape = val->shape();
         block_shape.insert(block_shape.begin(), 2);
+        _share = tensor_factory()->template create<int64_t>(block_shape);
         if (party_in == 0) {
             if (party() == 0) {
-                _share = tensor_factory()->template create<int64_t>(block_shape);
+                
                 privc_ctx()->template gen_random_private(*_share);
                 //block to_send = _share;
                 //if (val) {
@@ -126,14 +125,15 @@ public:
                 _share->copy(to_send.get());
                 auto mask_to_send = tensor_factory()->template create<int64_t>(block_shape);
                 auto garbled_delta = tensor_factory()->template create<int64_t>(block_shape);
+                ot()->garbled_delta(garbled_delta.get());
                 to_send->bitwise_xor(garbled_delta.get(), mask_to_send.get());
-                if_than_else_plain(val, mask_to_send.get(), to_send.get(), to_send.get());
+                if_then_else_plain(val, mask_to_send.get(), to_send.get(), to_send.get());
 
                 net()->send(next_party(), *to_send);
 
             } else {
                 // need to know recv shape
-                _share = tensor_factory()->template create<int64_t>(block_shape);
+                //_share = tensor_factory()->template create<int64_t>(block_shape);
                 net()->recv(next_party(), *_share);
             }
         } else {
@@ -151,6 +151,10 @@ public:
 
     std::vector<size_t> shape() const {
         return _share->shape();
+    }
+    void set_false() {
+        std::for_each(_share->data(), _share->data() + _share->numel(),
+                      [](int64_t& a) { a = 0; });
     }
 
     void bitwise_xor(const BitTensor* rhs, BitTensor* ret) const {

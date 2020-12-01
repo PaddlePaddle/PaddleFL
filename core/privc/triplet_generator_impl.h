@@ -159,7 +159,7 @@ std::vector<uint64_t> TripletGenerator<T, N>::gen_product(
 
           q ^= (round_ot_mask & ot()->base_ot_choice());
 
-          auto s = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+          auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
           uint64_t s0 = *reinterpret_cast<uint64_t *>(&s.first);
           uint64_t s1 = *reinterpret_cast<uint64_t *>(&s.second);
 
@@ -249,7 +249,7 @@ TripletGenerator<T, N>::gen_product(size_t ot_sender,
 
                 q ^= (round_ot_mask & ot()->base_ot_choice());
 
-                auto s = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+                auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
                 uint64_t* s0 = reinterpret_cast<uint64_t *>(&s.first);
                 uint64_t* s1 = reinterpret_cast<uint64_t *>(&s.second);
 

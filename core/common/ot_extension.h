@@ -19,14 +19,12 @@
 
 #include "prng.h"
 #include "utils.h"
-#include "../privc/common_utils.h"
-#include "../privc/typedef.h"
+#include "tensor_adapter.h"
 
 namespace common {
 
-using namespace privc;
 //using namespace aby3;
-//using TensorBlock = TensorAdapter<int64_t>;
+using TensorBlock = TensorAdapter<int64_t>;
 // implementation of ot extension
 // generates ot masks
 template <typename T> class OTExtBase {

@@ -62,12 +62,12 @@ public:
         }
 
         _s_tensor_factory = std::make_shared<common::PaddleTensorFactory>(&_cpu_ctx);
-        for (size_t i = 0; i < 2; ++i) {
+        /*for (size_t i = 0; i < 2; ++i) {
             _t[i] = std::thread(&FixedTensorTest::init_ot_and_triplet, i);
         }
         for (auto& ti : _t) {
             ti.join();
-        }
+        }*/
         //_s_tensor_factory = std::make_shared<aby3::PaddleTensorFactory>(&_cpu_ctx);
     }
 
@@ -84,15 +84,15 @@ public:
         _mpc_ctx[idx] = std::make_shared<PrivCContext>(idx, net);
     }
 
-    static inline void init_ot_and_triplet(size_t idx) {
-        std::shared_ptr<OT> ot = std::make_shared<OT>(_mpc_ctx[idx]);
-        ot->init();
-        std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_ot(ot);
+    //static inline void init_ot_and_triplet(size_t idx) {
+    //    std::shared_ptr<OT> ot = std::make_shared<OT>(_mpc_ctx[idx]);
+    //    ot->init();
+    //    std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_ot(ot);
 
         //std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor
         //            = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(_mpc_ctx[idx]);
         //std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_triplet_generator(tripletor);
-    }
+    //}
 
     std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {
         return _s_tensor_factory->template create<int64_t>(shape);

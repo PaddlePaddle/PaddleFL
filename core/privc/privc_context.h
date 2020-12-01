@@ -20,12 +20,13 @@
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 #include "core/common/prng.h"
 #include "core/common/rand_utils.h"
+#include "type_utils.h"
 
 namespace privc {
 
 using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
-using block = common::block;
+//using block = common::block;
 
 static const size_t SCALING_N = 32;
 
@@ -57,7 +58,7 @@ public:
 
   std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> triplet_generator();
 
-  void set_ot(std::shared_ptr<ObliviousTransfer>& ot);
+  //void set_ot(std::shared_ptr<ObliviousTransfer>& ot);
 
   std::shared_ptr<ObliviousTransfer>& ot();
 

@@ -81,25 +81,28 @@ void add_full(IntegerTensor *dest, BitTensor *carry_out,
 
     if (size == 0) {
         if (carry_in && carry_out) {
-            *carry_out = *carry_in;
+            //*carry_out = *carry_in;
+            carry_in->share()->copy(carry_out->mutable_share());
         }
         return;
     }
     if (carry_in) {
-        carry = *carry_in;
-    } //else {
+        //carry = *carry_in;
+        carry_in->share()->copy(carry.mutable_share());
+    } else {
         // carry = false;
         //carry = BitTensor();
-    //}
+        carry.set_false();
+    }
     // skip AND on last bit if carry_out==NULL
     skip_last = (carry_out == nullptr);
     while (size-- > skip_last) {
         //axc = op1[i] ^ carry;
-        (*op1)[i]->bitwise_xor(&carry, &axc);
+        (*op1)[i + pos_op1]->bitwise_xor(&carry, &axc);
         //bxc = op2[i] ^ carry;
-        (*op2)[i]->bitwise_xor(&carry, &bxc);
+        (*op2)[i + pos_op2]->bitwise_xor(&carry, &bxc);
         //dest[i] = op1[i] ^ bxc;
-        (*op1)[i]->bitwise_xor(&bxc, (*dest)[i].get());
+        (*op1)[i + pos_op1]->bitwise_xor(&bxc, (*dest)[i + pos_dest].get());
         //t = axc & bxc;
         axc.bitwise_and(&bxc, &t);
         //carry = carry ^ t;
@@ -107,11 +110,12 @@ void add_full(IntegerTensor *dest, BitTensor *carry_out,
         ++i;
     }
     if (carry_out != nullptr) {
-        *carry_out = carry;
+        //*carry_out = carry;
+        carry.share()->copy(carry_out->mutable_share());
     } else {
         //dest[i] = carry ^ op2[i] ^ op1[i];
-        carry.bitwise_xor((*op2)[i].get(), (*dest)[i].get());
-        (*dest)[i]->bitwise_xor((*op1)[i].get(), (*dest)[i].get());
+        carry.bitwise_xor((*op2)[i + pos_op2].get(), (*dest)[i + pos_dest].get());
+        (*dest)[i + pos_dest]->bitwise_xor((*op1)[i + pos_op1].get(), (*dest)[i + pos_dest].get());
     }
         
 }
@@ -179,10 +183,11 @@ void sub_full(IntegerTensor *dest, BitTensor *borrow_out, const IntegerTensor *o
     }
     if (borrow_in) {
         borrow = *borrow_in;
-    } //else {
+    } else {
         // borrow = false;
         //borrow = Bit();
-    //}
+        borrow.set_false();
+    }
     // skip AND on last bit if borrow_out==NULL
     skip_last = (borrow_out == nullptr);
     while (size-- > skip_last) {
@@ -193,7 +198,7 @@ void sub_full(IntegerTensor *dest, BitTensor *borrow_out, const IntegerTensor *o
         //dest[i] = bxa ^ borrow;
         bxa.bitwise_xor(&borrow, (*dest)[i].get());
         //t = bxa & bxc;
-        bxa.bitwise_xor(&bxc, &t);
+        bxa.bitwise_and(&bxc, &t);
         //borrow = borrow ^ t;
         borrow.bitwise_xor(&t, &borrow);
         ++i;
@@ -231,7 +236,7 @@ void mul_full(IntegerTensor *dest, const IntegerTensor *op1, const IntegerTensor
     for (int i = 0; i < size; ++i) {
         for (int k = 0; k < size - i; ++k) {
             //tmp[k] = op1[k] & op2[i];
-            (*op1)[k]->bitwise_and((*op2)[k].get(), tmp[k].get());
+            (*op1)[k]->bitwise_and((*op2)[i].get(), tmp[k].get());
         }
         //add_full(sum.data() + i, nullptr, sum.data() + i, tmp.data(), nullptr, size - i);
         add_full(&sum, nullptr, &sum, &tmp, nullptr, size - i, i, i, 0);
@@ -316,7 +321,7 @@ IntegerTensor::IntegerTensor(int64_t input, size_t party_in)
                 _bits[idx]._share = to_send;
 
                 to_send ^=
-                    (input >> idx) & 1 ? ot()->garbled_delta() : ZeroBlock;
+                    (input >> idx) & 1 ? ot()->garbled_delta() : common::ZeroBlock;
                 send_buffer.emplace_back(to_send);
                 //_ctx->send_to_buffer(to_send);
             }
@@ -343,14 +348,16 @@ IntegerTensor::IntegerTensor(const TensorAdapter<int64_t>* input, size_t party_i
     _length = sizeof(int64_t) * 8;
     auto shape = input->shape();
     auto bit_shape = shape;
-    bit_shape.insert(shape.begin(), _length);
+    bit_shape.insert(bit_shape.begin(), _length);
     //size_t block_size_expand = sizeof(block) / sizeof(int64_t);
     auto gc_shape = bit_shape;
-    gc_shape.insert(bit_shape.begin() + 1, _g_block_size_expand);
+    gc_shape.insert(gc_shape.begin() + 1, _g_block_size_expand);
 
     auto input_bits = tensor_factory()->template create<u8>(bit_shape);
     to_bits(input, input_bits.get());
-    _bits_tensor = tensor_factory()->template create<int64_t>(bit_shape);
+    //std::cout << "input: "<<input<<"\n";
+    //std::cout << "input_bits: "<<input_bits.get()<<"\n";
+    _bits_tensor = tensor_factory()->template create<int64_t>(gc_shape);
     if (party_in == 0) {
         if (party() == 0) {
             //std::vector<block> send_buffer;
@@ -360,7 +367,7 @@ IntegerTensor::IntegerTensor(const TensorAdapter<int64_t>* input, size_t party_i
                 //_bits[idx]._share = to_send;
 
                 //to_send ^=
-                //    (input >> idx) & 1 ? ot()->garbled_delta() : ZeroBlock;
+                //    (input >> idx) & 1 ? ot()->garbled_delta() : common::ZeroBlock;
                 //send_buffer.emplace_back(to_send);
                 //_ctx->send_to_buffer(to_send);
             auto to_send = tensor_factory()->template create<int64_t>(gc_shape);
@@ -374,7 +381,7 @@ IntegerTensor::IntegerTensor(const TensorAdapter<int64_t>* input, size_t party_i
                           zero_block_tensor->data() + zero_block_tensor->numel(),
                           [](int64_t& a) { a = 0; });
             ot()->garbled_delta(garbled_delta.get());
-            if_than_else_plain(input_bits.get(), garbled_delta.get(), zero_block_tensor.get(), mask_val.get());
+            if_then_else_plain(input_bits.get(), garbled_delta.get(), zero_block_tensor.get(), mask_val.get());
 
             to_send->bitwise_xor(mask_val.get(), to_send.get());
             //}
@@ -417,7 +424,7 @@ std::vector<IntegerTensor> IntegerTensor::vector(const std::vector<int64_t>& inp
                     int_i._bits[idx]._share = to_send;
 
                     to_send ^=
-                        (input[i] >> idx) & 1 ? ot()->garbled_delta() : ZeroBlock;
+                        (input[i] >> idx) & 1 ? ot()->garbled_delta() : common::ZeroBlock;
                     //ctx->send_to_buffer(to_send);
                     send_buffer.emplace_back(to_send);
                 }
@@ -465,6 +472,7 @@ std::shared_ptr<BitTensor> IntegerTensor::operator[](int index) {
     auto ret = tensor_factory()->template create<int64_t>(bit_shape);
 
     _bits_tensor->slice(index, index + 1, ret.get());
+    ret->reshape(bit_shape);
     return std::make_shared<BitTensor>(ret);
 }
 
@@ -474,6 +482,7 @@ const std::shared_ptr<BitTensor> IntegerTensor::operator[](int index) const {
     auto ret = tensor_factory()->template create<int64_t>(bit_shape);
 
     _bits_tensor->slice(index, index + 1, ret.get());
+    ret->reshape(bit_shape);
     return std::make_shared<BitTensor>(ret);
 }
 
@@ -528,13 +537,13 @@ void IntegerTensor::is_zero(BitTensor* ret) const {
 }
 
 void IntegerTensor::abs(IntegerTensor* ret) const {
-    //IntegerTensor res(*this);
+    IntegerTensor res(shape());
     for (int i = 0; i < size(); ++i) {
-        (*this)[size() - 1]->share()->copy((*ret)[i]->mutable_share());
+        (*this)[size() - 1]->share()->copy(res[i]->mutable_share());
     }
     //return ((*this) + res) ^ res;
-    bitwise_add(ret, ret);
-    ret->bitwise_xor(ret, ret);
+    bitwise_add(&res, ret);
+    ret->bitwise_xor(&res, ret);
 }
 
 void IntegerTensor::bitwise_xor(const IntegerTensor* rhs, IntegerTensor* ret) const {
@@ -587,6 +596,7 @@ void IntegerTensor::bitwise_mul(const IntegerTensor* rhs, IntegerTensor* ret) co
     if (size() != rhs->size()) {
         throw std::logic_error("op len not match");
     }
+    //share()->copy(ret->mutable_share());
     mul_full(ret, this, rhs, size());
 }
 /*
@@ -647,9 +657,9 @@ int64_t IntegerTensor::if_then_else_bc(Bit cond, const IntegerTensor &t_int,
 
 void IntegerTensor::if_then_else_bc(BitTensor* cond, const IntegerTensor* t_int,
                                 const IntegerTensor* f_int, TensorAdapter<int64_t>* ret) {
-    auto lsb_cond = tensor_factory()->create<u8>(cond->shape());
-    auto lsb_t_int = tensor_factory()->template create<int64_t>(t_int->shape());
-    auto lsb_f_int = tensor_factory()->template create<int64_t>(f_int->shape());
+    auto lsb_cond = tensor_factory()->create<u8>(ret->shape());
+    auto lsb_t_int = tensor_factory()->template create<int64_t>(ret->shape());
+    auto lsb_f_int = tensor_factory()->template create<int64_t>(ret->shape());
     block_lsb(cond->share(), lsb_cond.get());
     t_int->lsb(lsb_t_int.get());
     f_int->lsb(lsb_f_int.get());
@@ -752,7 +762,7 @@ std::vector<int64_t> to_ac_num_internal(const int64_t* input, size_t size) {
 
                 q ^= (round_ot_mask & ot()->base_ot_choice());
 
-                auto s = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+                auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
                 int64_t  s0 = *reinterpret_cast<int64_t *>(&s.first);
 
                 int64_t bit_mask = (int64_t )1 << idx;
@@ -788,7 +798,7 @@ std::vector<int64_t> to_ac_num_internal(const int64_t* input, size_t size) {
                 const int64_t& round_ot_msg = ot_msg.at(ot_msg_idx);
                 //_io->recv_data(&ot_msg, sizeof(ot_msg));
 
-                auto t0_hash = psi::hash_block(t0_buffer[i * word_width + idx]);
+                auto t0_hash = common::hash_block(t0_buffer[i * word_width + idx]);
 
                 int64_t key = *reinterpret_cast<int64_t *>(&t0_hash);
                 ret[i] += (input[i] >> idx) & 1 ? round_ot_msg ^ key : key;
@@ -799,9 +809,15 @@ std::vector<int64_t> to_ac_num_internal(const int64_t* input, size_t size) {
     }
 
     return ret;
+}
+
+void to_ac_num(const TensorAdapter<int64_t>* input,
+               TensorAdapter<int64_t>* ret) {
+    std::vector<int64_t> ret_ = to_ac_num_internal(input->data(), input->numel());
+    std::copy(ret_.data(), ret_.data() + ret_.size(), ret->data());
 }*/
 
-void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
+void to_ac_num(const TensorAdapter<int64_t>* input,
                TensorAdapter<int64_t>* ret) {
     const size_t word_width = sizeof(int64_t) * 8; // 8 bit for 1 byte
 
@@ -811,6 +827,7 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
     auto block_shape = get_block_shape(shape);
     auto buffer_shape = gc_shape;
     buffer_shape.erase(buffer_shape.begin() + 1);
+    auto ret_ = tensor_factory()->template create<int64_t>(shape);
 
     if (party() == 0) {
 
@@ -828,6 +845,7 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
                 //const block& round_ot_mask = ot_mask.at(ot_mask_idx);
                 auto round_ot_mask = tensor_factory()->template create<int64_t>(block_shape);
                 ot_mask->slice(idx, idx + 1, round_ot_mask.get());
+                round_ot_mask->reshape(block_shape);
 
                 //block q = ot()->ot_sender().get_ot_instance();
                 auto q = tensor_factory()->template create<int64_t>(block_shape);
@@ -840,13 +858,13 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
                 round_ot_mask->bitwise_and(base_ot_choice.get(), tmp.get());
                 q->bitwise_xor(tmp.get(), q.get());
 
-                //auto s = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+                //auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
                 auto s_first = tensor_factory()->template create<int64_t>(block_shape);
                 auto s_second = tensor_factory()->template create<int64_t>(block_shape);
                 q->bitwise_xor(base_ot_choice.get(), tmp.get());
                 std::pair<TensorBlock*, TensorBlock*> x_pair({q.get(), tmp.get()});
                 std::pair<TensorBlock*, TensorBlock*> s_pair({s_first.get(), s_second.get()});
-                psi::hash_blocks(x_pair, s_pair);
+                common::hash_blocks(x_pair, s_pair);
 
                 //int64_t  s0 = *reinterpret_cast<int64_t *>(&s.first);
                 auto s0 = tensor_factory()->template create<int64_t>(shape);
@@ -858,7 +876,7 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
                 
                 auto bit_mask = tensor_factory()->template create<int64_t>(shape);
                 std::for_each(bit_mask->data(), bit_mask->data() + bit_mask->numel(),
-                              [&idx](int64_t& a) { a = ((int64_t)1 << idx);});
+                              [&idx](int64_t& a) { a = ((int64_t)1 << idx); });
                 auto ai = tensor_factory()->template create<int64_t>(shape);
                 input->bitwise_and(bit_mask.get(), ai.get());
                 auto r = tensor_factory()->template create<int64_t>(shape);
@@ -877,10 +895,11 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
                 //s1_buffer.emplace_back(s1);
                 auto s1_buffer_s = tensor_factory()->template create<int64_t>(shape);
                 s1_buffer->slice(idx, idx + 1, s1_buffer_s.get());
+                s1_buffer_s->reshape(shape);
                 s1->copy(s1_buffer_s.get());
 
                 //ret[i] += r;
-                ret->add(r.get(), ret);
+                ret_->add(r.get(), ret_.get());
                 //ot_mask_idx++;
             }
         //}
@@ -909,12 +928,14 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
                 //const int64_t& round_ot_msg = ot_msg.at(ot_msg_idx);
                 auto round_ot_msg = tensor_factory()->template create<int64_t>(shape);
                 ot_msg->slice(idx, idx + 1, round_ot_msg.get());
+                round_ot_msg->reshape(shape);
 
-                //auto t0_hash = psi::hash_block(t0_buffer[i * word_width + idx]);
+                //auto t0_hash = common::hash_block(t0_buffer[i * word_width + idx]);
                 auto t0_buffer_s = tensor_factory()->template create<int64_t>(block_shape);
                 t0_buffer->slice(idx, idx + 1, t0_buffer_s.get());
+                t0_buffer_s->reshape(block_shape);
                 auto t0_hash = tensor_factory()->template create<int64_t>(block_shape);
-                psi::hash_block(t0_buffer_s.get(), t0_hash.get());
+                common::hash_block(t0_buffer_s.get(), t0_hash.get());
 
                 //int64_t key = *reinterpret_cast<int64_t *>(&t0_hash);
                 auto key = tensor_factory()->template create<int64_t>(shape);
@@ -925,16 +946,16 @@ void to_ac_num(const TensorAdapter<int64_t>* input, size_t size,
                 auto cond = tensor_factory()->create<u8>(shape);
                 std::transform(input->data(), input->data() + input->numel(),
                                cond->data(), [&idx] (int64_t a) -> u8 {
-                                   return ((a >> idx) & 1);
+                                   return (u8) ((a >> idx) & (u8) 1);
                                 });
-                if_than_else_plain(cond.get(), tmp.get(), key.get(), tmp.get());
-                ret->add(tmp.get(), ret);
+                if_then_else_plain(cond.get(), tmp.get(), key.get(), tmp.get());
+                ret_->add(tmp.get(), ret_.get());
                 //ot_msg_idx++;
             }
         //}
 
     }
-
+    ret_->copy(ret);
     //return ret;
 }
 
@@ -960,7 +981,7 @@ std::vector<int64_t> bc_mux_internal(const uint8_t* choice,
 
         q ^= (round_ot_mask & ot()->base_ot_choice());
 
-        auto s = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+        auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
         int64_t  s0 = *reinterpret_cast<int64_t *>(&s.first);
 
         int64_t msg1 = diff ^ s0;
@@ -977,7 +998,7 @@ std::vector<int64_t> bc_mux_internal(const uint8_t* choice,
 
     auto send_ot_mask = [](bool choice, std::vector<block>& send_buffer) {
         auto ot_instance = ot()->ot_receiver().get_ot_instance();
-        block choice_ = choice ? OneBlock : ZeroBlock;
+        block choice_ = choice ? common::OneBlock : common::ZeroBlock;
 
         const auto& t0 = ot_instance[0];
         auto ot_mask = choice_ ^ ot_instance[0] ^ ot_instance[1];
@@ -985,7 +1006,7 @@ std::vector<int64_t> bc_mux_internal(const uint8_t* choice,
         //send_to_buffer(ot_mask);
         send_buffer.emplace_back(ot_mask);
 
-        auto t0_hash = psi::hash_block(t0);
+        auto t0_hash = common::hash_block(t0);
         int64_t key = *reinterpret_cast<int64_t *>(&t0_hash);
 
         return key;
@@ -1073,19 +1094,19 @@ void bc_mux(const TensorAdapter<u8>* choice,
         auto base_ot_choice = tensor_factory()->template create<int64_t>(round_ot_mask->shape());
         ot()->base_ot_choice(base_ot_choice.get());
         auto tmp = tensor_factory()->template create<int64_t>(round_ot_mask->shape());
-        round_ot_mask->bitwise_xor(base_ot_choice.get(), tmp.get());
+        round_ot_mask->bitwise_and(base_ot_choice.get(), tmp.get());
         q->bitwise_xor(tmp.get(), q.get());
 
-        //auto s = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+        //auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
         auto s_first = tensor_factory()->template create<int64_t>(round_ot_mask->shape());
         auto s_second = tensor_factory()->template create<int64_t>(round_ot_mask->shape());
         q->bitwise_xor(base_ot_choice.get(), tmp.get());
         std::pair<TensorBlock*, TensorBlock*> x_pair({q.get(), tmp.get()});
         std::pair<TensorBlock*, TensorBlock*> s_pair({s_first.get(), s_second.get()});
-        psi::hash_blocks(x_pair, s_pair);
+        common::hash_blocks(x_pair, s_pair);
 
         //int64_t  s0 = *reinterpret_cast<int64_t *>(&s.first);
-        auto& s0 = ret;
+        TensorAdapter<int64_t>* s0 = ret;
         block_to_int64(s_first.get(), s0);
 
         //int64_t msg1 = diff ^ s0;
@@ -1112,12 +1133,12 @@ void bc_mux(const TensorAdapter<u8>* choice,
         auto ot_ins0 = tensor_factory()->template create<int64_t>(block_shape);
         auto ot_ins1 = tensor_factory()->template create<int64_t>(block_shape);
         ot()->ot_receiver().get_ot_instance(ot_ins0.get(), ot_ins1.get());
-        //block choice_ = choice ? OneBlock : ZeroBlock;
+        //block choice_ = choice ? common::OneBlock : common::ZeroBlock;
         auto choice_ = tensor_factory()->template create<int64_t>(block_shape);
         block* choice_ptr = reinterpret_cast<block*>(choice_->data());
         std::transform(choice->data(), choice->data() + choice->numel(),
                        choice_ptr, [](bool val) {
-                           return val ? OneBlock : ZeroBlock;
+                           return val ? common::OneBlock : common::ZeroBlock;
                         });
 
         //const auto& t0 = ot_instance[0];
@@ -1131,10 +1152,10 @@ void bc_mux(const TensorAdapter<u8>* choice,
         //send_buffer.emplace_back(ot_mask);
         ot_mask->copy(send_buffer);
 
-        //auto t0_hash = psi::hash_block(t0);
+        //auto t0_hash = common::hash_block(t0);
         //int64_t key = *reinterpret_cast<int64_t *>(&t0_hash);
         auto t0_hash = tensor_factory()->template create<int64_t>(block_shape);
-        psi::hash_block(t0.get(), t0_hash.get());
+        common::hash_block(t0.get(), t0_hash.get());
         block_to_int64(t0_hash.get(), ret);
 
         //return key;
@@ -1148,7 +1169,7 @@ void bc_mux(const TensorAdapter<u8>* choice,
         //return choice ? round_ot_msg ^ key : key;
         auto tmp = tensor_factory()->template create<int64_t>(key->shape());
         round_ot_msg->bitwise_xor(key, tmp.get());
-        if_than_else_plain(choice, tmp.get(), key, ret);
+        if_then_else_plain(choice, tmp.get(), key, ret);
 
     };
 

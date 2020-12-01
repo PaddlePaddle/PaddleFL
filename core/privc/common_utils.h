@@ -15,38 +15,24 @@
 #pragma once
 
 #include "core/privc/privc_context.h"
-#include "core/privc3/tensor_adapter_factory.h"
-#include "../privc3/tensor_adapter.h"
-#include "typedef.h"
+#include "core/common/tensor_adapter_factory.h"
+#include "core/common/tensor_adapter.h"
+#include "type_utils.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 
 namespace privc {
 
-// use alias name to distinguish TensorAdapter<block>
-// and normal TensorAdapter<int64_t>
-//using TensorBlock = aby3::TensorAdapter<int64_t>;
-
-//template<typename T>
-//using TensorAdapter = aby3::TensorAdapter<T>;
-
 using OT = ObliviousTransfer;
 
-static std::shared_ptr<AbstractContext> privc_ctx();
-
-static std::shared_ptr<OT> ot();
-
-static std::shared_ptr<aby3::TensorAdapterFactory> tensor_factory();
-
-static std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor();
-
-static size_t party();
-
-static size_t next_party();
-
-static AbstractNetwork* net();
-
+std::shared_ptr<AbstractContext> privc_ctx();
+std::shared_ptr<OT> ot();
+std::shared_ptr<common::TensorAdapterFactory> tensor_factory();
+std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor();
+size_t party();
+size_t next_party();
+AbstractNetwork* net();
 static std::vector<size_t> get_gc_shape(std::vector<size_t> shape,
-                                              size_t size = sizeof(int64_t)) {
+                                              size_t size = sizeof(int64_t) * 8) {
     // using two int64_t sizes to indicate block size
     shape.insert(shape.begin(), _g_block_size_expand);
     // insert bit length
@@ -63,7 +49,7 @@ static std::vector<size_t> get_block_shape(std::vector<size_t> shape) {
 static void block_to_int64(const TensorBlock* input, TensorAdapter<int64_t>* ret) {
     const block* in_ptr = reinterpret_cast<const block*>(input->data());
     std::transform(in_ptr, in_ptr + ret->numel(), ret->data(),
-                   [](block a) { return *(reinterpret_cast<int64_t*>(&a));});
+                   [](block a) { return *(reinterpret_cast<int64_t*>(&a)); });
 }
 
 } // namespace privc

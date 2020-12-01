@@ -33,12 +33,13 @@
 //#include "core/privc3/tensor_adapter.h"
 #include "core/privc/ot.h"
 #include "core/privc/privc_context.h"
+#include "type_utils.h"
 
 namespace privc {
 
 using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
-using block = common::block;
+//using block = common::block;
 using NaorPinkasOTsender = common::NaorPinkasOTsender;
 using NaorPinkasOTreceiver = common::NaorPinkasOTreceiver;
 
@@ -47,8 +48,8 @@ using OTExtSender = common::OTExtSender<T>;
 template<typename T>
 using OTExtReceiver = common::OTExtReceiver<T>;
 
-template <typename T>
-using TensorAdapter = common::TensorAdapter<T>;
+//template <typename T>
+//using TensorAdapter = common::TensorAdapter<T>;
 
 template<size_t N>
 inline int64_t fixed64_mult(const int64_t a, const int64_t b) {
@@ -70,21 +71,16 @@ inline uint64_t lshift(uint64_t lhs, size_t rhs) {
     return signedfixed128_mult<N>(lhs, (uint64_t)1 << rhs);
 }
 
-inline std::string block_to_string(const block &b) {
-    return std::string(reinterpret_cast<const char *>(&b), sizeof(block));
-}
-
 template<typename T, size_t N>
 class TripletGenerator {
 public:
+  TripletGenerator() = delete;
   TripletGenerator(common::PseudorandomNumberGenerator* prng,
-                   block base_ot_choices, AbstractNetwork* net,
+                   OT* ot, AbstractNetwork* net,
                    size_t party, size_t next_party) :
         //_base_ot_choices(circuit_context->gen_random_private<block>()),
         _prng(prng),
-        _base_ot_choices(base_ot_choices),
-        _np_ot_sender(sizeof(block) * 8),
-        _np_ot_recver(sizeof(block) * 8, block_to_string(_base_ot_choices)),
+        _ot(ot),
         _net(net),
         _party(party),
         _next_party(next_party) {};
@@ -144,8 +140,8 @@ private:
   size_t next_party() {
     return _next_party;
   }
-  std::shared_ptr<OT> ot() {
-    return std::dynamic_pointer_cast<PrivCContext>(privc_ctx())->ot();
+  OT* ot() {
+    return _ot;
   }
   // gen triplet for int64_t type
   std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input);
@@ -156,14 +152,15 @@ private:
 
   template<typename U> U gen_random_private() { return _prng->get<U>(); }
 
-  const block _base_ot_choices;
+  //const block _base_ot_choices;
 
-  NaorPinkasOTsender _np_ot_sender;
-  NaorPinkasOTreceiver _np_ot_recver;
+  //NaorPinkasOTsender _np_ot_sender;
+  //NaorPinkasOTreceiver _np_ot_recver;
 
-  OTExtSender<block> _ot_ext_sender;
-  OTExtReceiver<block> _ot_ext_recver;
+  //OTExtSender<block> _ot_ext_sender;
+  //OTExtReceiver<block> _ot_ext_recver;
   //std::shared_ptr<AbstractContext> _privc_ctx;
+  OT* _ot;
   common::PseudorandomNumberGenerator* _prng;
   AbstractNetwork* _net;
   size_t _party;

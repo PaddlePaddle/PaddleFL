@@ -21,25 +21,15 @@
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "core/privc3/prng_utils.h"
-#include "core/privc/crypto.h"
-#include "core/psi/naorpinkas_ot.h"
-#include "core/psi/ot_extension.h"
-#include "core/privc/typedef.h"
+//#include "core/privc3/prng_utils.h"
+#include "core/common/crypto.h"
+#include "core/common/naorpinkas_ot.h"
+#include "core/common/ot_extension.h"
+#include "./type_utils.h"
+#include "common_utils.h"
 
 
 namespace privc {
-
-using AbstractNetwork = paddle::mpc::AbstractNetwork;
-using AbstractContext = paddle::mpc::AbstractContext;
-using block = psi::block;
-using NaorPinkasOTsender = psi::NaorPinkasOTsender;
-using NaorPinkasOTreceiver = psi::NaorPinkasOTreceiver;
-
-template<typename T>
-using OTExtSender = psi::OTExtSender<T>;
-template<typename T>
-using OTExtReceiver = psi::OTExtReceiver<T>;
 
 inline std::string block_to_string(const block &b) {
     return std::string(reinterpret_cast<const char *>(&b), sizeof(block));
@@ -73,7 +63,7 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                          size_t word_width = 8 * sizeof(uint64_t)) {
         for (uint64_t idx = 0; idx < word_width; idx += 1) {
             auto ot_instance = ot_ext_recver.get_ot_instance();
-            block choice = (input >> idx) & 1 ? OneBlock : ZeroBlock;
+            block choice = (input >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
 
             t0_buffer.emplace_back(ot_instance[0]);
             ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
@@ -116,21 +106,23 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
         auto ot_ins0 = tensor_factory()->template create<int64_t>(block_shape);
         auto ot_ins1 = tensor_factory()->template create<int64_t>(block_shape);
         ot_ext_recver.get_ot_instance(ot_ins0.get(), ot_ins1.get());
-        //block choice = (input >> idx) & 1 ? OneBlock : ZeroBlock;
+        //block choice = (input >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
         auto choice = tensor_factory()->template create<int64_t>(block_shape);
         block* choice_ptr = reinterpret_cast<block*>(choice->data());
         std::transform(input->data(), input->data() + input->numel(),
                        choice_ptr, [&idx](int64_t a) {
-                           return (a >> idx) & 1 ? OneBlock : ZeroBlock;
+                           return (a >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
                        });
 
         //t0_buffer.emplace_back(ot_instance[0]);
         auto t0_buffer_s = tensor_factory()->template create<int64_t>(block_shape);
         t0_buffer->slice(idx, idx + 1, t0_buffer_s.get());
+        t0_buffer_s->reshape(block_shape);
         ot_ins0->copy(t0_buffer_s.get());
         //ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
         auto ot_masks_s = tensor_factory()->template create<int64_t>(block_shape);
         ot_masks->slice(idx, idx + 1, ot_masks_s.get());
+        ot_masks_s->reshape(block_shape);
         choice->bitwise_xor(ot_ins0.get(), ot_masks_s.get());
         ot_masks_s->bitwise_xor(ot_ins1.get(), ot_masks_s.get());
     }
@@ -138,11 +130,15 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
 
 class ObliviousTransfer {
 public:
-  ObliviousTransfer(std::shared_ptr<AbstractContext>& circuit_context) :
-        _base_ot_choices(circuit_context->gen_random_private<block>()),
+  ObliviousTransfer() = delete;
+  ObliviousTransfer(block base_ot_choices, block garbled_delta, AbstractNetwork* net, size_t party, size_t next_party) :
+        _base_ot_choices(base_ot_choices),
+        _net(net),
+        _party(party),
+        _garbled_delta(garbled_delta),
+        _next_party(next_party),
         _np_ot_sender(sizeof(block) * 8),
-        _np_ot_recver(sizeof(block) * 8, block_to_string(_base_ot_choices)) {
-      _privc_ctx = circuit_context;
+        _np_ot_recver(sizeof(block) * 8, block_to_string(base_ot_choices)) {
   };
 
   OTExtReceiver<block>& ot_receiver() { return _ot_ext_recver; }
@@ -182,19 +178,16 @@ public:
 
 private:
 
-  std::shared_ptr<AbstractContext> privc_ctx() {
-      return _privc_ctx;
-  }
   AbstractNetwork* net() {
-      return _privc_ctx->network();
+      return _net;
   }
 
   size_t party() {
-    return privc_ctx()->party();
+    return _party;
   }
 
   size_t next_party() {
-    return privc_ctx()->next_party();
+    return _next_party;
   }
 
   const block _base_ot_choices;
@@ -206,7 +199,10 @@ private:
 
   OTExtSender<block> _ot_ext_sender;
   OTExtReceiver<block> _ot_ext_recver;
-  std::shared_ptr<AbstractContext> _privc_ctx;
+  size_t _party;
+  size_t _next_party;
+  AbstractNetwork* _net;
+  //std::shared_ptr<AbstractContext> _privc_ctx;
 };
 
 using OT = ObliviousTransfer;

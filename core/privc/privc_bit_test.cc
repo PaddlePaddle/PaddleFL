@@ -25,7 +25,7 @@ limitations under the License. */
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "fixedpoint_tensor.h"
 #include "core/privc/triplet_generator.h"
-#include "core/privc3/paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 #include "bit.h"
 
 namespace privc {
@@ -63,13 +63,13 @@ public:
             ti.join();
         }
 
-        for (size_t i = 0; i < 2; ++i) {
+        /*for (size_t i = 0; i < 2; ++i) {
             _t[i] = std::thread(&BitTest::init_ot_and_triplet, i);
         }
         for (auto& ti : _t) {
             ti.join();
-        }
-        _s_tensor_factory = std::make_shared<aby3::PaddleTensorFactory>(&_cpu_ctx);
+        }*/
+        _s_tensor_factory = std::make_shared<common::PaddleTensorFactory>(&_cpu_ctx);
     }
 
     static inline std::shared_ptr<paddle::mpc::MeshNetwork> gen_network(size_t idx) {
@@ -85,7 +85,7 @@ public:
         _mpc_ctx[idx] = std::make_shared<PrivCContext>(idx, net);
     }
 
-    static inline void init_ot_and_triplet(size_t idx) {
+    /*static inline void init_ot_and_triplet(size_t idx) {
         std::shared_ptr<OT> ot = std::make_shared<OT>(_mpc_ctx[idx]);
         ot->init();
         std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_ot(ot);
@@ -93,7 +93,7 @@ public:
         std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor
                     = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(_mpc_ctx[idx]);
         std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_triplet_generator(tripletor);
-    }
+    }*/
     template<typename T = int64_t>
     std::shared_ptr<TensorAdapter<T>> gen(std::vector<size_t> shape) {
         return _s_tensor_factory->template create<T>(shape);
@@ -104,8 +104,71 @@ std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {
     return g_ctx_holder::tensor_factory()->template create<int64_t>(shape);
 }
 
+TEST_F(BitTest, reconstruct) {
+    std::vector<size_t> shape = { 2, 2 };
+    std::shared_ptr<TensorAdapter<u8>> sl = gen<u8>(shape);
+    std::shared_ptr<TensorAdapter<u8>> sr = gen<u8>(shape);
+    std::shared_ptr<TensorAdapter<u8>> ret[4] = {gen<u8>(shape), gen<u8>(shape),
+                                        gen<u8>(shape), gen<u8>(shape)};
 
-TEST_F(BitTest, xor_and_reconstruct) {
+    sl->data()[0] = (int64_t)1;
+    sl->data()[1] = (int64_t)1;
+    sl->data()[2] = (int64_t)0;
+    sl->data()[3] = (int64_t)0;
+    
+    sr->data()[0] = (int64_t)1;
+    sr->data()[1] = (int64_t)0;
+    sr->data()[2] = (int64_t)1;
+    sr->data()[3] = (int64_t)0;
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                BitTensor op0(sl.get(), 0);
+                BitTensor op1(sr.get(), 1);
+
+                op0.reconstruct(ret[0].get());
+                op1.reconstruct(ret[2].get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                BitTensor op0(sl.get(), 0);
+                BitTensor op1(sr.get(), 1);
+
+                op0.reconstruct(ret[1].get());
+                op1.reconstruct(ret[3].get());
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+    bool reconstruct_true = std::equal(ret[0]->data(),
+                            ret[0]->data() + ret[0]->numel(),
+                            ret[1]->data());
+    bool reconstruct_true1 = std::equal(ret[2]->data(),
+                            ret[2]->data() + ret[2]->numel(),
+                            ret[3]->data());
+    EXPECT_TRUE(reconstruct_true);
+    EXPECT_TRUE(reconstruct_true1);
+
+    EXPECT_EQ(1, ret[0]->data()[0]);
+    EXPECT_EQ(1, ret[0]->data()[1]);
+    EXPECT_EQ(0, ret[0]->data()[2]);
+    EXPECT_EQ(0, ret[0]->data()[3]);
+
+    EXPECT_EQ(1, ret[2]->data()[0]);
+    EXPECT_EQ(0, ret[2]->data()[1]);
+    EXPECT_EQ(1, ret[2]->data()[2]);
+    EXPECT_EQ(0, ret[2]->data()[3]);
+}
+
+TEST_F(BitTest, xor) {
     std::vector<size_t> shape = { 2, 2 };
     std::shared_ptr<TensorAdapter<u8>> sl = gen<u8>(shape);
     std::shared_ptr<TensorAdapter<u8>> sr = gen<u8>(shape);
@@ -152,10 +215,7 @@ TEST_F(BitTest, xor_and_reconstruct) {
     for (auto &t: _t) {
         t.join();
     }
-    bool reconstruct_true = std::equal(ret[0]->data(),
-                            ret[0]->data() + ret[0]->numel(),
-                            ret[1]->data());
-    EXPECT_TRUE(reconstruct_true);
+
     EXPECT_EQ(0, ret[0]->data()[0]);
     EXPECT_EQ(1, ret[0]->data()[1]);
     EXPECT_EQ(1, ret[0]->data()[2]);
@@ -276,8 +336,8 @@ TEST_F(BitTest, not) {
     std::shared_ptr<TensorAdapter<u8>> ret[2] = {gen<u8>(shape), gen<u8>(shape)};
 
     sl->data()[0] = (int64_t)1;
-    sl->data()[1] = (int64_t)1;
-    sl->data()[2] = (int64_t)0;
+    sl->data()[1] = (int64_t)0;
+    sl->data()[2] = (int64_t)1;
     sl->data()[3] = (int64_t)0;
 
     _t[0] = std::thread(
@@ -311,8 +371,8 @@ TEST_F(BitTest, not) {
     }
 
     EXPECT_EQ(0, ret[0]->data()[0]);
-    EXPECT_EQ(0, ret[0]->data()[1]);
-    EXPECT_EQ(1, ret[0]->data()[2]);
+    EXPECT_EQ(1, ret[0]->data()[1]);
+    EXPECT_EQ(0, ret[0]->data()[2]);
     EXPECT_EQ(1, ret[0]->data()[3]);
 }
 

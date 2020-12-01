@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "core/privc/crypto.h"
 #include "core/privc/privc_context.h"
 #include "core/privc/ot.h"
 
@@ -22,7 +21,7 @@ namespace privc {
 void ObliviousTransfer::init() {
   auto np_ot_send_pre = [&]() {
     std::array<std::array<std::array<unsigned char,
-        psi::POINT_BUFFER_LEN>, 2>, OT_SIZE> send_buffer;
+        common::POINT_BUFFER_LEN>, 2>, OT_SIZE> send_buffer;
 
     for (uint64_t idx = 0; idx < OT_SIZE; idx += 1) {
       send_buffer[idx] = _np_ot_sender.send_pre(idx);
@@ -31,7 +30,7 @@ void ObliviousTransfer::init() {
   };
 
   auto np_ot_send_post = [&]() {
-      std::array<std::array<unsigned char, psi::POINT_BUFFER_LEN>, OT_SIZE> recv_buffer;
+      std::array<std::array<unsigned char, common::POINT_BUFFER_LEN>, OT_SIZE> recv_buffer;
 
       net()->recv(next_party(), recv_buffer.data(), sizeof(recv_buffer));
 
@@ -42,9 +41,9 @@ void ObliviousTransfer::init() {
 
   auto np_ot_recv = [&]() {
       std::array<std::array<std::array<unsigned char,
-          psi::POINT_BUFFER_LEN>, 2>, OT_SIZE> recv_buffer;
+          common::POINT_BUFFER_LEN>, 2>, OT_SIZE> recv_buffer;
 
-      std::array<std::array<unsigned char, psi::POINT_BUFFER_LEN>, OT_SIZE> send_buffer;
+      std::array<std::array<unsigned char, common::POINT_BUFFER_LEN>, OT_SIZE> send_buffer;
 
       net()->recv(next_party(), recv_buffer.data(), sizeof(recv_buffer));
 
@@ -55,7 +54,7 @@ void ObliviousTransfer::init() {
       net()->send(next_party(), send_buffer.data(), sizeof(send_buffer));
   };
 
-  _garbled_delta = privc_ctx()->template gen_random_private<block>();
+  //_garbled_delta = privc_ctx()->template gen_random_private<block>();
   reinterpret_cast<u8 *>(&_garbled_delta)[0] |= (u8)1;
   _garbled_and_ctr = 0;
 

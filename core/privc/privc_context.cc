@@ -28,13 +28,22 @@ PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> networ
     seed = common::block_from_dev_urandom();
   }
   set_random_seed(seed, 0);
+  auto garbled_delta = this->template gen_random_private<block>();
+  auto ot_base_choice = this->template gen_random_private<block>();
+  _ot = std::make_shared<OT>(
+                    ot_base_choice,
+                    garbled_delta,
+                    this->network(),
+                    this->party(),
+                    this->next_party());
+  _ot->init();
   _tripletor = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(
                                                 &_prng,
-                                                this->gen_random_private<block>(),
+                                                _ot.get(),
                                                 this->network(),
                                                 this->party(),
                                                 this->next_party());
-  _tripletor->init();
+  //_tripletor->init();
 }
 
 std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> PrivCContext::triplet_generator() {
@@ -42,9 +51,9 @@ std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> PrivCContext::triplet_gene
   return _tripletor;
 }
 
-void PrivCContext::set_ot(std::shared_ptr<OT>& ot) {
-  _ot = ot;
-}
+//void PrivCContext::set_ot(std::shared_ptr<OT>& ot) {
+//  _ot = ot;
+//}
 
 std::shared_ptr<OT>& PrivCContext::ot() {
   return _ot;

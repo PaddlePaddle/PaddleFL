@@ -24,7 +24,7 @@
 
 #include "./aes.h"
 
-#include "common_utils.h"
+//#include "common_utils.h"
 #include "./tensor_adapter.h"
 
 namespace common {
@@ -34,9 +34,8 @@ typedef unsigned long long u64;
 const block ZeroBlock = _mm_set_epi64x(0, 0);
 const block OneBlock = _mm_set_epi64x(-1, -1);
 const int POINT_BUFFER_LEN = 21;
-using privc::TensorBlock;
-template<typename T>
-using TensorAdapter = aby3::TensorAdapter<T>;
+
+using TensorBlock = TensorAdapter<int64_t>;
 
 static block double_block(block bl);
 
@@ -79,13 +78,10 @@ static inline void hash_blocks(const std::pair<const TensorBlock*, const TensorB
         block* block_ptr_ret_second = reinterpret_cast<block*>(ret.second->data());
         std::pair<block, block> x_pair({*(block_ptr_x_first + j), *(block_ptr_x_second + j)});
 
-        std::pair<block, block> i_pair({ZeroBlock, ZeroBlock});
-        if ((i.first != nullptr) && (i.second != nullptr)) {
-            block* block_ptr_i_first = reinterpret_cast<block*>(i.first->data());
-            block* block_ptr_i_second = reinterpret_cast<block*>(i.second->data());
-            i_pair.first = *(block_ptr_i_first + j);
-            i_pair.second = *(block_ptr_i_second + j);
-        }
+        std::pair<block, block> i_pair;
+        i_pair.first = i.first ? *(reinterpret_cast<block*>(i.first->data()) + j) : ZeroBlock;
+        i_pair.second = i.second ? *(reinterpret_cast<block*>(i.second->data()) + j) : ZeroBlock;
+
         auto ret_pair = hash_blocks(x_pair, i_pair);
         *(block_ptr_ret_first + j) = ret_pair.first;
         *(block_ptr_ret_second + j) = ret_pair.second;

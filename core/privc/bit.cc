@@ -69,8 +69,8 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
 
     auto j0_ = tensor_factory()->template create<int64_t>(block_shape);
     auto j1_ = tensor_factory()->template create<int64_t>(block_shape);
-    psi::to_block(j0.get(), j0_.get());
-    psi::to_block(j1.get(), j1_.get());
+    common::to_block(j0.get(), j0_.get());
+    common::to_block(j1.get(), j1_.get());
 
     auto pa = tensor_factory()->template create<u8>(shape);
     auto pb = tensor_factory()->template create<u8>(shape);
@@ -85,10 +85,10 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         //u64 j0 = garbled_and_ctr += 2;
         //u64 j1 = j0 + 1;
 
-        //auto j0_ = psi::to_block(j0);
-        //auto j1_ = psi::to_block(j1);
+        //auto j0_ = common::to_block(j0);
+        //auto j1_ = common::to_block(j1);
         //auto& garbled_delta = ot()->garbled_delta();
-        //auto t = psi::hash_blocks({a, a ^ garbled_delta}, {j0_, j0_});
+        //auto t = common::hash_blocks({a, a ^ garbled_delta}, {j0_, j0_});
         auto garbled_delta = tensor_factory()->template create<int64_t>(block_shape);
         ot()->garbled_delta(garbled_delta.get());
         auto mask_a = tensor_factory()->template create<int64_t>(block_shape);
@@ -98,7 +98,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         auto t_first = tensor_factory()->template create<int64_t>(block_shape);
         auto t_second = tensor_factory()->template create<int64_t>(block_shape);
         std::pair<TensorBlock*, TensorBlock*> t_pair(t_first.get(), t_second.get());
-        psi::hash_blocks(a_pair, t_pair, j0_pair);
+        common::hash_blocks(a_pair, t_pair, j0_pair);
 
         //block tg = t.first;
         //block wg = tg;
@@ -108,13 +108,14 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         auto wg = tensor_factory()->template create<int64_t>(block_shape);
         t_first->copy(tg.get());
         tg->copy(wg.get());
+        tg->bitwise_xor(t_second.get(), tg.get());
 
-        //t = psi::hash_blocks({b, b ^ garbled_delta}, {j1_, j1_});
+        //t = common::hash_blocks({b, b ^ garbled_delta}, {j1_, j1_});
         auto mask_b = tensor_factory()->template create<int64_t>(block_shape);
         b->bitwise_xor(garbled_delta.get(), mask_b.get());
         std::pair<const TensorBlock*, const TensorBlock*> b_pair(b, mask_b.get());
         std::pair<TensorBlock*, TensorBlock*> j1_pair(j1_.get(), j1_.get());
-        psi::hash_blocks(b_pair, t_pair, j1_pair);
+        common::hash_blocks(b_pair, t_pair, j1_pair);
 
         //block te = t.first;
         //block we = te;
@@ -139,15 +140,15 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         tg->bitwise_xor(garbled_delta.get(), tg_mask.get());
         te->bitwise_xor(a, we_mask.get());
         we->bitwise_xor(we_mask.get(), we_mask.get());
-        if_than_else_plain(pb.get(), tg_mask.get(), tg.get(), tg.get());
-        if_than_else_plain(pb.get(), we_mask.get(), we.get(), we.get());
+        if_then_else_plain(pb.get(), tg_mask.get(), tg.get(), tg.get());
+        if_then_else_plain(pb.get(), we_mask.get(), we.get(), we.get());
 
         //if (pa) {
         //    wg ^= tg;
         //}
         auto wg_mask = tensor_factory()->template create<int64_t>(block_shape);
         wg->bitwise_xor(tg.get(), wg_mask.get());
-        if_than_else_plain(pa.get(), wg_mask.get(), wg.get(), wg.get());
+        if_then_else_plain(pa.get(), wg_mask.get(), wg.get(), wg.get());
         /* TODO: add gc delay
         if (_gc_delay) {
             send_to_buffer(tg);
@@ -169,14 +170,14 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         //u64 j0 = garbled_and_ctr += 2;
         //u64 j1 = j0 + 1;
 
-        //auto j0_ = psi::to_block(j0);
-        //auto j1_ = psi::to_block(j1);
+        //auto j0_ = common::to_block(j0);
+        //auto j1_ = common::to_block(j1);
         auto tg = tensor_factory()->template create<int64_t>(block_shape);
         auto te = tensor_factory()->template create<int64_t>(block_shape);
         net()->template recv(next_party(), *tg);
         net()->template recv(next_party(), *te);
 
-        //auto t = psi::hash_blocks({a, b}, {j0_, j1_});
+        //auto t = common::hash_blocks({a, b}, {j0_, j1_});
         //block wg = t.first;
         //block we = t.second;
         auto t_first = tensor_factory()->template create<int64_t>(block_shape);
@@ -184,7 +185,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         std::pair<TensorBlock*, TensorBlock*> t_pair(t_first.get(), t_second.get());
         std::pair<const TensorBlock*, const TensorBlock*> x_pair(a, b);
         std::pair<TensorBlock*, TensorBlock*> j_pair(j0_.get(), j1_.get());
-        psi::hash_blocks(x_pair, t_pair, j_pair);
+        common::hash_blocks(x_pair, t_pair, j_pair);
 
         auto wg = tensor_factory()->template create<int64_t>(block_shape);
         auto we = tensor_factory()->template create<int64_t>(block_shape);
@@ -197,7 +198,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         //}
         auto wg_mask = tensor_factory()->template create<int64_t>(block_shape);
         wg->bitwise_xor(tg.get(), wg_mask.get());
-        if_than_else_plain(pa.get(), wg_mask.get(), wg.get(), wg.get());
+        if_then_else_plain(pa.get(), wg_mask.get(), wg.get(), wg.get());
 
         //if (sb) {
         //    we ^= te ^ a;
@@ -205,7 +206,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         auto we_mask = tensor_factory()->template create<int64_t>(block_shape);
         te->bitwise_xor(a, we_mask.get());
         we->bitwise_xor(we_mask.get(), we_mask.get());
-        if_than_else_plain(pb.get(), we_mask.get(), we.get(), we.get());
+        if_then_else_plain(pb.get(), we_mask.get(), we.get(), we.get());
 
         //return wg ^ we;
         wg->bitwise_xor(we.get(), ret);
@@ -221,17 +222,17 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         u64 j0 = garbled_and_ctr += 2;
         u64 j1 = j0 + 1;
 
-        auto j0_ = psi::to_block(j0);
-        auto j1_ = psi::to_block(j1);
+        auto j0_ = common::to_block(j0);
+        auto j1_ = common::to_block(j1);
         auto& garbled_delta = ot()->garbled_delta();
-        auto t = psi::hash_blocks({a, a ^ garbled_delta}, {j0_, j0_});
+        auto t = common::hash_blocks({a, a ^ garbled_delta}, {j0_, j0_});
 
         block tg = t.first;
         block wg = tg;
 
         tg ^= t.second;
 
-        t = psi::hash_blocks({b, b ^ garbled_delta}, {j1_, j1_});
+        t = common::hash_blocks({b, b ^ garbled_delta}, {j1_, j1_});
 
         block te = t.first;
         block we = te;
@@ -268,13 +269,13 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         u64 j0 = garbled_and_ctr += 2;
         u64 j1 = j0 + 1;
 
-        auto j0_ = psi::to_block(j0);
-        auto j1_ = psi::to_block(j1);
+        auto j0_ = common::to_block(j0);
+        auto j1_ = common::to_block(j1);
 
         block tg = net()->template recv<block>(next_party());
         block te = net()->template recv<block>(next_party());
 
-        auto t = psi::hash_blocks({a, b}, {j0_, j1_});
+        auto t = common::hash_blocks({a, b}, {j0_, j1_});
         block wg = t.first;
         block we = t.second;
 
@@ -288,7 +289,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
     }
 }
 */
-void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
+void garbled_share(const TensorAdapter<u8>* val, TensorBlock* ret) {
     auto shape = ret->shape();
     if (party() == 0) {
         auto ot_mask = tensor_factory()->template create<int64_t>(shape);
@@ -301,7 +302,7 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
         q->bitwise_xor(ot_mask.get(), q.get());
         //q ^= ot_mask & ot()->base_ot_choice();
 
-        // auto ret_ = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+        // auto ret_ = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
         // auto& garbled_delta = ot()->garbled_delta();
         // block to_send =
         //     ret_.first ^ ret_.second ^ garbled_delta;
@@ -312,7 +313,7 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
         auto* ret_first = ret;
         auto ret_second = tensor_factory()->template create<int64_t>(shape);
         std::pair<TensorBlock*, TensorBlock*> ret_pair(ret_first, ret_second.get());
-        psi::hash_blocks(q_pair, ret_pair);
+        common::hash_blocks(q_pair, ret_pair);
 
         auto to_send = tensor_factory()->template create<int64_t>(shape);
         ret_first->bitwise_xor(ret_second.get(), to_send.get());
@@ -328,11 +329,11 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
         auto ot_ins1 = tensor_factory()->template create<int64_t>(shape);
         ot()->ot_receiver().get_ot_instance(ot_ins0.get(), ot_ins1.get());
 
-        //block choice = val ? OneBlock : ZeroBlock;
+        //block choice = val ? common::OneBlock : ZeroBlock;
         auto choice = tensor_factory()->template create<int64_t>(shape);
         std::transform(val->data(), val->data() + val->numel(),
                        reinterpret_cast<block*>(choice->data()),
-                       [](bool val) -> block { return val ? OneBlock : ZeroBlock; });
+                       [](bool val) -> block { return val ? common::OneBlock : common::ZeroBlock; });
 
         //block ot_mask = ot_ins[0] ^ ot_ins[1] ^ choice;
         auto ot_mask = tensor_factory()->template create<int64_t>(shape);
@@ -343,9 +344,9 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
 
         auto ot_recv = tensor_factory()->template create<int64_t>(shape);
         net()->template recv(next_party(), *ot_recv);
-        //block ret = psi::hash_block(ot_ins[0]);
+        //block ret = common::hash_block(ot_ins[0]);
         auto ret_ = tensor_factory()->template create<int64_t>(shape);
-        psi::hash_block(ot_ins0.get(), ret_.get());
+        common::hash_block(ot_ins0.get(), ret_.get());
 
         //if (val) {
         //    ret ^= ot_recv;
@@ -353,7 +354,7 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
 
         auto ret_mask = tensor_factory()->template create<int64_t>(shape);
         ret_->bitwise_xor(ot_recv.get(), ret_mask.get());
-        if_than_else_plain(val, ret_mask.get(), ret_.get(), ret_.get());
+        if_then_else_plain(val, ret_mask.get(), ret_.get(), ret_.get());
         ret_->copy(ret);
         //return ret;
     }
@@ -366,7 +367,7 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
         block q = ot()->ot_sender().get_ot_instance();
         q ^= ot_mask & ot()->base_ot_choice();
 
-        auto ret_ = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+        auto ret_ = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
         auto& garbled_delta = ot()->garbled_delta();
         block to_send =
             ret_.first ^ ret_.second ^ garbled_delta;
@@ -376,12 +377,12 @@ void garbled_share(TensorAdapter<u8>* val, TensorBlock* ret) {
     } else {
         auto ot_ins = ot()->ot_receiver().get_ot_instance();
 
-        block choice = val ? OneBlock : ZeroBlock;
+        block choice = val ? common::OneBlock : common::ZeroBlock;
         block ot_mask = ot_ins[0] ^ ot_ins[1] ^ choice;
         net()->send(next_party(), ot_mask);
 
         block ot_recv = net()->template recv<block>(next_party());
-        block ret = psi::hash_block(ot_ins[0]);
+        block ret = common::hash_block(ot_ins[0]);
 
         if (val) {
             ret ^= ot_recv;
@@ -402,7 +403,7 @@ std::vector<block> garbled_share_internal(const int64_t* val, size_t size) {
             block q = ot()->ot_sender().get_ot_instance();
             q ^= ot_mask & ot()->base_ot_choice();
 
-            auto ret_ = psi::hash_blocks({q, q ^ ot()->base_ot_choice()});
+            auto ret_ = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
             ret[idx] = ret_.first;
             auto& garbled_delta = ot()->garbled_delta();
             block to_send =
@@ -420,12 +421,12 @@ std::vector<block> garbled_share_internal(const int64_t* val, size_t size) {
 
         for (size_t idx = 0; idx < 8 * sizeof(int64_t) * size; ++idx) {
             auto ot_ins = ot()->ot_receiver().get_ot_instance();
-            ret[idx] = psi::hash_block(ot_ins[0]);
+            ret[idx] = common::hash_block(ot_ins[0]);
 
             size_t i = idx / (sizeof(int64_t) * 8);
             size_t j = idx % (sizeof(int64_t) * 8);
 
-            block choice = (val[i] >> j) & 1 ? OneBlock : ZeroBlock;
+            block choice = (val[i] >> j) & 1 ? common::OneBlock : common::ZeroBlock;
             block ot_mask = ot_ins[0] ^ ot_ins[1] ^ choice;
             //send_to_buffer(ot_mask);
             send_buffer.emplace_back(ot_mask);
@@ -440,7 +441,7 @@ std::vector<block> garbled_share_internal(const int64_t* val, size_t size) {
             size_t i = idx / (sizeof(int64_t) * 8);
             size_t j = idx % (sizeof(int64_t) * 8);
 
-            ret[idx] ^= (val[i] >> j) & 1 ? ot_recv : ZeroBlock;
+            ret[idx] ^= (val[i] >> j) & 1 ? ot_recv : common::ZeroBlock;
         }
         return ret;
     }

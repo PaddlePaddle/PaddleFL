@@ -14,26 +14,39 @@
 
 #pragma once
 
-
-#include "core/privc/privc_context.h"
-#include "core/privc3/tensor_adapter_factory.h"
-#include "../privc3/tensor_adapter.h"
-//#include "crypto.h"
+#include "core/common/tensor_adapter_factory.h"
+#include "core/common/tensor_adapter.h"
+#include "core/common/crypto.h"
+#include "core/common/naorpinkas_ot.h"
+#include "core/common/ot_extension.h"
 
 namespace privc {
 
 // use alias name to distinguish TensorAdapter<block>
 // and normal TensorAdapter<int64_t>
-using TensorBlock = aby3::TensorAdapter<int64_t>;
+using TensorBlock = common::TensorAdapter<int64_t>;
 
 template<typename T>
-using TensorAdapter = aby3::TensorAdapter<T>;
+using TensorAdapter = common::TensorAdapter<T>;
 
-typedef unsigned char u8;
-typedef unsigned long long u64;
+using u8 = common::u8;
+using u64 = common::u64;
 
-const block ZeroBlock = _mm_set_epi64x(0, 0);
-const block OneBlock = _mm_set_epi64x(-1, -1);
+using block = common::block;
+
+//const block ZeroBlock = common::ZeroBlock;
+//const block OneBlock = common::OneBlock;
+
+using NaorPinkasOTsender = common::NaorPinkasOTsender;
+using NaorPinkasOTreceiver = common::NaorPinkasOTreceiver;
+
+using AbstractNetwork = paddle::mpc::AbstractNetwork;
+using AbstractContext = paddle::mpc::AbstractContext;
+
+template<typename T>
+using OTExtSender = common::OTExtSender<T>;
+template<typename T>
+using OTExtReceiver = common::OTExtReceiver<T>;
 
 static const size_t _g_block_size_expand = sizeof(block) / sizeof(int64_t);
 

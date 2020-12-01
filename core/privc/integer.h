@@ -25,7 +25,7 @@ namespace privc {
 
 inline void to_bits(const TensorAdapter<int64_t>* input, TensorAdapter<u8>* input_bits) {
 
-    for (int i = 0; i < sizeof(int64_t); ++i) {
+    for (int i = 0; i < sizeof(int64_t) * 8; ++i) {
         //auto tmp = tensor_factory()->template create<int64_t>(input->shape());
         //input->rshift(i, tmp.get());
         // TODO: make sure deconstructing input_slice has not effect on input_bits
@@ -36,8 +36,8 @@ inline void to_bits(const TensorAdapter<int64_t>* input, TensorAdapter<u8>* inpu
         std::transform(input->data(), input->data() + input->numel(),
                         input_slice->data(),
                         [&i](int64_t a) {
-                            int64_t val = (a >> i) & 1;
-                            return *reinterpret_cast<u8*>(&val);
+                            u8 val = (a >> i) & (u8) 1;
+                            return val;
                         });
     }
 }
@@ -52,7 +52,7 @@ std::vector<int64_t> bc_mux(const std::vector<uint8_t>& choice,
                                 const std::vector<int64_t>& val_t,
                                 const std::vector<int64_t>& val_f);
                                 */
-void to_ac_num(TensorAdapter<int64_t>* val, TensorAdapter<int64_t>* ret);
+void to_ac_num(const TensorAdapter<int64_t>* val, TensorAdapter<int64_t>* ret);
 
 void bc_mux(const TensorAdapter<u8>* choice,
             const TensorAdapter<int64_t>* val_t,
@@ -100,7 +100,7 @@ public:
     IntegerTensor(const std::vector<size_t>& shape) : _length(shape[0]) {
         _bits_tensor = tensor_factory()->template create<int64_t>(shape);
         std::for_each(_bits_tensor->data(), _bits_tensor->data() + _bits_tensor->numel(),
-                      [](int64_t& a) { a = 0;});
+                      [](int64_t& a) { a = 0; });
     }
 
     std::vector<size_t> shape() const {
@@ -198,9 +198,11 @@ public:
                       [](int64_t& a) { a = 0;});
         for (int idx = 0; idx < size(); idx += 1) {
             //ret |= (int64_t)block_lsb(_bits[idx]._share) << idx;
-            auto tmp = tensor_factory()->template create<int64_t>((*this)[idx]->shape());
+            auto tmp = tensor_factory()->template create<int64_t>(ret->shape());
             block_lsb((*this)[idx]->share(), tmp.get());
+            //std::cout <<"p0: "<<tmp.get();
             tmp->lshift(idx, tmp.get());
+            //std::cout <<"p1"<<tmp.get();
             ret->bitwise_or(tmp.get(), ret);
         }
         //return ret;

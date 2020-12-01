@@ -386,12 +386,14 @@ void FixedPointTensor<T, N>::sigmoid_impl(FixedPointTensor<T, N>* ret,
     FixedPoint<N> y(share(), 1);
     auto gc_shape = get_gc_shape(shape());
     FixedPoint<N> gc(gc_shape);
+    x.bitwise_add(&y, &gc);
 
     FixedPoint<N> ret_gc(gc_shape);
     gc.logistic(&ret_gc);
     auto bc_shape = gc_shape;
-    bc_shape.erase(bc_shape.begin() + 1);
-    auto res_lsb = tensor_factory()->template create<T>(gc_shape);
+    bc_shape.erase(bc_shape.begin());
+    bc_shape.erase(bc_shape.begin());
+    auto res_lsb = tensor_factory()->template create<T>(bc_shape);
     ret_gc.lsb(res_lsb.get());
     to_ac_num(res_lsb.get(), ret->mutable_share());
 }
