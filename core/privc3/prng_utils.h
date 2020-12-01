@@ -14,21 +14,21 @@
 
 #pragma once
 
-#include "prng.h"
-#include "rand_utils.h"
+#include "core/common/prng.h"
+#include "core/common/rand_utils.h"
 
 namespace aby3 {
 
-using block = psi::block;
+using block = common::block;
 
-const block g_zero_block = psi::g_zero_block;
+const block g_zero_block = common::g_zero_block;
 
-using PseudorandomNumberGenerator = psi::PseudorandomNumberGenerator;
+using PseudorandomNumberGenerator = common::PseudorandomNumberGenerator;
 
-inline block block_from_dev_urandom() { return psi::block_from_dev_urandom(); }
+inline block block_from_dev_urandom() { return common::block_from_dev_urandom(); }
 
 inline bool equals(const block &lhs, const block &rhs) {
-  return psi::equals(lhs, rhs);
+  return common::equals(lhs, rhs);
 }
 
 } // namespace aby3

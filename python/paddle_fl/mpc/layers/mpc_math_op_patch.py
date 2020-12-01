@@ -22,7 +22,7 @@ from paddle.fluid.layers.layer_function_generator import OpProtoHolder
 
 from ..framework import MpcVariable, create_mpc_var
 
-supported_mpc_ops = ['__add__', '__radd__', '__sub__', '__rsub__']
+supported_mpc_ops = ['__add__', '__radd__', '__sub__', '__rsub__', '__mul__', '__rmul__']
 compare_ops = ['__gt__', '__ge__', '__lt__', '__le__', '__eq__', '__ne__']
 supported_mpc_ops.extend(compare_ops)
 

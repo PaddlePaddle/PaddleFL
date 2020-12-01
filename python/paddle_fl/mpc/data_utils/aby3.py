@@ -22,6 +22,7 @@ import paddle
 import paddle.fluid as fluid
 import mpc_data_utils as mdu
 from ..layers import __all__ as all_ops
+from op_extra_desc import add_extra_desc
 
 __all__ = [
     'encrypt',
@@ -345,6 +346,7 @@ def _transpile_type_and_shape(block):
             elif op.type in op_to_skip:
                 pass
             else:
+                add_extra_desc(op, block)
                 op.desc.set_type(MPC_OP_PREFIX + op.type)
         else:
             raise NotImplementedError('Operator {} is unsupported.'
@@ -468,7 +470,7 @@ def decrypt_model(mpc_model_dir, plain_model_path, mpc_model_filename=None, plai
             else:
                 plain_var_shape = mpc_var.shape[1:]
                 mpc_var.desc.set_shape(plain_var_shape)
-                #mpc_var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float32))
+                mpc_var.desc.set_dtype(fluid.framework.convert_np_dtype_to_dtype_(np.float32))
 
     # remove init op
     first_mpc_op = global_block.ops[0]

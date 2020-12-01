@@ -29,10 +29,13 @@ TEST_MODULES=("test_datautils_aby3"
 "test_data_preprocessing"
 "test_op_reshape"
 "test_op_reduce_sum"
+"test_op_elementwise_mul"
+"test_gru_op"
 )
 
 # run unittest
 for MODULE in ${TEST_MODULES[@]}
 do
+    echo Test Module $MODULE
     $PYTHON_TEST $MODULE
 done

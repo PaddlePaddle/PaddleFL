@@ -98,6 +98,8 @@ if (WITH_GPU)
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" "-std=c++11")
 endif(WITH_GPU)
 
+add_subdirectory(core/common)
+add_subdirectory(core/privc)
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)
 add_subdirectory(core/paddlefl_mpc/operators)
@@ -116,7 +118,8 @@ set_property(TARGET fluid_framework PROPERTY IMPORTED_LOCATION ${FLUID_LIB})
 
 # generate dynamic .so lib
 add_library(paddle_enc SHARED
-    $<TARGET_OBJECTS:privc3_o>
+    $<TARGET_OBJECTS:common_o>
+    $<TARGET_OBJECTS:mpc_tensor_o>
     $<TARGET_OBJECTS:mpc_protocol_o>
     $<TARGET_OBJECTS:mpc_ops_o>)
 
@@ -125,7 +128,7 @@ target_link_libraries(paddle_enc gloo)
 target_link_libraries(paddle_enc hiredis)
 
 if (WITH_GPU)
-    target_link_libraries(paddle_enc privc3_cu)
+    target_link_libraries(paddle_enc mpc_tensor_cu)
 endif (WITH_GPU)
 
 set(CMAKE_SKIP_INSTALL_RPATH TRUE)
@@ -140,7 +143,7 @@ install(DIRECTORY "${THIRD_PARTY_PATH}/install/openssl/lib/"
     DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}/third_party/openssl)
 
 if (WITH_GPU)
-    install(TARGETS privc3_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
+    install(TARGETS mpc_tensor_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
 endif (WITH_GPU)
 
 install(TARGETS paddle_enc mpc_data_utils

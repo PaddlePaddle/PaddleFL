@@ -18,15 +18,18 @@
 #include <cstring>
 #include <stdexcept>
 
-#include "aes.h"
+#include "../common/aes.h"
+
+using common::operator&;
+using common::operator^;
 
 namespace psi {
 
 PsiBase::PsiBase(size_t sender_size, size_t recver_size, const block &seed)
     : _sender_size(sender_size), _recver_size(recver_size),
-      _bin_num(1.2 * recver_size), _max_stash_size(get_stash_size(recver_size)),
-      _code_word_width(get_codeword_size(sender_size)),
-      _oprf_output_len(get_mask_size(sender_size, recver_size)), _prng(seed) {
+      _bin_num(1.2 * recver_size), _max_stash_size(common::get_stash_size(recver_size)),
+      _code_word_width(common::get_codeword_size(sender_size)),
+      _oprf_output_len(common::get_mask_size(sender_size, recver_size)), _prng(seed) {
   if (_oprf_output_len > sizeof(block)) {
     throw std::invalid_argument("psi error: oprf output length exceed");
   }
@@ -60,7 +63,7 @@ void init_input(std::vector<std::string> &output,
   }
   std::vector<block> hashed_input;
   for (auto &item : output) {
-    auto md = crypto_hash(item.data(), item.size());
+    auto md = common::crypto_hash(item.data(), item.size());
     // block size == 128 bit
     block &md_block = *reinterpret_cast<block *>(&md);
     hashed_input.emplace_back(md_block);
@@ -137,7 +140,7 @@ void PsiSender::recv_masks(size_t begin_idx, size_t end_idx,
           _ot_sender_msgs[bin_idx] ^
           ((masks[bin_idx - begin_idx] ^ code_word) & _ot_ext_choices);
 
-      auto md = crypto_hash(oprf_input.data(), _code_word_width);
+      auto md = common::crypto_hash(oprf_input.data(), _code_word_width);
 
       auto &now_idx = _permute_now_idx[hash_idx];
 
@@ -231,7 +234,7 @@ std::vector<Block512> PsiReceiver::send_masks(size_t begin_idx,
           code_word ^ _ot_recver_msgs[bin_idx][0] ^ _ot_recver_msgs[bin_idx][1];
 
       auto md =
-          crypto_hash(_ot_recver_msgs[bin_idx][0].data(), _code_word_width);
+          common::crypto_hash(_ot_recver_msgs[bin_idx][0].data(), _code_word_width);
 
       std::memset(md.data() + _oprf_output_len, 0,
                   md.size() - _oprf_output_len);

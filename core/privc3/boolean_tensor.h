@@ -19,7 +19,11 @@
 #include <vector>
 
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "tensor_adapter.h"
+#include "core/common/tensor_adapter.h"
+
+template<typename T>
+using TensorAdapter = common::TensorAdapter<T>;
+using TensorAdapterFactory = common::TensorAdapterFactory;
 
 namespace aby3 {
 

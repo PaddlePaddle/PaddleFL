@@ -18,10 +18,17 @@
 
 #include "aby3_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-#include "paddle_tensor.h"
+#include "core/common/paddle_tensor.h"
 #include "boolean_tensor.h"
 
 namespace aby3 {
+
+template<typename T>
+using TensorAdapter = common::TensorAdapter<T>;
+using TensorAdapterFactory = common::TensorAdapterFactory;
+template<typename T>
+using PaddleTensor = common::PaddleTensor<T>;
+using PaddleTensorFactory = common::PaddleTensorFactory;
 
 template<typename T, size_t N>
 class FixedPointTensor {
@@ -135,6 +142,10 @@ public:
     // element-wise sigmoid using Chebyshev polynomial approximation
     // implemented with ref to tfe[https://github.com/tf-encrypted/tf-encrypted]
     void sigmoid_chebyshev(FixedPointTensor* ret) const;
+
+    // element-wise sigmoid using long-div and exp
+    // higher precision but higher time cost
+    void sigmoid_high_precision(FixedPointTensor<T, N>* ret) const;
 
     // softmax axis = -1
     void softmax(FixedPointTensor* ret,
