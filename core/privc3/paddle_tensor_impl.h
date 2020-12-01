@@ -98,6 +98,8 @@ void PaddleTensor<T>::div(const TensorAdapter<T> *rhs,
   std::transform(data(), data() + numel(), rhs->data(), ret->data(), div_);
 }
 
+#ifndef USE_CUDA
+
 template <typename T>
 void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
                               TensorAdapter<T> *ret,
@@ -193,6 +195,8 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
       }
   }
 }
+
+#endif
 
 template <typename T>
 void PaddleTensor<T>::negative(TensorAdapter<T> *ret) const {

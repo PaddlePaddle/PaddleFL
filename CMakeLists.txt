@@ -57,6 +57,8 @@ option(WITH_TESTING "Compile with unit testing" ON)
 
 option(WITH_PSI "Compile with psi lib" ON)
 
+option(WITH_GPU"Compile with gpu" ON)
+
 option(USE_AES_NI "Compile with AES NI" ON)
 
 option(USE_OPENMP "Compile with OpenMP" ON)
@@ -90,6 +92,12 @@ if (USE_ABY3_TRUNC1)
     add_compile_definitions(USE_ABY3_TRUNC1)
 endif(USE_ABY3_TRUNC1)
 
+if (WITH_GPU)
+    find_package(CUDA)
+    add_definitions(-DUSE_CUDA)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" "-std=c++11")
+endif(WITH_GPU)
+
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)
 add_subdirectory(core/paddlefl_mpc/operators)
@@ -116,6 +124,10 @@ target_link_libraries(paddle_enc fluid_framework)
 target_link_libraries(paddle_enc gloo)
 target_link_libraries(paddle_enc hiredis)
 
+if (WITH_GPU)
+    target_link_libraries(paddle_enc privc3_cu)
+endif (WITH_GPU)
+
 set(CMAKE_SKIP_INSTALL_RPATH TRUE)
 
 set(PADDLE_ENCRYPTED_LIB_PATH "${CMAKE_SOURCE_DIR}/python/paddle_fl/mpc/libs")
@@ -126,6 +138,10 @@ install(DIRECTORY "${THIRD_PARTY_PATH}/install/hiredis/lib/"
     DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}/third_party)
 install(DIRECTORY "${THIRD_PARTY_PATH}/install/openssl/lib/"
     DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}/third_party/openssl)
+
+if (WITH_GPU)
+    install(TARGETS privc3_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
+endif (WITH_GPU)
 
 install(TARGETS paddle_enc mpc_data_utils
     LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}
