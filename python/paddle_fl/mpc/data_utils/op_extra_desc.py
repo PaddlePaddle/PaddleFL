@@ -18,21 +18,6 @@ relu, relu_grad, pool2d, pool2d_grad.
 import abc
 import six
 
-ops_to_add_extra = ['relu', 'relu_grad', 'pool2d', 'pool2d_grad']
-
-def add_extra_desc(op, block):
-    if op.type not in ops_to_add_extra:
-        return
-    if op.type == 'relu':
-        instance = ReluExtraDesc()
-    if op.type == 'relu_grad':
-        instance = ReluGradExtraDesc()
-    if op.type == 'pool2d':
-        instance = Pool2dExtraDesc()
-    if op.type == 'pool2d_grad':
-        instance = Pool2dGradExtraDesc()
-    instance.add_extra_desc(op, block)
-
 
 @six.add_metaclass(abc.ABCMeta)
 class OpExtraDesc(object):
@@ -74,3 +59,16 @@ class Pool2dExtraDesc(OpExtraDesc):
 class Pool2dGradExtraDesc(OpExtraDesc):
     def add_extra_desc(self, op, block):
         op.desc.set_input('One_hot_tensor', [op.input_arg_names[0] + '.one_hot_tensor'])
+
+
+ops_to_add_extra = {'relu': ReluExtraDesc(), 
+                    'relu_grad': ReluGradExtraDesc(),
+                    'pool2d': Pool2dExtraDesc(),
+                    'pool2d_grad': Pool2dGradExtraDesc()}
+
+
+def add_extra_desc(op, block):
+    op_desc_inst = ops_to_add_extra.get(op.type)
+    if op_desc_inst:
+        op_desc_inst.add_extra_desc(op, block)
+
