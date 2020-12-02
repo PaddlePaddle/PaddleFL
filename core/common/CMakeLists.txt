@@ -34,15 +34,7 @@ add_dependencies(mpc_tensor_o fluid_framework common)
 
 add_library(mpc_tensor STATIC $<TARGET_OBJECTS:mpc_tensor_o>)
 
-if (WITH_GPU)
-    cuda_add_library(mpc_tensor_cu SHARED paddle_tensor_impl.cu)
-endif (WITH_GPU)
-
 set(mpc_tensor_deps_libs fluid_framework common)
-
-if (WITH_GPU)
-    list(APPEND mpc_tensor_deps_libs mpc_tensor_cu)
-endif (WITH_GPU)
 
 target_link_libraries(mpc_tensor ${mpc_tensor_deps_libs})
 

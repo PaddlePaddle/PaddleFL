@@ -22,7 +22,7 @@ import paddle
 import paddle.fluid as fluid
 import mpc_data_utils as mdu
 from ..layers import __all__ as all_ops
-from op_extra_desc import add_extra_desc
+from .op_extra_desc import add_extra_desc
 
 __all__ = [
     'encrypt',

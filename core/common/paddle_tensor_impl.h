@@ -22,8 +22,6 @@
 #include "paddle/fluid/platform/hostdevice.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
-#include "./functor.h"
-
 namespace common {
 
 using u128 = unsigned __int128;
@@ -105,7 +103,6 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
                               TensorAdapter<T> *ret,
                               bool trans_lhs,
                               bool trans_rhs) const {
-#ifndef USE_CUDA
   auto rhs_ = dynamic_cast<const PaddleTensor<T> *>(rhs);
   auto ret_ = dynamic_cast<PaddleTensor<T> *>(ret);
 
@@ -196,10 +193,6 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
       }
   }
 
-#else // USE_CUDA
-  MatMul<T>::mat_mul(this, rhs, ret, trans_lhs, trans_rhs);
-
-#endif // USE_CUDA
 }
 
 
