@@ -29,7 +29,9 @@ const size_t FIXED_POINTER_SCALING_FACTOR = 16;
 
 class MpcOperators {
 public:
-    virtual void add(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
+    virtual void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) = 0;
+
+    virtual void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) = 0;
 
     virtual void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
 
@@ -39,7 +41,8 @@ public:
 
     virtual void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
 
-    virtual void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
+    virtual void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
+                        int x_num_col_dims = 1, int y_num_col_dims = 1) = 0;
 
     virtual void scale(const Tensor *lhs, const double factor, Tensor *out) = 0;
 

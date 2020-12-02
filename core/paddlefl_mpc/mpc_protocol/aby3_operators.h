@@ -26,12 +26,17 @@ limitations under the License. */
 #include "core/privc3/fixedpoint_tensor.h"
 #include "core/privc3/boolean_tensor.h"
 #include "core/common/paddle_tensor.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_add_op.h"
+//#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/common.h"
+//#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/matmul.h"
+
 
 namespace paddle {
 namespace mpc {
 
 using paddle::framework::Tensor;
 using aby3::ABY3Context;
+using namespace paddle::operators::aby3;
 // TODO: decide scaling factor
 const size_t ABY3_SCALING_FACTOR = FIXED_POINTER_SCALING_FACTOR;
 using FixedTensor = aby3::FixedPointTensor<int64_t, ABY3_SCALING_FACTOR>;
@@ -41,18 +46,12 @@ using PaddleTensor = common::PaddleTensor<int64_t>;
 class Aby3OperatorsImpl : public MpcOperators {
 public:
 
-    void add(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
+    void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) override {
+        add_impl(lhs, rhs, out, axis);
+    }
 
-        auto lhs_tuple = from_tensor(lhs);
-        auto rhs_tuple = from_tensor(rhs);
-        auto out_tuple = from_tensor(out);
-
-        auto lhs_ = std::get<0>(lhs_tuple).get();
-        auto rhs_ = std::get<0>(rhs_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
-
-        lhs_->add(rhs_, out_);
-
+    void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) override {
+        add_grad_impl(lhs, rhs, dout, dx, dy, axis);
     }
 
     // TODO: override
@@ -104,8 +103,9 @@ public:
         lhs_->mul(rhs_, out_);
     }
 
-    void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
-
+    void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
+                 int x_num_col_dims = 1, int y_num_col_dims = 1) override {
+        //matmul_impl(lhs, rhs, out, x_num_col_dims, y_num_col_dims);        
         auto lhs_tuple = from_tensor(lhs);
         auto rhs_tuple = from_tensor(rhs);
         auto out_tuple = from_tensor(out);
