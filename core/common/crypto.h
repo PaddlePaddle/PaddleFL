@@ -24,12 +24,18 @@
 
 #include "./aes.h"
 
+#include "./tensor_adapter.h"
+#include "paddle/fluid/platform/enforce.h"
+
 namespace common {
 
 typedef unsigned char u8;
 typedef unsigned long long u64;
 const block ZeroBlock = _mm_set_epi64x(0, 0);
 const block OneBlock = _mm_set_epi64x(-1, -1);
+const int POINT_BUFFER_LEN = 21;
+
+using TensorBlock = TensorAdapter<int64_t>;
 
 static block double_block(block bl);
 
@@ -39,6 +45,20 @@ static inline block hash_block(const block& x, const block& i = ZeroBlock) {
     return pi.ecb_enc_block(k) ^ k;
 }
 
+static inline void hash_block(const TensorBlock* x, TensorBlock* ret,
+                              const TensorBlock* i = nullptr) {
+    PADDLE_ENFORCE_EQ(x->numel(), ret->numel(), "input numel no match.");
+    for (int j = 0; j < x->numel() / 2; ++j) {
+        block i_block(ZeroBlock);
+        if (i) {
+            i_block = *(reinterpret_cast<const block*>(i->data()) + j);
+        }
+        block x_block = *(reinterpret_cast<const block*>(x->data()) + j);
+        block* ret_block_ptr = reinterpret_cast<block*>(ret->data()) + j;
+        *(ret_block_ptr) = hash_block(x_block, i_block);
+    }
+}
+
 static inline std::pair<block, block> hash_blocks(const std::pair<block, block>& x,
                                                   const std::pair<block, block>& i = {ZeroBlock, ZeroBlock}) {
     static AES pi(ZeroBlock);
@@ -46,6 +66,51 @@ static inline std::pair<block, block> hash_blocks(const std::pair<block, block>&
     block c[2];
     pi.ecb_enc_blocks(k, 2, c);
     return {c[0] ^ k[0], c[1] ^ k[1]};
+}
+
+static inline void hash_blocks(
+            const std::pair<const TensorBlock*,
+            const TensorBlock*>& x,
+            std::pair<TensorBlock*, TensorBlock*>& ret,
+            const std::pair<TensorBlock*, TensorBlock*>& i = {nullptr, nullptr}) {
+    PADDLE_ENFORCE_EQ(x.first->numel(), ret.first->numel(),
+                      "input numel no match.");
+    PADDLE_ENFORCE_EQ(x.second->numel(), ret.second->numel(),
+                      "input numel no match.");
+    PADDLE_ENFORCE_EQ(ret.second->numel(), ret.first->numel(),
+                      "input numel no match.");
+
+    int numel = x.first->numel() / 2;
+    for (int j = 0; j < numel; ++j) {
+        const block* block_ptr_x_first = reinterpret_cast<const block*>(x.first->data());
+        const block* block_ptr_x_second = reinterpret_cast<const block*>(x.second->data());
+        block* block_ptr_ret_first = reinterpret_cast<block*>(ret.first->data());
+        block* block_ptr_ret_second = reinterpret_cast<block*>(ret.second->data());
+        std::pair<block, block> x_pair({*(block_ptr_x_first + j), *(block_ptr_x_second + j)});
+
+        std::pair<block, block> i_pair;
+        i_pair.first = i.first ? *(reinterpret_cast<block*>(i.first->data()) + j) : ZeroBlock;
+        i_pair.second = i.second ? *(reinterpret_cast<block*>(i.second->data()) + j) : ZeroBlock;
+
+        auto ret_pair = hash_blocks(x_pair, i_pair);
+        *(block_ptr_ret_first + j) = ret_pair.first;
+        *(block_ptr_ret_second + j) = ret_pair.second;
+    }
+}
+
+template <typename T>
+static inline block to_block(const T& val) {
+    block ret = ZeroBlock;
+    std::memcpy(&ret, &val, std::min(sizeof ret, sizeof val));
+    return ret;
+}
+
+template <typename T>
+static inline block to_block(const TensorAdapter<T>* val, TensorBlock* ret) {
+    block* ret_ptr = reinterpret_cast<block*>(ret->data());
+    for (int i = 0; i < val->numel(); ++i) {
+        *(ret_ptr + i) = to_block(*(val->data() + i));
+    }
 }
 
 static inline block double_block(block bl) {

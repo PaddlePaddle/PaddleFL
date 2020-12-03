@@ -30,6 +30,9 @@ public:
   virtual std::shared_ptr<TensorAdapter<int64_t>>
   create_int64_t(const std::vector<size_t> &shape) = 0;
 
+  virtual std::shared_ptr<TensorAdapter<uint8_t>>
+  create_uint8_t(const std::vector<size_t> &shape) = 0;
+
   virtual std::shared_ptr<TensorAdapter<int64_t>> create_int64_t() = 0;
 
   template <typename T> std::shared_ptr<TensorAdapter<T>> create();

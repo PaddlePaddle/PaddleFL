@@ -16,6 +16,7 @@
 
 #include "core/privc/triplet_generator.h"
 #include "core/privc/privc_context.h"
+#include "core/privc/ot.h"
 namespace privc {
 
 PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> network,
@@ -27,18 +28,30 @@ PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> networ
     seed = common::block_from_dev_urandom();
   }
   set_random_seed(seed, 0);
+  auto garbled_delta = this->template gen_random_private<block>();
+  auto ot_base_choice = this->template gen_random_private<block>();
+  _ot = std::make_shared<OT>(
+                    ot_base_choice,
+                    garbled_delta,
+                    this->network(),
+                    this->party(),
+                    this->next_party());
+  _ot->init();
   _tripletor = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(
                                                 &_prng,
-                                                this->gen_random_private<block>(),
+                                                _ot.get(),
                                                 this->network(),
                                                 this->party(),
                                                 this->next_party());
-  _tripletor->init();
 }
 
 std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> PrivCContext::triplet_generator() {
   PADDLE_ENFORCE_NE(_tripletor, nullptr, "must set triplet generator first.");
   return _tripletor;
+}
+
+std::shared_ptr<OT>& PrivCContext::ot() {
+  return _ot;
 }
 
 } // namespace privc

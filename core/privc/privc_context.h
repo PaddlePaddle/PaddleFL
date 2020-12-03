@@ -28,8 +28,12 @@ using AbstractContext = paddle::mpc::AbstractContext;
 using block = common::block;
 
 static const size_t SCALING_N = 32;
+
+// forward declare
 template <typename T, size_t N>
 class TripletGenerator;
+
+class ObliviousTransfer;
 
 class PrivCContext : public AbstractContext {
 public:
@@ -42,6 +46,8 @@ public:
 
   std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> triplet_generator();
 
+  std::shared_ptr<ObliviousTransfer>& ot();
+
 protected:
   common::PseudorandomNumberGenerator& get_prng(size_t idx) override {
     return _prng;
@@ -50,6 +56,7 @@ protected:
 private:
   std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> _tripletor;
   common::PseudorandomNumberGenerator _prng;
+  std::shared_ptr<ObliviousTransfer> _ot;
 };
 
 } // namespace privc

@@ -19,9 +19,11 @@
 
 #include "prng.h"
 #include "utils.h"
+#include "tensor_adapter.h"
 
 namespace common {
 
+using TensorBlock = TensorAdapter<int64_t>;
 // implementation of ot extension
 // generates ot masks
 template <typename T> class OTExtBase {
@@ -63,6 +65,8 @@ public:
 
   T get_ot_instance();
 
+  void get_ot_instance(TensorBlock* msg);
+
   template <class U> void fill_ot_buffer(U &send_msg);
 
 private:
@@ -86,6 +90,8 @@ public:
             bool init_buffer = false);
 
   std::array<T, 2> get_ot_instance();
+
+  void get_ot_instance(TensorBlock* msg1, TensorBlock* msg2);
 
   template <class U> void fill_ot_buffer(U &recv_msg);
 

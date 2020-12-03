@@ -135,7 +135,7 @@ public:
                                         size_t scaling_factor);
 
   template<int Rank>
-  void Transpose(const std::vector<int> axis, TensorAdapter<T>* ret) {
+  void Transpose(const std::vector<int> axis, TensorAdapter<T>* ret) const {
     paddle::operators::math::Transpose<paddle::platform::CPUDeviceContext, T, Rank> trans;
     trans(*(dynamic_cast<const paddle::platform::CPUDeviceContext*>(_device_ctx)),
           _tensor,
@@ -168,6 +168,9 @@ public:
 
   std::shared_ptr<TensorAdapter<int64_t>>
   create_int64_t(const std::vector<size_t> &shape) override;
+
+  std::shared_ptr<TensorAdapter<uint8_t>>
+  create_uint8_t(const std::vector<size_t> &shape) override;
 
   std::shared_ptr<TensorAdapter<int64_t>> create_int64_t() override;
 
