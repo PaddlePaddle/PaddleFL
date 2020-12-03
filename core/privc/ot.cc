@@ -17,7 +17,6 @@
 
 namespace privc {
 
-
 void ObliviousTransfer::init() {
   auto np_ot_send_pre = [&]() {
     std::array<std::array<std::array<unsigned char,
@@ -54,7 +53,6 @@ void ObliviousTransfer::init() {
       net()->send(next_party(), send_buffer.data(), sizeof(send_buffer));
   };
 
-  //_garbled_delta = privc_ctx()->template gen_random_private<block>();
   reinterpret_cast<u8 *>(&_garbled_delta)[0] |= (u8)1;
   _garbled_and_ctr = 0;
 

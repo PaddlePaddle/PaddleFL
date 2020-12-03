@@ -21,13 +21,10 @@
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
-//#include "core/privc3/prng_utils.h"
 #include "core/common/crypto.h"
 #include "core/common/naorpinkas_ot.h"
 #include "core/common/ot_extension.h"
-#include "./type_utils.h"
 #include "common_utils.h"
-
 
 namespace privc {
 
@@ -92,21 +89,24 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
     }
 }
 
-
 template <typename T>
 inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                          const TensorAdapter<T>* input,
                          TensorBlock* ot_masks,
                          TensorBlock* t0_buffer,
                          size_t word_width = 8 * sizeof(uint64_t)) {
+    PADDLE_ENFORCE_EQ(ot_masks->numel(),
+                    t0_buffer->numel(), "input numel no match.");
+    PADDLE_ENFORCE_EQ(input->numel() * word_width * _g_block_size_expand,
+                    t0_buffer->numel(), "input numel no match.");
+
     auto shape = input->shape();
     auto block_shape = get_block_shape(shape);
     for (uint64_t idx = 0; idx < word_width; idx += 1) {
-        //auto ot_instance = ot_ext_recver.get_ot_instance();
         auto ot_ins0 = tensor_factory()->template create<int64_t>(block_shape);
         auto ot_ins1 = tensor_factory()->template create<int64_t>(block_shape);
         ot_ext_recver.get_ot_instance(ot_ins0.get(), ot_ins1.get());
-        //block choice = (input >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
+
         auto choice = tensor_factory()->template create<int64_t>(block_shape);
         block* choice_ptr = reinterpret_cast<block*>(choice->data());
         std::transform(input->data(), input->data() + input->numel(),
@@ -114,15 +114,15 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                            return (a >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
                        });
 
-        //t0_buffer.emplace_back(ot_instance[0]);
         auto t0_buffer_s = tensor_factory()->template create<int64_t>(block_shape);
         t0_buffer->slice(idx, idx + 1, t0_buffer_s.get());
-        t0_buffer_s->reshape(block_shape);
+
         ot_ins0->copy(t0_buffer_s.get());
-        //ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
+
         auto ot_masks_s = tensor_factory()->template create<int64_t>(block_shape);
         ot_masks->slice(idx, idx + 1, ot_masks_s.get());
         ot_masks_s->reshape(block_shape);
+        
         choice->bitwise_xor(ot_ins0.get(), ot_masks_s.get());
         ot_masks_s->bitwise_xor(ot_ins1.get(), ot_masks_s.get());
     }
@@ -202,9 +202,9 @@ private:
   size_t _party;
   size_t _next_party;
   AbstractNetwork* _net;
-  //std::shared_ptr<AbstractContext> _privc_ctx;
 };
 
 using OT = ObliviousTransfer;
+
 } // namespace privc
 

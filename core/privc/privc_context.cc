@@ -43,17 +43,12 @@ PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> networ
                                                 this->network(),
                                                 this->party(),
                                                 this->next_party());
-  //_tripletor->init();
 }
 
 std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> PrivCContext::triplet_generator() {
   PADDLE_ENFORCE_NE(_tripletor, nullptr, "must set triplet generator first.");
   return _tripletor;
 }
-
-//void PrivCContext::set_ot(std::shared_ptr<OT>& ot) {
-//  _ot = ot;
-//}
 
 std::shared_ptr<OT>& PrivCContext::ot() {
   return _ot;

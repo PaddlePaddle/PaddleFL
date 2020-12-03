@@ -26,7 +26,7 @@ limitations under the License. */
 #include "fixedpoint_tensor.h"
 #include "core/privc/triplet_generator.h"
 #include "core/common/paddle_tensor.h"
-#include "bit.h"
+#include "gc_bit.h"
 
 namespace privc {
 
@@ -63,12 +63,6 @@ public:
             ti.join();
         }
 
-        /*for (size_t i = 0; i < 2; ++i) {
-            _t[i] = std::thread(&BitTest::init_ot_and_triplet, i);
-        }
-        for (auto& ti : _t) {
-            ti.join();
-        }*/
         _s_tensor_factory = std::make_shared<common::PaddleTensorFactory>(&_cpu_ctx);
     }
 
@@ -85,15 +79,6 @@ public:
         _mpc_ctx[idx] = std::make_shared<PrivCContext>(idx, net);
     }
 
-    /*static inline void init_ot_and_triplet(size_t idx) {
-        std::shared_ptr<OT> ot = std::make_shared<OT>(_mpc_ctx[idx]);
-        ot->init();
-        std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_ot(ot);
-
-        std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor
-                    = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(_mpc_ctx[idx]);
-        std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_triplet_generator(tripletor);
-    }*/
     template<typename T = int64_t>
     std::shared_ptr<TensorAdapter<T>> gen(std::vector<size_t> shape) {
         return _s_tensor_factory->template create<T>(shape);

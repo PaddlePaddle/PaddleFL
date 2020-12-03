@@ -10,7 +10,7 @@ set(COMMON_SRCS
 add_library(common_o OBJECT ${COMMON_SRCS})
 add_dependencies(common_o crypto)
 
-add_library(common SHARED $<TARGET_OBJECTS:common_o>)
+add_library(common STATIC $<TARGET_OBJECTS:common_o>)
 
 if (USE_OPENMP)
     target_link_libraries(common OpenMP::OpenMP_CXX OpenMP::OpenMP_C crypto)

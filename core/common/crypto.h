@@ -26,6 +26,8 @@
 
 //#include "common_utils.h"
 #include "./tensor_adapter.h"
+#include "paddle/fluid/platform/enforce.h"
+
 
 namespace common {
 
@@ -47,6 +49,7 @@ static inline block hash_block(const block& x, const block& i = ZeroBlock) {
 
 static inline void hash_block(const TensorBlock* x, TensorBlock* ret,
                               const TensorBlock* i = nullptr) {
+    PADDLE_ENFORCE_EQ(x->numel(), ret->numel(), "input numel no match.");
     for (int j = 0; j < x->numel() / 2; ++j) {
         block i_block(ZeroBlock);
         if (i) {
@@ -67,9 +70,18 @@ static inline std::pair<block, block> hash_blocks(const std::pair<block, block>&
     return {c[0] ^ k[0], c[1] ^ k[1]};
 }
 
-static inline void hash_blocks(const std::pair<const TensorBlock*, const TensorBlock*>& x,
-                 std::pair<TensorBlock*, TensorBlock*>& ret,
-                 const std::pair<TensorBlock*, TensorBlock*>& i = {nullptr, nullptr}) {
+static inline void hash_blocks(
+            const std::pair<const TensorBlock*,
+            const TensorBlock*>& x,
+            std::pair<TensorBlock*, TensorBlock*>& ret,
+            const std::pair<TensorBlock*, TensorBlock*>& i = {nullptr, nullptr}) {
+    PADDLE_ENFORCE_EQ(x.first->numel(), ret.first->numel(),
+                      "input numel no match.");
+    PADDLE_ENFORCE_EQ(x.second->numel(), ret.second->numel(),
+                      "input numel no match.");
+    PADDLE_ENFORCE_EQ(ret.second->numel(), ret.first->numel(),
+                      "input numel no match.");
+
     int numel = x.first->numel() / 2;
     for (int j = 0; j < numel; ++j) {
         const block* block_ptr_x_first = reinterpret_cast<const block*>(x.first->data());

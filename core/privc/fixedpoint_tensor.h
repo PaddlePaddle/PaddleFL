@@ -21,9 +21,7 @@
 #include "../common/paddle_tensor.h"
 #include "./triplet_generator.h"
 #include "core/common/tensor_adapter_factory.h"
-//#include "core/privc3/paddle_tensor.h"
 #include "core/privc/triplet_generator.h"
-//#include "core/privc/common.h"
 #include "core/privc/common_utils.h"
 
 namespace privc {
@@ -129,6 +127,7 @@ public:
     }
 
     // matrix argmax
+    // return max index in one-hot
     void argmax(FixedPointTensor<T, N>* ret) const {
       argmax_impl<T>(ret, Type2Type<T>());
     }

@@ -26,7 +26,7 @@ limitations under the License. */
 #include "fixedpoint_tensor.h"
 #include "core/privc/triplet_generator.h"
 #include "core/common/paddle_tensor.h"
-#include "integer.h"
+#include "gc_integer.h"
 
 namespace privc {
 
@@ -83,36 +83,11 @@ public:
     std::shared_ptr<TensorAdapter<T>> gen(std::vector<size_t> shape) {
         return _s_tensor_factory->template create<T>(shape);
     }
-   /* void fun_slice(TensorAdapter<int64_t>* in) {
-    std::vector<size_t> shape = { 1, 2 };
-    std::shared_ptr<TensorAdapter<int64_t>> s_in = gen(shape);
-    in->slice(0, 1, s_in.get());
-    *(s_in->data()) = 1;
-    *(s_in->data() + 1) = 2;
-}*/
 };
 
 std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {
     return g_ctx_holder::tensor_factory()->template create<int64_t>(shape);
 }
-
-/*TEST_F(IntegerTest, test_slice) {
-    std::vector<size_t> shape = { 2, 2 };
-    std::shared_ptr<TensorAdapter<int64_t>> sl = gen<int64_t>(shape);
-    sl->data()[0] = (int64_t)0;
-    sl->data()[1] = (int64_t)1;
-    sl->data()[2] = (int64_t)2;
-    sl->data()[3] = -((int64_t)3);
-
-    fun_slice(sl.get());
-
-    EXPECT_EQ(1, sl->data()[0]);
-    EXPECT_EQ(2, sl->data()[1]);
-    EXPECT_EQ(2, sl->data()[2]);
-    EXPECT_EQ(-3, sl->data()[3]);
-}
-*/
-
 
 TEST_F(IntegerTest, reconstruct) {
     std::vector<size_t> shape = { 2, 2 };

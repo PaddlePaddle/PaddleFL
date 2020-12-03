@@ -26,20 +26,14 @@
 #include "core/common/naorpinkas_ot.h"
 #include "core/common/ot_extension.h"
 #include "core/common/tensor_adapter.h"
-//#include "core/privc3/prng_utils.h"
-//#include "core/privc/crypto.h"
-//#include "core/psi/naorpinkas_ot.h"
-//#include "core/psi/ot_extension.h"
-//#include "core/privc3/tensor_adapter.h"
 #include "core/privc/ot.h"
 #include "core/privc/privc_context.h"
-#include "type_utils.h"
 
 namespace privc {
 
 using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
-//using block = common::block;
+
 using NaorPinkasOTsender = common::NaorPinkasOTsender;
 using NaorPinkasOTreceiver = common::NaorPinkasOTreceiver;
 
@@ -47,9 +41,6 @@ template<typename T>
 using OTExtSender = common::OTExtSender<T>;
 template<typename T>
 using OTExtReceiver = common::OTExtReceiver<T>;
-
-//template <typename T>
-//using TensorAdapter = common::TensorAdapter<T>;
 
 template<size_t N>
 inline int64_t fixed64_mult(const int64_t a, const int64_t b) {
@@ -78,7 +69,6 @@ public:
   TripletGenerator(common::PseudorandomNumberGenerator* prng,
                    OT* ot, AbstractNetwork* net,
                    size_t party, size_t next_party) :
-        //_base_ot_choices(circuit_context->gen_random_private<block>()),
         _prng(prng),
         _ot(ot),
         _net(net),
@@ -152,14 +142,6 @@ private:
 
   template<typename U> U gen_random_private() { return _prng->get<U>(); }
 
-  //const block _base_ot_choices;
-
-  //NaorPinkasOTsender _np_ot_sender;
-  //NaorPinkasOTreceiver _np_ot_recver;
-
-  //OTExtSender<block> _ot_ext_sender;
-  //OTExtReceiver<block> _ot_ext_recver;
-  //std::shared_ptr<AbstractContext> _privc_ctx;
   OT* _ot;
   common::PseudorandomNumberGenerator* _prng;
   AbstractNetwork* _net;

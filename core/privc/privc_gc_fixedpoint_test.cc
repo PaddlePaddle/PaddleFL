@@ -26,7 +26,7 @@ limitations under the License. */
 #include "fixedpoint_tensor.h"
 #include "core/privc/triplet_generator.h"
 #include "core/common/paddle_tensor.h"
-#include "fixed_point.h"
+#include "gc_fixed_point.h"
 
 namespace privc {
 

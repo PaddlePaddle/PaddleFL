@@ -61,12 +61,6 @@ public:
             ti.join();
         }
 
-        /*for (size_t i = 0; i < 2; ++i) {
-            _t[i] = std::thread(&TripletGeneratorTest::init_ot_and_triplet, i);
-        }
-        for (auto& ti : _t) {
-            ti.join();
-        }*/
         _s_tensor_factory = std::make_shared<common::PaddleTensorFactory>(&_cpu_ctx);
     }
 
@@ -82,16 +76,6 @@ public:
         net->init();
         _mpc_ctx[idx] = std::make_shared<PrivCContext>(idx, net);
     }
-
-    //static inline void init_ot_and_triplet(size_t idx) {
-    //    std::shared_ptr<OT> ot = std::make_shared<OT>(_mpc_ctx[idx]);
-    //    ot->init();
-    //    std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_ot(ot);
-
-        //std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor
-        //            = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(_mpc_ctx[idx]);
-        //std::dynamic_pointer_cast<PrivCContext>(_mpc_ctx[idx])->set_triplet_generator(tripletor);
-    //}
 
     std::shared_ptr<TensorAdapter<int64_t>> gen(std::vector<size_t> shape) {
         return _s_tensor_factory->template create<int64_t>(shape);
@@ -146,7 +130,7 @@ TEST_F(TripletGeneratorTest, triplet) {
                     + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
                     + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
 
-        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N * 0.00001));
+        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N) * 0.00001);
     }
 }
 
@@ -200,8 +184,8 @@ TEST_F(TripletGeneratorTest, penta_triplet) {
                     + fixed64_mult<SCALING_N>(*(ret1_ptr + alpha_idx), *(ret1_ptr + b_idx));
 
         // sometimes the difference big than 200
-        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N * 0.00001));
-        EXPECT_NEAR(alpha_c , (*(ret0_ptr + alpha_c_idx) + *(ret1_ptr + alpha_c_idx)), std::pow(2, SCALING_N * 0.00001));
+        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N) * 0.00001);
+        EXPECT_NEAR(alpha_c , (*(ret0_ptr + alpha_c_idx) + *(ret1_ptr + alpha_c_idx)), std::pow(2, SCALING_N) * 0.00001);
     }
 }
 
