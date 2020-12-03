@@ -40,7 +40,6 @@ template <typename DeviceContext, typename T>
 class MpcElementwiseSubGradKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext &ctx) const override {
-        VLOG(3) << "******** MpcElementwiseSubGradKernel: ";
         auto *dout = ctx.Input<Tensor>(framework::GradVarName("Out"));
         auto *dx = ctx.Output<Tensor>(framework::GradVarName("X"));
         auto *dy = ctx.Output<Tensor>(framework::GradVarName("Y"));

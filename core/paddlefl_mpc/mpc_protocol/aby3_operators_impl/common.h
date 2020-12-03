@@ -12,20 +12,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-// Description: implementations of each virtual op according to ABY3 protocol
+// Description: 
 
 #pragma once
 
-//#ifndef COMMON_H
-//#define COMMON_H
-
-#include "core/paddlefl_mpc/mpc_protocol/aby3_operators.h"
+#include "paddle/fluid/framework/tensor.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_operators.h"
+#include "core/common/paddle_tensor.h"
+#include "core/privc3/fixedpoint_tensor.h"
+#include "core/privc3/boolean_tensor.h"
+#include "core/privc3/aby3_context.h"
 
 namespace paddle {
 namespace operators {
-namespace aby3 {
+namespace aby3impl {
 
 using namespace paddle::mpc;
+using paddle::framework::Tensor;
+using aby3::ABY3Context;
+// TODO: decide scaling factor
+const size_t ABY3_SCALING_FACTOR = FIXED_POINTER_SCALING_FACTOR;
+using FixedTensor = aby3::FixedPointTensor<int64_t, ABY3_SCALING_FACTOR>;
+using BoolTensor = aby3::BooleanTensor<int64_t>;
+using PaddleTensor = common::PaddleTensor<int64_t>;
+
 
 static const size_t SHARE_NUM = 2;
 
@@ -52,6 +63,7 @@ static std::tuple<
     return std::make_tuple(ft, pt0, pt1);
 }
 
+
 static std::tuple<
     std::shared_ptr<FixedTensor>,
     std::shared_ptr<PaddleTensor>,
@@ -60,7 +72,7 @@ static std::tuple<
     return from_tensor<FixedTensor>(t);
 }
 
-} // aby3
+} // aby3impl
 } // operators
 } // paddle
 
