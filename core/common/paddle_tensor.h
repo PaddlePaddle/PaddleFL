@@ -75,8 +75,8 @@ public:
 
   void mat_mul(const TensorAdapter<T> *rhs,
                TensorAdapter<T> *ret,
-               bool trans_lhs = false,
-               bool trans_rhs = false) const override;
+               bool transpose_lhs = false,
+               bool transpose_rhs = false) const override;
 
   void add128(const TensorAdapter<T> *rhs,
               TensorAdapter<T> *ret,

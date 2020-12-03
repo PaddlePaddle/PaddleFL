@@ -152,6 +152,9 @@ inline void ResizeToChannelFirst(const framework::ExecutionContext& context,
 
     auto in_dims_vec = framework::vectorize(input->dims());
     if (is_output) {
+        // same as paddle, resize output of conv op
+        // SNDHWC -> SNCDHW
+        // all for simulate paddle conv op (plaintext)'s behavior
         in_dims_vec[0] = input->dims()[0];
         in_dims_vec[1] = input->dims()[1];
         in_dims_vec[2] = input->dims()[5];
@@ -993,6 +996,7 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
                                                 out_step,
                                                 filter_matrix_shape[2],
                                                 }));
+#pragma omp for
     for (int i = 0; i < batch_size; i++) {
 
       Tensor filter_slice = batched_filter.Slice(i, i + 1);
