@@ -10,13 +10,15 @@ set(COMMON_SRCS
 add_library(common_o OBJECT ${COMMON_SRCS})
 add_dependencies(common_o crypto)
 
-add_library(common SHARED $<TARGET_OBJECTS:common_o>)
+add_library(common STATIC $<TARGET_OBJECTS:common_o>)
+
+set(common_deps_libs crypto)
 
 if (USE_OPENMP)
-    target_link_libraries(common OpenMP::OpenMP_CXX OpenMP::OpenMP_C crypto)
-else()
-    target_link_libraries(common crypto)
+    list(APPEND common_deps_libs OpenMP::OpenMP_CXX OpenMP::OpenMP_C)
 endif (USE_OPENMP)
+
+target_link_libraries(common ${common_deps_libs})
 
 cc_test(aes_test SRCS aes_test.cc DEPS common)
 cc_test(ot_test SRCS ot_test.cc DEPS common)
@@ -32,6 +34,8 @@ add_dependencies(mpc_tensor_o fluid_framework common)
 
 add_library(mpc_tensor STATIC $<TARGET_OBJECTS:mpc_tensor_o>)
 
-target_link_libraries(mpc_tensor fluid_framework common)
+set(mpc_tensor_deps_libs fluid_framework common)
+
+target_link_libraries(mpc_tensor ${mpc_tensor_deps_libs})
 
 cc_test(paddle_tensor_test SRCS paddle_tensor_test.cc DEPS mpc_tensor)

@@ -160,6 +160,126 @@ TEST_F(PaddleTensorTest, matmul_test) {
     EXPECT_TRUE(eq);
 }
 
+TEST_F(PaddleTensorTest, matmul_transpose_test) {
+    std::vector<size_t> shape0 = { 2, 3 };
+    std::vector<size_t> shape1 = { 3, 2 };
+    std::vector<size_t> shape2 = { 3, 3 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 6; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get(), true, true);
+
+    // | 0 3 |   | 0 2 4 |   |  3  9 15 |
+    // | 1 4 | x | 1 3 5 | = |  4 14 24 |
+    // | 2 5 |               |  5 19 33 |
+
+    std::vector<int64_t> res = { 3, 9, 15, 4, 14, 24, 5, 19, 33};
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
+}
+
+TEST_F(PaddleTensorTest, matmul_transpose_test2) {
+    std::vector<size_t> shape0 = { 2, 3 };
+    std::vector<size_t> shape1 = { 2, 3 };
+    std::vector<size_t> shape2 = { 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 6; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get(), false, true);
+
+    // | 0 1 2 |   | 0 3 |   |  5 14 |
+    // | 3 4 5 | x | 1 4 | = | 14 50 |
+    //             | 2 5 |
+
+    std::vector<int64_t> res = { 5, 14, 14, 50 };
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
+}
+
+TEST_F(PaddleTensorTest, matmul_transpose_test3) {
+    std::vector<size_t> shape0 = { 2, 3 };
+    std::vector<size_t> shape1 = { 2, 3 };
+    std::vector<size_t> shape2 = { 3, 3 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 6; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get(), true, false);
+
+    // | 0 3 |   | 0 1 2 |   |  9 12 15 |
+    // | 1 4 | x | 3 4 5 | = | 12 17 22 |
+    // | 2 5 |               | 15 22 29 |
+
+    std::vector<int64_t> res = { 9, 12, 15, 12, 17, 22, 15, 22, 29};
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
+}
+
+TEST_F(PaddleTensorTest, matmul_test2) {
+    std::vector<size_t> shape0 = { 2, 2, 3 };
+    std::vector<size_t> shape1 = { 3, 2 };
+    std::vector<size_t> shape2 = { 2, 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 12; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get());
+
+    // | 0 1 2 | | 6  7  8 |    | 0 1 |   | 10 13 |  | 46 67 |
+    // | 3 4 5 |,| 9 10 11 |  x | 2 3 | = | 28 40 |, | 64 94 |
+    //                          | 4 5 |
+
+    std::vector<int64_t> res = { 10, 13, 28, 40, 46, 67, 64, 94 };
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
+}
+
+TEST_F(PaddleTensorTest, matmul_test3) {
+    std::vector<size_t> shape0 = { 2, 2, 3 };
+    std::vector<size_t> shape1 = { 2, 3, 2 };
+    std::vector<size_t> shape2 = { 2, 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 12; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get());
+
+    // | 0 1 2 | | 6  7  8 |    | 0 1 | |  6  7 |   | 10 13 |  | 172 193 |
+    // | 3 4 5 |,| 9 10 11 |  x | 2 3 | |  8  9 | = | 28 40 |, | 244 274 |
+    //                          | 4 5 |,| 10 11 |
+
+    std::vector<int64_t> res = { 10, 13, 28, 40, 172, 193, 244, 274 };
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
+}
+
 TEST_F(PaddleTensorTest, xor_test) {
     std::vector<size_t> shape = { 1 };
     auto pt0 = _tensor_factory->template create<int64_t>(shape);

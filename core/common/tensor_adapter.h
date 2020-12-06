@@ -74,7 +74,10 @@ public:
     virtual void div(const TensorAdapter* rhs, TensorAdapter* ret) const = 0;
 
     // 2d matrix muliply,  need operands' rank are 2
-    virtual void mat_mul(const TensorAdapter* rhs, TensorAdapter* ret) const = 0;
+    virtual void mat_mul(const TensorAdapter* rhs,
+                         TensorAdapter* ret,
+                         bool trans_lhs = false,
+                         bool trans_rhs = false) const = 0;
 
     // element wise op, need operands' dim are same
     virtual void bitwise_xor(const TensorAdapter* rhs, TensorAdapter* ret) const = 0;
