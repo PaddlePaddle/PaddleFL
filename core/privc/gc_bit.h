@@ -20,7 +20,7 @@
 #include "core/privc/privc_context.h"
 #include "core/common/crypto.h"
 #include "core/privc/triplet_generator.h"
-#include "core/privc/common_utils.h"
+#include "core/privc/utils.h"
 #include "core/privc/ot.h"
 #include "paddle/fluid/platform/enforce.h"
 
@@ -36,11 +36,11 @@ inline void if_then_else_plain(const TensorAdapter<T>* val,
                          const TensorBlock* else_val,
                          TensorBlock* ret) {
     PADDLE_ENFORCE_EQ(_g_block_size_expand * val->numel(),
-                      then_val->numel(), "input numel no match.");
+                      then_val->numel(), "input of then val's numel no match with input val.");
     PADDLE_ENFORCE_EQ(else_val->numel(), then_val->numel(),
-                      "input numel no match.");
+                      "input of else val's numel no match.");
     PADDLE_ENFORCE_EQ(ret->numel(), then_val->numel(),
-                      "input numel no match.");
+                      "input of then val's numel no match with return.");
 
     const block* then_val_ptr = reinterpret_cast<const block*>(then_val->data());
     const block* else_val_ptr = reinterpret_cast<const block*>(else_val->data());
@@ -125,9 +125,9 @@ public:
 
     void bitwise_xor(const BitTensor* rhs, BitTensor* ret) const {
         PADDLE_ENFORCE_EQ(rhs->share()->numel(), share()->numel(),
-                          "input numel no match.");
+                          "input of rhs's numel no match with return.");
         PADDLE_ENFORCE_EQ(ret->share()->numel(), share()->numel(),
-                          "input numel no match.");
+                          "input of lhs's numel no match with return.");
         share()->bitwise_xor(rhs->share(), ret->mutable_share());
     }
 
@@ -141,18 +141,18 @@ public:
 
     void bitwise_and(const BitTensor* rhs, BitTensor* ret) const {
         PADDLE_ENFORCE_EQ(rhs->share()->numel(), share()->numel(),
-                          "input numel no match.");
+                          "input of rhs's numel no match with return.");
         PADDLE_ENFORCE_EQ(ret->share()->numel(), share()->numel(),
-                          "input numel no match.");
+                          "input of lhs's numel no match with return.");
 
         garbled_and(share(), rhs->share(), ret->mutable_share());
     }
 
     void bitwise_or(const BitTensor* rhs, BitTensor* ret) const {
         PADDLE_ENFORCE_EQ(rhs->share()->numel(), share()->numel(),
-                          "input numel no match.");
+                          "input of rhs's numel no match with return.");
         PADDLE_ENFORCE_EQ(ret->share()->numel(), share()->numel(),
-                          "input numel no match.");
+                          "input of lhs's numel no match with return.");
 
         BitTensor op_t(shape());
         bitwise_and(rhs, &op_t);

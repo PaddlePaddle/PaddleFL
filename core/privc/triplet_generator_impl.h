@@ -21,7 +21,7 @@ namespace privc {
 template<typename T, size_t N>
 void TripletGenerator<T, N>::get_triplet(TensorAdapter<T>* ret) {
   size_t num_trip = ret->numel() / 3;
-  if (_triplet_buffer.size() < num_trip) {
+  while (_triplet_buffer.size() < num_trip) {
       fill_triplet_buffer();
   }
 
@@ -38,7 +38,7 @@ void TripletGenerator<T, N>::get_triplet(TensorAdapter<T>* ret) {
 template<typename T, size_t N>
 void TripletGenerator<T, N>::get_penta_triplet(TensorAdapter<T>* ret) {
   size_t num_trip = ret->numel() / 5;
-  if (_triplet_buffer.size() < num_trip) {
+  while (_penta_triplet_buffer.size() < num_trip) {
       fill_penta_triplet_buffer();
   }
 
@@ -50,7 +50,7 @@ void TripletGenerator<T, N>::get_penta_triplet(TensorAdapter<T>* ret) {
     *(ret_ptr + 2 * num_trip) = triplet[2];
     *(ret_ptr + 3 * num_trip) = triplet[3];
     *(ret_ptr + 4 * num_trip) = triplet[4];
-    _triplet_buffer.pop();
+    _penta_triplet_buffer.pop();
   }
 }
 

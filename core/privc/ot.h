@@ -24,7 +24,7 @@
 #include "core/common/crypto.h"
 #include "core/common/naorpinkas_ot.h"
 #include "core/common/ot_extension.h"
-#include "common_utils.h"
+#include "utils.h"
 
 namespace privc {
 
@@ -96,9 +96,10 @@ inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
                          TensorBlock* t0_buffer,
                          size_t word_width = 8 * sizeof(uint64_t)) {
     PADDLE_ENFORCE_EQ(ot_masks->numel(),
-                    t0_buffer->numel(), "input numel no match.");
+                    t0_buffer->numel(),
+                    "the numel between returns of ot instance0 and ot mask is no match.");
     PADDLE_ENFORCE_EQ(input->numel() * word_width * _g_block_size_expand,
-                    t0_buffer->numel(), "input numel no match.");
+                    t0_buffer->numel(), "the numel of input and returns is no match.");
 
     auto shape = input->shape();
     auto block_shape = get_block_shape(shape);

@@ -17,9 +17,13 @@
 namespace privc {
 
 void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
+    // refs to following paper to find this algorithm:
+    // Zahur S, (2015). "Two halves make a whole"
+
     auto block_shape = ret->shape();
     auto shape = block_shape;
     shape.erase(shape.begin());
+    // increment index j0, j1 
     auto j0 = tensor_factory()->template create<int64_t>(shape);
     auto j1 = tensor_factory()->template create<int64_t>(shape);
     ot()->garbled_and_ctr(j0.get());
@@ -29,7 +33,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
     auto j1_ = tensor_factory()->template create<int64_t>(block_shape);
     common::to_block(j0.get(), j0_.get());
     common::to_block(j1.get(), j1_.get());
-
+    // select bit: pa, pb
     auto pa = tensor_factory()->template create<u8>(shape);
     auto pb = tensor_factory()->template create<u8>(shape);
     block_lsb(a, pa.get());
@@ -46,7 +50,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         auto t_second = tensor_factory()->template create<int64_t>(block_shape);
         std::pair<TensorBlock*, TensorBlock*> t_pair(t_first.get(), t_second.get());
         common::hash_blocks(a_pair, t_pair, j0_pair);
-
+        // first half gate: wg
         auto tg = tensor_factory()->template create<int64_t>(block_shape);
         auto wg = tensor_factory()->template create<int64_t>(block_shape);
         t_first->copy(tg.get());
@@ -58,7 +62,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         std::pair<const TensorBlock*, const TensorBlock*> b_pair(b, mask_b.get());
         std::pair<TensorBlock*, TensorBlock*> j1_pair(j1_.get(), j1_.get());
         common::hash_blocks(b_pair, t_pair, j1_pair);
-
+        // second half gate: we
         auto te = tensor_factory()->template create<int64_t>(block_shape);
         auto we = tensor_factory()->template create<int64_t>(block_shape);
 
@@ -81,7 +85,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
 
         net()->send(next_party(), *tg);
         net()->send(next_party(), *te);
-
+        // combine halves
         we->bitwise_xor(wg.get(), ret);
     } else {
 
@@ -96,7 +100,8 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         std::pair<const TensorBlock*, const TensorBlock*> x_pair(a, b);
         std::pair<TensorBlock*, TensorBlock*> j_pair(j0_.get(), j1_.get());
         common::hash_blocks(x_pair, t_pair, j_pair);
-
+        // first half gate: wg
+        // second half gate: we
         auto wg = tensor_factory()->template create<int64_t>(block_shape);
         auto we = tensor_factory()->template create<int64_t>(block_shape);
         t_first->copy(wg.get());
@@ -110,7 +115,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         te->bitwise_xor(a, we_mask.get());
         we->bitwise_xor(we_mask.get(), we_mask.get());
         if_then_else_plain(pb.get(), we_mask.get(), we.get(), we.get());
-
+        // combine halves
         wg->bitwise_xor(we.get(), ret);
     }
 }
