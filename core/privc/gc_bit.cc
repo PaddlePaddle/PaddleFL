@@ -19,6 +19,7 @@ namespace privc {
 void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
     // refs to following paper to find this algorithm:
     // Zahur S, (2015). "Two halves make a whole"
+    // following variables naming come from the paper
 
     auto block_shape = ret->shape();
     auto shape = block_shape;
