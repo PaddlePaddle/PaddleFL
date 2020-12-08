@@ -32,6 +32,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
 
     auto j0_ = tensor_factory()->template create<int64_t>(block_shape);
     auto j1_ = tensor_factory()->template create<int64_t>(block_shape);
+    // convert int64 to block
     common::to_block(j0.get(), j0_.get());
     common::to_block(j1.get(), j1_.get());
     // select bit: pa, pb
@@ -41,30 +42,39 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
     block_lsb(b, pb.get());
 
     if (party() == 0) {
-        auto garbled_delta = tensor_factory()->template create<int64_t>(block_shape);
-        ot()->garbled_delta(garbled_delta.get());
+        // get garbled delta : R
+        auto R = tensor_factory()->template create<int64_t>(block_shape);
+        ot()->garbled_delta(R.get());
+
         auto mask_a = tensor_factory()->template create<int64_t>(block_shape);
-        a->bitwise_xor(garbled_delta.get(), mask_a.get());
+        a->bitwise_xor(R.get(), mask_a.get());
+
+        // cal t = H(a, j), H(mask_a, j)
         std::pair<const TensorBlock*, const TensorBlock*> a_pair(a, mask_a.get());
         std::pair<TensorBlock*, TensorBlock*> j0_pair(j0_.get(), j0_.get());
         auto t_first = tensor_factory()->template create<int64_t>(block_shape);
         auto t_second = tensor_factory()->template create<int64_t>(block_shape);
         std::pair<TensorBlock*, TensorBlock*> t_pair(t_first.get(), t_second.get());
         common::hash_blocks(a_pair, t_pair, j0_pair);
-        // first half gate: wg
+
+        // tg = H(a, j) ^ H(mask_a, j) ^ pa*R
         auto tg = tensor_factory()->template create<int64_t>(block_shape);
+
+        // first half gate: wg = H(a, j) ^ pa*tg
         auto wg = tensor_factory()->template create<int64_t>(block_shape);
         t_first->copy(tg.get());
         tg->copy(wg.get());
         tg->bitwise_xor(t_second.get(), tg.get());
 
         auto mask_b = tensor_factory()->template create<int64_t>(block_shape);
-        b->bitwise_xor(garbled_delta.get(), mask_b.get());
+        b->bitwise_xor(R.get(), mask_b.get());
         std::pair<const TensorBlock*, const TensorBlock*> b_pair(b, mask_b.get());
         std::pair<TensorBlock*, TensorBlock*> j1_pair(j1_.get(), j1_.get());
         common::hash_blocks(b_pair, t_pair, j1_pair);
-        // second half gate: we
+
+        // te = H(b, j1) ^ H(mask_b, j1) ^ a
         auto te = tensor_factory()->template create<int64_t>(block_shape);
+        // second half gate: we = H(b, j1) ^ pb(te ^ a)
         auto we = tensor_factory()->template create<int64_t>(block_shape);
 
         t_first->copy(te.get());
@@ -74,7 +84,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
 
         auto tg_mask = tensor_factory()->template create<int64_t>(block_shape);
         auto we_mask = tensor_factory()->template create<int64_t>(block_shape);
-        tg->bitwise_xor(garbled_delta.get(), tg_mask.get());
+        tg->bitwise_xor(R.get(), tg_mask.get());
         te->bitwise_xor(a, we_mask.get());
         we->bitwise_xor(we_mask.get(), we_mask.get());
         if_then_else_plain(pb.get(), tg_mask.get(), tg.get(), tg.get());
@@ -86,24 +96,25 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
 
         net()->send(next_party(), *tg);
         net()->send(next_party(), *te);
+
         // combine halves
         we->bitwise_xor(wg.get(), ret);
     } else {
-
+        // recv tg, te
         auto tg = tensor_factory()->template create<int64_t>(block_shape);
         auto te = tensor_factory()->template create<int64_t>(block_shape);
         net()->template recv(next_party(), *tg);
         net()->template recv(next_party(), *te);
-
+        // cal t = H(a, j0), H(b, j1)
         auto t_first = tensor_factory()->template create<int64_t>(block_shape);
         auto t_second = tensor_factory()->template create<int64_t>(block_shape);
         std::pair<TensorBlock*, TensorBlock*> t_pair(t_first.get(), t_second.get());
         std::pair<const TensorBlock*, const TensorBlock*> x_pair(a, b);
         std::pair<TensorBlock*, TensorBlock*> j_pair(j0_.get(), j1_.get());
         common::hash_blocks(x_pair, t_pair, j_pair);
-        // first half gate: wg
-        // second half gate: we
+        // first half gate: wg = H(a, j0) ^ pa*tg
         auto wg = tensor_factory()->template create<int64_t>(block_shape);
+        // second half gate: we = H(b, j1) ^ pb*(te ^ a)
         auto we = tensor_factory()->template create<int64_t>(block_shape);
         t_first->copy(wg.get());
         t_second->copy(we.get());
@@ -116,6 +127,7 @@ void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock* ret) {
         te->bitwise_xor(a, we_mask.get());
         we->bitwise_xor(we_mask.get(), we_mask.get());
         if_then_else_plain(pb.get(), we_mask.get(), we.get(), we.get());
+
         // combine halves
         wg->bitwise_xor(we.get(), ret);
     }

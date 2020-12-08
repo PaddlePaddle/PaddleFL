@@ -74,11 +74,11 @@ static inline void hash_blocks(
             std::pair<TensorBlock*, TensorBlock*>& ret,
             const std::pair<TensorBlock*, TensorBlock*>& i = {nullptr, nullptr}) {
     PADDLE_ENFORCE_EQ(x.first->numel(), ret.first->numel(),
-                      "input numel no match.");
+                      "input of first element's numel no match with return.");
     PADDLE_ENFORCE_EQ(x.second->numel(), ret.second->numel(),
-                      "input numel no match.");
+                      "input of second element's numel no match with return.");
     PADDLE_ENFORCE_EQ(ret.second->numel(), ret.first->numel(),
-                      "input numel no match.");
+                      "return's first element numel no match with second.");
 
     int numel = x.first->numel() / 2;
     for (int j = 0; j < numel; ++j) {
