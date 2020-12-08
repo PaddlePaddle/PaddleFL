@@ -146,6 +146,16 @@ template <typename T> T OTExtSender<T>::get_ot_instance() {
   return _send_msg[_now_idx++];
 }
 
+template <typename T> void OTExtSender<T>::get_ot_instance(TensorBlock* ot_msg) {
+  auto numel = ot_msg->numel() / 2;
+  for (int i = 0; i < numel; ++i) {
+    if (_now_idx == _s_ot_ext_buffer_size) {
+      fill_ot_buffer();
+    }
+    *(reinterpret_cast<block*>(ot_msg->data()) + i) = _send_msg[_now_idx++];
+  }
+}
+
 template <typename T> std::array<T, 2> OTExtReceiver<T>::get_ot_instance() {
   if (_now_idx == _s_ot_ext_buffer_size) {
     fill_ot_buffer();
@@ -153,4 +163,17 @@ template <typename T> std::array<T, 2> OTExtReceiver<T>::get_ot_instance() {
 
   return _recv_msg[_now_idx++];
 }
+
+template <typename T> void OTExtReceiver<T>::get_ot_instance(TensorBlock* ot_msg0,
+                                                        TensorBlock* ot_msg1) {
+  for (int i = 0; i < ot_msg0->numel() / 2; ++i) {
+    if (_now_idx == _s_ot_ext_buffer_size) {
+      fill_ot_buffer();
+    }
+    *(reinterpret_cast<block*>(ot_msg0->data()) + i) = _recv_msg[_now_idx][0];
+    *(reinterpret_cast<block*>(ot_msg1->data()) + i) = _recv_msg[_now_idx][1];
+    ++_now_idx;
+  }
+}
+
 } // namespace common

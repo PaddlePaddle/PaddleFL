@@ -19,62 +19,9 @@
 namespace privc {
 
 template<typename T, size_t N>
-void TripletGenerator<T, N>::init() {
-  auto np_ot_send_pre = [&]() {
-    std::array<std::array<std::array<unsigned char,
-        common::g_point_buffer_len>, 2>, OT_SIZE> send_buffer;
-
-    for (uint64_t idx = 0; idx < OT_SIZE; idx += 1) {
-      send_buffer[idx] = _np_ot_sender.send_pre(idx);
-    }
-    net()->send(next_party(), send_buffer.data(), sizeof(send_buffer));
-  };
-
-  auto np_ot_send_post = [&]() {
-      std::array<std::array<unsigned char, common::g_point_buffer_len>, OT_SIZE> recv_buffer;
-
-      net()->recv(next_party(), recv_buffer.data(), sizeof(recv_buffer));
-
-      for (uint64_t idx = 0; idx < OT_SIZE; idx += 1) {
-          _np_ot_sender.send_post(idx, recv_buffer[idx]);
-      }
-  };
-
-  auto np_ot_recv = [&]() {
-      std::array<std::array<std::array<unsigned char,
-          common::g_point_buffer_len>, 2>, OT_SIZE> recv_buffer;
-
-      std::array<std::array<unsigned char, common::g_point_buffer_len>, OT_SIZE> send_buffer;
-
-      net()->recv(next_party(), recv_buffer.data(), sizeof(recv_buffer));
-
-      for (uint64_t idx = 0; idx < OT_SIZE; idx += 1) {
-          send_buffer[idx] = _np_ot_recver.recv(idx, recv_buffer[idx]);
-      }
-
-      net()->send(next_party(), send_buffer.data(), sizeof(send_buffer));
-  };
-
-  if (party() == 0) {
-      np_ot_recv();
-
-      np_ot_send_pre();
-      np_ot_send_post();
-
-  } else { // party == Bob
-      np_ot_send_pre();
-      np_ot_send_post();
-
-      np_ot_recv();
-  }
-  _ot_ext_sender.init(_base_ot_choices, _np_ot_recver._msgs);
-  _ot_ext_recver.init(_np_ot_sender._msgs);
-}
-
-template<typename T, size_t N>
 void TripletGenerator<T, N>::get_triplet(TensorAdapter<T>* ret) {
   size_t num_trip = ret->numel() / 3;
-  if (_triplet_buffer.size() < num_trip) {
+  while (_triplet_buffer.size() < num_trip) {
       fill_triplet_buffer();
   }
 
@@ -91,7 +38,7 @@ void TripletGenerator<T, N>::get_triplet(TensorAdapter<T>* ret) {
 template<typename T, size_t N>
 void TripletGenerator<T, N>::get_penta_triplet(TensorAdapter<T>* ret) {
   size_t num_trip = ret->numel() / 5;
-  if (_triplet_buffer.size() < num_trip) {
+  while (_penta_triplet_buffer.size() < num_trip) {
       fill_penta_triplet_buffer();
   }
 
@@ -103,7 +50,7 @@ void TripletGenerator<T, N>::get_penta_triplet(TensorAdapter<T>* ret) {
     *(ret_ptr + 2 * num_trip) = triplet[2];
     *(ret_ptr + 3 * num_trip) = triplet[3];
     *(ret_ptr + 4 * num_trip) = triplet[4];
-    _triplet_buffer.pop();
+    _penta_triplet_buffer.pop();
   }
 }
 
@@ -208,11 +155,11 @@ std::vector<uint64_t> TripletGenerator<T, N>::gen_product(
           const block& round_ot_mask = ot_mask.at(ot_mask_idx);
 
           // bad naming from ot extention
-          block q = _ot_ext_sender.get_ot_instance();
+          block q = ot()->ot_sender().get_ot_instance();
 
-          q ^= (round_ot_mask & _base_ot_choices);
+          q ^= (round_ot_mask & ot()->base_ot_choice());
 
-          auto s = common::hash_blocks({q, q ^ _base_ot_choices});
+          auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
           uint64_t s0 = *reinterpret_cast<uint64_t *>(&s.first);
           uint64_t s1 = *reinterpret_cast<uint64_t *>(&s.second);
 
@@ -231,8 +178,8 @@ std::vector<uint64_t> TripletGenerator<T, N>::gen_product(
 
     std::vector<block> ot_masks;
     std::vector<block> t0_buffer;
-
-    gen_ot_masks(_ot_ext_recver, input, ot_masks, t0_buffer);
+    auto& ot_ext_recver = ot()->ot_receiver();
+    gen_ot_masks(ot_ext_recver, input, ot_masks, t0_buffer);
     net()->send(next_party(), ot_masks.data(), sizeof(block) * ot_masks.size());
     std::vector<uint64_t> ot_msg;
     ot_msg.resize(input.size() * word_width);
@@ -298,11 +245,11 @@ TripletGenerator<T, N>::gen_product(size_t ot_sender,
                 const block& round_ot_mask = ot_mask.at(ot_mask_idx);
 
                 // bad naming from ot extention
-                block q = _ot_ext_sender.get_ot_instance();
+                block q = ot()->ot_sender().get_ot_instance();
 
-                q ^= (round_ot_mask & _base_ot_choices);
+                q ^= (round_ot_mask & ot()->base_ot_choice());
 
-                auto s = common::hash_blocks({q, q ^ _base_ot_choices});
+                auto s = common::hash_blocks({q, q ^ ot()->base_ot_choice()});
                 uint64_t* s0 = reinterpret_cast<uint64_t *>(&s.first);
                 uint64_t* s1 = reinterpret_cast<uint64_t *>(&s.second);
 
@@ -323,8 +270,8 @@ TripletGenerator<T, N>::gen_product(size_t ot_sender,
 
         std::vector<block> ot_masks;
         std::vector<block> t0_buffer;
-
-        gen_ot_masks(_ot_ext_recver, input0, ot_masks, t0_buffer);
+        auto& ot_ext_recver = ot()->ot_receiver();
+        gen_ot_masks(ot_ext_recver, input0, ot_masks, t0_buffer);
         net()->send(next_party(), ot_masks.data(), sizeof(block) * ot_masks.size());
         std::vector<std::pair<uint64_t, uint64_t>> ot_msg;
         ot_msg.resize(input0.size() * word_width);

@@ -26,12 +26,14 @@
 #include "core/common/naorpinkas_ot.h"
 #include "core/common/ot_extension.h"
 #include "core/common/tensor_adapter.h"
+#include "core/privc/ot.h"
+#include "core/privc/privc_context.h"
 
 namespace privc {
 
 using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
-using block = common::block;
+
 using NaorPinkasOTsender = common::NaorPinkasOTsender;
 using NaorPinkasOTreceiver = common::NaorPinkasOTreceiver;
 
@@ -39,9 +41,6 @@ template<typename T>
 using OTExtSender = common::OTExtSender<T>;
 template<typename T>
 using OTExtReceiver = common::OTExtReceiver<T>;
-
-template <typename T>
-using TensorAdapter = common::TensorAdapter<T>;
 
 template<size_t N>
 inline int64_t fixed64_mult(const int64_t a, const int64_t b) {
@@ -63,57 +62,15 @@ inline uint64_t lshift(uint64_t lhs, size_t rhs) {
     return signedfixed128_mult<N>(lhs, (uint64_t)1 << rhs);
 }
 
-inline std::string block_to_string(const block &b) {
-    return std::string(reinterpret_cast<const char *>(&b), sizeof(block));
-}
-
-inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
-                         uint64_t input,
-                         std::vector<block>& ot_masks,
-                         std::vector<block>& t0_buffer,
-                         size_t word_width = 8 * sizeof(uint64_t)) {
-        for (uint64_t idx = 0; idx < word_width; idx += 1) {
-            auto ot_instance = ot_ext_recver.get_ot_instance();
-            block choice = (input >> idx) & 1 ? common::OneBlock : common::ZeroBlock;
-
-            t0_buffer.emplace_back(ot_instance[0]);
-            ot_masks.emplace_back(choice ^ ot_instance[0] ^ ot_instance[1]);
-        }
-}
-
-inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
-                         const int64_t* input,
-                         size_t size,
-                         std::vector<block>& ot_masks,
-                         std::vector<block>& t0_buffer,
-                         size_t word_width = 8 * sizeof(uint64_t)) {
-    for (size_t i = 0; i < size; ++i) {
-        gen_ot_masks(ot_ext_recver, input[i], ot_masks, t0_buffer, word_width);
-    }
-}
-
-template <typename T>
-inline void gen_ot_masks(OTExtReceiver<block> & ot_ext_recver,
-                         const std::vector<T>& input,
-                         std::vector<block>& ot_masks,
-                         std::vector<block>& t0_buffer,
-                         size_t word_width = 8 * sizeof(uint64_t)) {
-    for (const auto& i: input) {
-        gen_ot_masks(ot_ext_recver, i, ot_masks, t0_buffer, word_width);
-    }
-}
-
 template<typename T, size_t N>
 class TripletGenerator {
 public:
+  TripletGenerator() = delete;
   TripletGenerator(common::PseudorandomNumberGenerator* prng,
-                   block base_ot_choices, AbstractNetwork* net,
+                   OT* ot, AbstractNetwork* net,
                    size_t party, size_t next_party) :
-        //_base_ot_choices(circuit_context->gen_random_private<block>()),
         _prng(prng),
-        _base_ot_choices(base_ot_choices),
-        _np_ot_sender(sizeof(block) * 8),
-        _np_ot_recver(sizeof(block) * 8, block_to_string(_base_ot_choices)),
+        _ot(ot),
         _net(net),
         _party(party),
         _next_party(next_party) {};
@@ -130,7 +87,6 @@ public:
 
   static const size_t _s_triplet_step = 1 << 8;
   static constexpr double _s_fixed_point_compensation = 0.3;
-  static const size_t OT_SIZE = sizeof(block) * 8;
 
 protected:
   // dummy type for specilize template method
@@ -174,6 +130,9 @@ private:
   size_t next_party() {
     return _next_party;
   }
+  OT* ot() {
+    return _ot;
+  }
   // gen triplet for int64_t type
   std::vector<uint64_t> gen_product(const std::vector<uint64_t> &input);
   std::vector<std::pair<uint64_t, uint64_t>> gen_product(size_t ot_sender,
@@ -183,14 +142,7 @@ private:
 
   template<typename U> U gen_random_private() { return _prng->get<U>(); }
 
-  const block _base_ot_choices;
-
-  NaorPinkasOTsender _np_ot_sender;
-  NaorPinkasOTreceiver _np_ot_recver;
-
-  OTExtSender<block> _ot_ext_sender;
-  OTExtReceiver<block> _ot_ext_recver;
-  //std::shared_ptr<AbstractContext> _privc_ctx;
+  OT* _ot;
   common::PseudorandomNumberGenerator* _prng;
   AbstractNetwork* _net;
   size_t _party;

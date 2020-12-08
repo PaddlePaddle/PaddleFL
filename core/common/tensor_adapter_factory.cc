@@ -37,4 +37,10 @@ TensorAdapterFactory::malloc_tensor(size_t size, const std::vector<size_t>& shap
   return ret;
 }
 
+template <>
+std::shared_ptr<TensorAdapter<uint8_t>>
+TensorAdapterFactory::create(const std::vector<size_t> &shape) {
+  return create_uint8_t(shape);
+}
+
 } // namespace common
