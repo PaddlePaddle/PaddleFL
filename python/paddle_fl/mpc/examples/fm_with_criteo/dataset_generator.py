@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+dataset generate
+"""
+
 import os
 import numpy as np
 import paddle.fluid.incubate.data_generator as dg
@@ -24,10 +28,20 @@ categorical_range_ = range(14, 40)
 
 
 def generate_sample(hash_dim_, paddle_train_data_dir):
-    files = [str(paddle_train_data_dir) + "/%s" % x for x in os.listdir(paddle_train_data_dir)]
+    """
+    generate_sample
+    """
+    files = [
+        str(paddle_train_data_dir) + "/%s" % x
+        for x in os.listdir(paddle_train_data_dir)
+    ]
+
     #print("file_list : {}".format(files))
 
     def reader():
+        """
+        reader
+        """
         for file in files:
             with open(file, 'r') as f:
                 for line in f:
@@ -37,7 +51,8 @@ def generate_sample(hash_dim_, paddle_train_data_dir):
                     feat_value = []
                     for idx in continuous_range_:
                         #feat_idx.append(idx)
-                        feat_idx.append(hash('dense_feat_id' + str(idx)) % hash_dim_)
+                        feat_idx.append(
+                            hash('dense_feat_id' + str(idx)) % hash_dim_)
                         if features[idx] == '':
                             feat_value.append(0.0)
                         else:
@@ -46,18 +61,21 @@ def generate_sample(hash_dim_, paddle_train_data_dir):
                                 cont_diff_[idx - 1])
                     for idx in categorical_range_:
                         if features[idx] == '':
-                            feat_idx.append(hash('sparse_feat_id' + str(idx)) % hash_dim_)
+                            feat_idx.append(
+                                hash('sparse_feat_id' + str(idx)) % hash_dim_)
                             feat_value.append(0.0)
                         else:
                             feat_idx.append(
                                 hash(str(idx) + features[idx]) % hash_dim_)
                             feat_value.append(1.0)
                     label = [int(features[0])]
-                    yield feat_idx[:], feat_value[:], label[:] 
+                    yield feat_idx[:], feat_value[:], label[:]
 
     return reader
 
 
 def train(hash_dim_, paddle_train_data_dir):
+    """
+    generate train sample
+    """
     return generate_sample(hash_dim_, paddle_train_data_dir)
-

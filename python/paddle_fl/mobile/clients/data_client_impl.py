@@ -181,7 +181,7 @@ def test_global_shuffle():
         for line in fin:
             group = line.strip().split("\t")
             uid = group[0]
-            user_data_dict = data_client.get_data_by_uid(uid)
+            user_data_dict = data_client.get_data_by_uid(uid, date)
 
 
 def test_set_param():

@@ -23,6 +23,7 @@ from paddle.fluid.core import VarDesc
 from paddle.fluid import unique_name
 from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
 
+
 class NumpyArrayInitializer(Initializer):
     """Init a mpc parameter with an numpy array (astype('int64'))
     This op initialize the variable by numpy array.
@@ -71,8 +72,9 @@ class NumpyArrayInitializer(Initializer):
 
         value_name = "int64_values"
         if (out_dtype != VarDesc.VarType.INT64):
-          raise ValueError("Only 'int64' dtype is supported in paddlefl's initializer, "
-                            "Use paddle.fluid.initializer for other dtype.")
+            raise ValueError(
+                "Only 'int64' dtype is supported in paddlefl's initializer, "
+                "Use paddle.fluid.initializer for other dtype.")
         values = [int(v) for v in np_value.flat]
 
         if self._value.size > 1024 * 1024 * 1024:
@@ -91,7 +93,6 @@ class NumpyArrayInitializer(Initializer):
         if not framework.in_dygraph_mode():
             var.op = op
         return op
-
 
 
 class XavierInitializer(Initializer):
@@ -152,7 +153,8 @@ class XavierInitializer(Initializer):
         """
         shape = var.shape
         if not shape or len(shape) == 0:
-            raise ValueError("Shape should be larger than 0 in paddlefl's initializer.")
+            raise ValueError(
+                "Shape should be larger than 0 in paddlefl's initializer.")
         elif len(shape) == 1:
             fan_in = fan_out = 1
         elif len(shape) == 2:
@@ -185,7 +187,8 @@ class XavierInitializer(Initializer):
         check_variable_and_dtype(var, "Out", ["int64"], "xavier_init")
 
         if (var.dtype != VarDesc.VarType.INT64):
-            raise ValueError("Only 'int64' dtype is supported in paddlefl's initializer.")
+            raise ValueError(
+                "Only 'int64' dtype is supported in paddlefl's initializer.")
 
         f_in, f_out = self._compute_fans(var)
 
@@ -201,7 +204,7 @@ class XavierInitializer(Initializer):
         # out_expand_var for encrypted random number, shape = (2, ...), is same with var's shape
         out_dtype = VarDesc.VarType.FP32
         shape_ = list(var.shape)
-        shape_[0]=1
+        shape_[0] = 1
         out_var = block.create_var(
             name=unique_name.generate(".".join(
                 ['gaussian_random', var.name, 'tmp'])),
@@ -271,4 +274,3 @@ class XavierInitializer(Initializer):
         if not framework.in_dygraph_mode():
             var.op = op
         return op
-

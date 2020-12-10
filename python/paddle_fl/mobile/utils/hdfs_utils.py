@@ -615,7 +615,6 @@ if __name__ == "__main__":
         "/home/xx/data1",
         1,
         5,
-        100,
         multi_processes=5)
 
     multi_upload(client, "/user/com/train-25/model", "/home/xx/data1")

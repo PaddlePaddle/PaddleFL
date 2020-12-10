@@ -56,8 +56,8 @@ def conv2d_forward_naive(input,
     sub_out_c = out_c // group
     sub_f_n = f_n // group
 
-    stride, pad, dilation = conv_param['stride'], conv_param['pad'], conv_param[
-        'dilation']
+    stride, pad, dilation = conv_param['stride'], conv_param[
+        'pad'], conv_param['dilation']
 
     # update pad and dilation
     def _get_padding_with_SAME(input_shape, pool_size, pool_stride):
@@ -139,6 +139,7 @@ def create_test_channel_last_class(parent):
     TestChannelLastCase.__name__ = cls_name
     globals()[cls_name] = TestChannelLastCase
 
+
 def create_test_padding_SAME_class(parent):
     class TestPaddingSMAECase(parent):
         def init_paddings(self):
@@ -155,8 +156,10 @@ def create_test_padding_VALID_class(parent):
         def init_paddings(self):
             self.pad = [1, 1]
             self.padding_algorithm = "VALID"
+
         def test_check_grad(self):
             pass
+
         #    error = 0.09
         #    if parent.__name__ in ["TestConv2dOp_AsyPadding",
         #            "TestWithStride_AsyPadding"]:
@@ -172,6 +175,7 @@ def create_test_padding_VALID_class(parent):
     cls_name = "{0}_{1}".format(parent.__name__, "PaddingVALIDOp")
     TestPaddingVALIDCase.__name__ = cls_name
     globals()[cls_name] = TestPaddingVALIDCase
+
 
 class TestConv2dOp(OpTest):
     def setUp(self):
@@ -212,18 +216,14 @@ class TestConv2dOp(OpTest):
         }
         self.outputs = {'Output': output}
 
-
     def test_check_output(self):
         place = core.CPUPlace()
-        self.check_output_with_place(
-            place, atol=1e-3)
+        self.check_output_with_place(place, atol=1e-3)
 
     def test_check_grad(self):
         place = core.CPUPlace()
         self.check_grad_with_place(
-            place, {'Input', 'Filter'},
-            'Output',
-            max_relative_error=5)
+            place, {'Input', 'Filter'}, 'Output', max_relative_error=5)
 
     # skip cases for fast ut
     # to test correctness, uncomment test cases
@@ -318,6 +318,7 @@ class TestWith1x1(TestConv2dOp):
 
     def test_check_grad(self):
         pass
+
     #    place = core.CPUPlace()
     #    self.check_grad_with_place(
     #        place, {'Input', 'Filter'},
@@ -331,6 +332,7 @@ class TestWith1x1(TestConv2dOp):
     #        'Output',
     #        max_relative_error=0.9,
     #        no_grad_set=set(['Filter']))
+
 
 class TestWithDilation(TestConv2dOp):
     def init_test_case(self):
@@ -390,9 +392,9 @@ class TestConv2dOp_v2(OpTest):
         input = np.random.random(self.input_size)
         filter = np.random.uniform(-1, 1, self.filter_size)
 
-
-        output, _, _, _, _ = conv2d_forward_naive(input, filter, self.groups,
-                                                  conv2d_param, self.padding_algorithm, self.data_format)
+        output, _, _, _, _ = conv2d_forward_naive(
+            input, filter, self.groups, conv2d_param, self.padding_algorithm,
+            self.data_format)
 
         input = share(input)
         filter = share(filter)
@@ -413,8 +415,7 @@ class TestConv2dOp_v2(OpTest):
 
     def test_check_output(self):
         place = core.CPUPlace()
-        self.check_output_with_place(
-            place, atol=1e-3)
+        self.check_output_with_place(place, atol=1e-3)
 
     #def test_check_grad(self):
     #    place = core.CPUPlace()
@@ -471,15 +472,14 @@ class TestConv2dOp_AsyPadding(TestConv2dOp_v2):
     def init_paddings(self):
         self.pad = [0, 0, 1, 2]
         self.padding_algorithm = "EXPLICIT"
+
     def test_check_grad(self):
         place = core.CPUPlace()
         self.check_grad_with_place(
-            place, {'Input', 'Filter'},
-            'Output',
-            max_relative_error=0.09)
+            place, {'Input', 'Filter'}, 'Output', max_relative_error=0.09)
 
-    def test_check_grad(self):
-        pass
+    #def test_check_grad(self):
+    #    pass
 
 
 class TestWithPad_AsyPadding(TestConv2dOp_v2):
@@ -667,7 +667,6 @@ create_test_channel_last_class(TestWithPad_AsyPadding)
 create_test_channel_last_class(TestWithGroup_AsyPadding)
 create_test_channel_last_class(TestWith1x1_AsyPadding)
 create_test_channel_last_class(TestWithInput1x1Filter1x1_AsyPadding)
-
 
 if __name__ == '__main__':
     unittest.main()

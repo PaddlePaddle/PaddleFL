@@ -33,16 +33,16 @@ def infer():
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
     # Step 1. load decrypted model.
-    infer_prog, feed_names, fetch_targets = fluid.io.load_inference_model(executor=exe,
-                                                                          dirname=decrypted_paddle_model_dir,
-                                                                          model_filename=paddle_model_filename)
+    infer_prog, feed_names, fetch_targets = fluid.io.load_inference_model(
+        executor=exe,
+        dirname=decrypted_paddle_model_dir,
+        model_filename=paddle_model_filename)
     # Step 2. make prediction
     batch_size = 10
     infer_reader = fluid.io.batch(
         paddle.dataset.uci_housing.test(), batch_size=batch_size)
     infer_data = next(infer_reader())
-    infer_feat = np.array(
-        [data[0] for data in infer_data]).astype("float32")
+    infer_feat = np.array([data[0] for data in infer_data]).astype("float32")
     assert feed_names[0] == 'x'
     results = exe.run(infer_prog,
                       feed={feed_names[0]: np.array(infer_feat)},
@@ -52,14 +52,16 @@ def infer():
         print("%d: %.2f" % (idx, val))
 
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     # decrypt mpc model
-    aby3.decrypt_model(mpc_model_dir=mpc_model_dir,
-                       plain_model_path=decrypted_paddle_model_dir,
-                       mpc_model_filename=mpc_model_filename,
-                       plain_model_filename=paddle_model_filename)
-    print('Successfully decrypt inference model. The decrypted model is saved in: {}'
-          .format(decrypted_paddle_model_dir))
+    aby3.decrypt_model(
+        mpc_model_dir=mpc_model_dir,
+        plain_model_path=decrypted_paddle_model_dir,
+        mpc_model_filename=mpc_model_filename,
+        plain_model_filename=paddle_model_filename)
+    print(
+        'Successfully decrypt inference model. The decrypted model is saved in: {}'
+        .format(decrypted_paddle_model_dir))
 
     # infer with decrypted model
     infer()

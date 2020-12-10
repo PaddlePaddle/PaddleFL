@@ -21,6 +21,7 @@ import mpc_data_utils as mdu
 from paddle.fluid.data_feeder import check_type, check_dtype
 import paddle.fluid.layers.utils as utils
 from paddle.fluid.initializer import Constant
+from paddle.fluid.layers.tensor import fill_constant
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.framework import Variable
@@ -138,10 +139,10 @@ def fc(input,
             num_flatten_dims = len(input_shape) - 1
             param_num_flatten_dims = num_flatten_dims
         else:
-            param_num_flatten_dims = num_flatten_dims + 1 # The first dimension '2' of input is share number.
+            param_num_flatten_dims = num_flatten_dims + 1  # The first dimension '2' of input is share number.
         param_shape = [
-                          reduce(lambda a, b: a * b, input_shape[param_num_flatten_dims:], 1)
-                      ] + [size]
+            reduce(lambda a, b: a * b, input_shape[param_num_flatten_dims:], 1)
+        ] + [size]
         w = helper.create_mpc_parameter(
             attr=param_attr, shape=param_shape, dtype=dtype, is_bias=False)
         tmp = helper.create_mpc_variable_for_type_inference(dtype)
@@ -164,7 +165,8 @@ def fc(input,
             outputs={"Out": pre_bias},
             attrs={"use_mkldnn": False})
     # add bias
-    pre_activation = helper.append_mpc_bias_op(pre_bias, dim_start=num_flatten_dims)
+    pre_activation = helper.append_mpc_bias_op(
+        pre_bias, dim_start=num_flatten_dims)
     # add activation
     return helper.append_mpc_activation(pre_activation)
 
@@ -236,16 +238,12 @@ def relu(input, name=None):
     helper.append_op(
         type="mpc_relu",
         inputs={"X": input},
-        outputs={
-            "Out": out,
-            "Derivative": derivative}
-        )
+        outputs={"Out": out,
+                 "Derivative": derivative})
     return out
 
 
-def sigmoid_cross_entropy_with_logits(x,
-                                      label,
-                                      name=None):
+def sigmoid_cross_entropy_with_logits(x, label, name=None):
     """
     sigmoid_cross_entropy_with_logits
         forward: out = sigmoid(x). todo: add cross_entropy
@@ -317,7 +315,8 @@ def softmax_with_cross_entropy(logits,
     if return_softmax:
         return loss, softmax
     else:
-        raise NotImplementedError("'return_softmax' should be true. Loss is NULL, only for backward.")
+        raise NotImplementedError(
+            "'return_softmax' should be true. Loss is NULL, only for backward.")
 
 
 def pool2d(input,
@@ -344,9 +343,8 @@ def pool2d(input,
             "and be a valid value. Received pool_size: %s." % str(pool_size))
 
     if data_format not in ["NCHW"]:
-        raise ValueError(
-            "Attr(data_format) should be 'NCHW'. Received "
-            "Attr(data_format): %s." % str(data_format))
+        raise ValueError("Attr(data_format) should be 'NCHW'. Received "
+                         "Attr(data_format): %s." % str(data_format))
 
     pool_size = utils.convert_to_list(pool_size, 2, 'pool_size')
     pool_stride = utils.convert_to_list(pool_stride, 2, 'pool_stride')
@@ -355,6 +353,7 @@ def pool2d(input,
         """
         update_padding: convert to 2-dimension padding
         """
+
         def is_list_or_tuple(ele):
             """
             return true if ele is list or tuple.
@@ -370,8 +369,11 @@ def pool2d(input,
                     raise ValueError(
                         "Non-zero pool_padding(%s) in the batch or channel dimensions "
                         "is not supported." % str(padding))
-                padding = padding[2:4] # data_format == "NCHW":
-                padding = [ele for a_list in padding for ele in a_list]
+                padding = padding[2:4]  # data_format == "NCHW":
+                #padding = [ele for a_list in padding for ele in a_list]
+                for a_list in padding:
+                    for ele in a_list:
+                        padding.append(ele)
             padding = utils.convert_to_list(padding, 4, 'padding')
 
             if utils._is_symmetric_padding(padding, 2):
@@ -399,13 +401,14 @@ def pool2d(input,
             padding_algorithm = "SAME"
             pool_padding = [0, 0]
 
-    pool_padding = update_padding(pool_padding, data_format) # [h, w]
+    pool_padding = update_padding(pool_padding, data_format)  # [h, w]
 
     op_type = 'pool2d'
     helper = MpcLayerHelper(op_type, **locals())
     dtype = helper.input_dtype()
     pool_out = helper.create_mpc_variable_for_type_inference(dtype)
-    one_hot_tensor = helper.create_variable_for_type_inference(dtype=input.dtype)
+    one_hot_tensor = helper.create_variable_for_type_inference(
+        dtype=input.dtype)
 
     helper.append_op(
         type='mpc_' + op_type,
@@ -489,11 +492,10 @@ def batch_norm(input,
         dtype=dtype)
     mean.stop_gradient = True
 
-
     variance = helper.create_mpc_parameter(
         attr=ParamAttr(
             name=moving_variance_name,
-            initializer=Constant(mdu.mpc_one_share), # plaintext: 1
+            initializer=Constant(mdu.mpc_one_share),  # plaintext: 1
             trainable=False,
             do_model_average=do_model_average_for_mean_and_var),
         shape=param_shape,
@@ -509,7 +511,6 @@ def batch_norm(input,
         dtype=dtype, stop_gradient=True)
     saved_variance = helper.create_mpc_variable_for_type_inference(
         dtype=dtype, stop_gradient=True)
-
 
     #reserve_space = None
     #if has_reserve_space:
@@ -606,8 +607,7 @@ def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
             op_reshape = pfl_mpc.layers.reshape(data_1, [2, 1, 9])
     """
 
-    check_mpc_variable_and_dtype(
-        x, 'x', ['int64'], 'reshape')
+    check_mpc_variable_and_dtype(x, 'x', ['int64'], 'reshape')
     check_type(shape, 'shape', (list, tuple, Variable), 'reshape')
     check_type(actual_shape, 'actual_shape', (Variable, type(None)), 'reshape')
 
@@ -615,6 +615,9 @@ def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
     _helper = LayerHelper("reshape2", **locals())
 
     def get_new_shape_tensor(list_shape):
+        """
+        get_new_shape_tensor
+        """
         new_shape_tensor = []
         for dim in list_shape:
             if isinstance(dim, Variable):
@@ -628,6 +631,9 @@ def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
         return new_shape_tensor
 
     def get_attr_shape(list_shape):
+        """
+        get_attr_shape
+        """
         unk_dim_idx = -1
         attrs_shape = []
         for dim_idx, dim_size in enumerate(list_shape):
@@ -660,8 +666,9 @@ def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
         shape.stop_gradient = True
         inputs["Shape"] = shape
     elif isinstance(shape, (list, tuple)):
-        assert len(shape) > 0, ("The size of 'shape' in reshape can't be zero, "
-                                "but received %s." % len(shape))
+        assert len(shape) > 0, (
+            "The size of 'shape' in reshape can't be zero, "
+            "but received %s." % len(shape))
         attrs["shape"] = get_attr_shape(shape)
 
         if utils._contain_var(shape):
@@ -684,7 +691,7 @@ def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
 
 
 def mean_normalize(f_min, f_max, f_mean, sample_num):
-    '''
+    """
     Mean normalization is a method used to normalize the range of independent
     variables or features of data.
     Refer to:
@@ -733,7 +740,7 @@ def mean_normalize(f_min, f_max, f_mean, sample_num):
             # feed encrypted data
             f_range, f_mean = exe.run(feed={'mi': f_min, 'ma': f_max,
             'me': f_mean, 'sn': sample_num}, fetch_list=[out0, out1])
-    '''
+    """
     helper = MpcLayerHelper("mean_normalize", **locals())
 
     # dtype = helper.input_dtype()
@@ -745,7 +752,8 @@ def mean_normalize(f_min, f_max, f_mean, sample_num):
     check_dtype(dtype, 'sample_num', ['int64'], 'mean_normalize')
 
     f_range = helper.create_mpc_variable_for_type_inference(dtype=f_min.dtype)
-    f_mean_out= helper.create_mpc_variable_for_type_inference(dtype=f_min.dtype)
+    f_mean_out = helper.create_mpc_variable_for_type_inference(
+        dtype=f_min.dtype)
 
     # to avoid circular dependencies
     from .math import reduce_sum
@@ -762,11 +770,10 @@ def mean_normalize(f_min, f_max, f_mean, sample_num):
             "Mean": f_mean,
             "SampleNum": sample_num,
             "TotalNum": total_num,
-            },
+        },
         outputs={
             "Range": f_range,
             "MeanOut": f_mean_out,
-             },
-        )
+        }, )
 
     return f_range, f_mean_out

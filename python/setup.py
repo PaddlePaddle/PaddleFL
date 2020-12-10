@@ -24,6 +24,7 @@ from setuptools import find_packages
 from setuptools import setup
 from version import fl_version
 
+
 def python_version():
     """
     get python version
@@ -34,7 +35,8 @@ def python_version():
 max_version, mid_version, min_version = python_version()
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle >= 1.8.0', 'paddlepaddle-gpu >= 1.8'
+    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle >= 1.8.0',
+    'paddlepaddle-gpu >= 1.8'
 ]
 
 if max_version < 3:
@@ -43,14 +45,19 @@ else:
     REQUIRED_PACKAGES += ["numpy"]
 
 REQUIRED_PACKAGES += ["unittest2"]
-packages = ['paddle_fl.paddle_fl', 'paddle_fl.paddle_fl.common', 'paddle_fl.paddle_fl.core',
-            'paddle_fl.paddle_fl.dataset', 'paddle_fl.paddle_fl.reader', 'paddle_fl.mpc',
-            'paddle_fl.mpc.layers', 'paddle_fl.mpc.data_utils','paddle_fl', 'paddle_fl.paddle_fl.common',
-            'paddle_fl.paddle_fl.dataset', 'paddle_fl.paddle_fl.reader', 'paddle_fl.paddle_fl.core',
-             'paddle_fl.paddle_fl.core.master', 'paddle_fl.paddle_fl.core.scheduler',
-             'paddle_fl.paddle_fl.core.server', 'paddle_fl.paddle_fl.core.submitter',
-             'paddle_fl.paddle_fl.core.trainer', 'paddle_fl.paddle_fl.core.trainer.diffiehellman',
-              'paddle_fl.paddle_fl.core.strategy', 'paddle_fl.paddle_fl.core.strategy.details']
+packages = [
+    'paddle_fl.paddle_fl', 'paddle_fl.paddle_fl.common',
+    'paddle_fl.paddle_fl.core', 'paddle_fl.paddle_fl.dataset',
+    'paddle_fl.paddle_fl.reader', 'paddle_fl.mpc', 'paddle_fl.mpc.layers',
+    'paddle_fl.mpc.data_utils', 'paddle_fl', 'paddle_fl.paddle_fl.common',
+    'paddle_fl.paddle_fl.dataset', 'paddle_fl.paddle_fl.reader',
+    'paddle_fl.paddle_fl.core', 'paddle_fl.paddle_fl.core.master',
+    'paddle_fl.paddle_fl.core.scheduler', 'paddle_fl.paddle_fl.core.server',
+    'paddle_fl.paddle_fl.core.submitter', 'paddle_fl.paddle_fl.core.trainer',
+    'paddle_fl.paddle_fl.core.trainer.diffiehellman',
+    'paddle_fl.paddle_fl.core.strategy',
+    'paddle_fl.paddle_fl.core.strategy.details'
+]
 package_data = {
     'paddle_fl.mpc': [
         'libs/*', 'libs/third_party/*', 'libs/third_party/openssl/*',
@@ -72,15 +79,18 @@ package_dir = {
     'paddle_fl.paddle_fl.reader': './paddle_fl/paddle_fl/reader',
     'paddle_fl.paddle_fl.core': './paddle_fl/paddle_fl/core',
     'paddle_fl.paddle_fl.core.master': './paddle_fl/paddle_fl/core/master',
-    'paddle_fl.paddle_fl.core.scheduler': './paddle_fl/paddle_fl/core/scheduler',
+    'paddle_fl.paddle_fl.core.scheduler':
+    './paddle_fl/paddle_fl/core/scheduler',
     'paddle_fl.paddle_fl.core.server': './paddle_fl/paddle_fl/core/server',
-    'paddle_fl.paddle_fl.core.submitter': './paddle_fl/paddle_fl/core/submitter',
+    'paddle_fl.paddle_fl.core.submitter':
+    './paddle_fl/paddle_fl/core/submitter',
     'paddle_fl.paddle_fl.core.trainer': './paddle_fl/paddle_fl/core/trainer',
-    'paddle_fl.paddle_fl.core.trainer.diffiehellman': './paddle_fl/paddle_fl/core/trainer/diffiehellman',
+    'paddle_fl.paddle_fl.core.trainer.diffiehellman':
+    './paddle_fl/paddle_fl/core/trainer/diffiehellman',
     'paddle_fl.paddle_fl.core.strategy': './paddle_fl/paddle_fl/core/strategy',
-    'paddle_fl.paddle_fl.core.strategy.details': './paddle_fl/paddle_fl/core/strategy/details',
+    'paddle_fl.paddle_fl.core.strategy.details':
+    './paddle_fl/paddle_fl/core/strategy/details',
 }
-
 
 setup(
     name='paddle_fl',
