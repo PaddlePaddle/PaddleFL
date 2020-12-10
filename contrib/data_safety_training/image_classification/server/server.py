@@ -34,7 +34,8 @@ def data_generater(samples, r):
             conv = sample[0]
             label = sample[1]
             yield conv, label
-        return train_data
+
+    return train_data
 
 
 class ResNet():

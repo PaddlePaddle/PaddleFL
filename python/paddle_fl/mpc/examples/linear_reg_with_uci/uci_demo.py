@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+mpc uci demo
+"""
+
 import sys
 import numpy as np
 import time
@@ -76,14 +80,14 @@ for epoch_id in range(epoch_num):
         step_end = time.time()
 
         if step % 5 == 0:
-            print('Epoch={}, Step={}, batch_cost={:.4f} s, Loss={},'.format(epoch_id, step,
-                                                      (step_end - step_start), mpc_loss))
+            print('Epoch={}, Step={}, batch_cost={:.4f} s, Loss={},'.format(
+                epoch_id, step, (step_end - step_start), mpc_loss))
             with open(loss_file, 'ab') as f:
                 f.write(np.array(mpc_loss).tostring())
         step += 1
     end_time = time.time()
     print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
-      .format(epoch_id, BATCH_SIZE, (end_time - start_time)))
+          .format(epoch_id, BATCH_SIZE, (end_time - start_time)))
 
 prediction_file = "/tmp/uci_prediction.part{}".format(role)
 for sample in loader():

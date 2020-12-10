@@ -35,25 +35,25 @@ feat_num = prepare.feat_width
 
 data_path = prepare.data_path
 
+
 def get_shares(path):
-    '''
+    """
     collect encrypted feature stats from all data owners
-    '''
+    """
     data = []
     for i in range(party_num):
-        reader = aby3.load_aby3_shares(path + '.' + str(i),
-                id=role, shape=(feat_num,))
+        reader = aby3.load_aby3_shares(
+            path + '.' + str(i), id=role, shape=(feat_num, ))
         data.append([x for x in reader()])
     data = np.array(data).reshape([party_num, share_num, feat_num])
     return np.transpose(data, axes=[1, 0, 2])
 
 
 def get_sample_num(path):
-    '''
+    """
     get encrypted sample nums
-    '''
-    reader = aby3.load_aby3_shares(path,
-            id=role, shape=(party_num,))
+    """
+    reader = aby3.load_aby3_shares(path, id=role, shape=(party_num, ))
     for n in reader():
         return n
 
@@ -72,13 +72,17 @@ ma = pfl_mpc.data(name='ma', shape=shape, dtype='int64')
 me = pfl_mpc.data(name='me', shape=shape, dtype='int64')
 sn = pfl_mpc.data(name='sn', shape=shape[:-1], dtype='int64')
 
-out0, out1 = pfl_mpc.layers.mean_normalize(f_min=mi, f_max=ma,
-        f_mean=me, sample_num=sn)
+out0, out1 = pfl_mpc.layers.mean_normalize(
+    f_min=mi, f_max=ma, f_mean=me, sample_num=sn)
 
 exe = fluid.Executor(place=fluid.CPUPlace())
 
-f_range, f_mean = exe.run(feed={'mi': f_min, 'ma': f_max, 'me': f_mean,
-    'sn': sample_num},fetch_list=[out0, out1])
+f_range, f_mean = exe.run(
+    feed={'mi': f_min,
+          'ma': f_max,
+          'me': f_mean,
+          'sn': sample_num},
+    fetch_list=[out0, out1])
 result = np.transpose(np.array([f_range, f_mean]), axes=[1, 0, 2])
 
 result_file = data_path + "result.part{}".format(role)

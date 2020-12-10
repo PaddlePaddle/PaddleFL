@@ -47,32 +47,47 @@ y = pfl_mpc.data(name='y', shape=[BATCH_SIZE, 10], dtype='int64')
 
 
 class Model(object):
+    """
+   lenet model: lenet3, lenet4
+    """
+
     def __int__(self):
+        """
+        init
+        """
         pass
 
     def lenet3(self):
-        conv = pfl_mpc.layers.conv2d(input=x, num_filters=16, filter_size=5, act='relu')
+        """
+        lenet3
+        """
+        conv = pfl_mpc.layers.conv2d(
+            input=x, num_filters=16, filter_size=5, act='relu')
         pool = pfl_mpc.layers.pool2d(input=conv, pool_size=2, pool_stride=2)
         fc_1 = pfl_mpc.layers.fc(input=pool, size=100, act='relu')
         fc_out = pfl_mpc.layers.fc(input=fc_1, size=10)
-        cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(logits=fc_out,
-                                                                  label=y,
-                                                                  soft_label=True,
-                                                                  return_softmax=True)
+        cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(
+            logits=fc_out, label=y, soft_label=True, return_softmax=True)
         return cost, softmax
 
     def lenet5(self):
-        conv_1 = pfl_mpc.layers.conv2d(input=x, num_filters=16, filter_size=5, act='relu')
-        pool_1 = pfl_mpc.layers.pool2d(input=conv_1, pool_size=2, pool_stride=2)
-        conv_2 = pfl_mpc.layers.conv2d(input=pool_1, num_filters=16, filter_size=5, act='relu')
-        pool_2 = pfl_mpc.layers.pool2d(input=conv_2, pool_size=2, pool_stride=2)
+        """
+        lenet5
+        """
+        conv_1 = pfl_mpc.layers.conv2d(
+            input=x, num_filters=16, filter_size=5, act='relu')
+        pool_1 = pfl_mpc.layers.pool2d(
+            input=conv_1, pool_size=2, pool_stride=2)
+        conv_2 = pfl_mpc.layers.conv2d(
+            input=pool_1, num_filters=16, filter_size=5, act='relu')
+        pool_2 = pfl_mpc.layers.pool2d(
+            input=conv_2, pool_size=2, pool_stride=2)
         fc_1 = pfl_mpc.layers.fc(input=pool_2, size=100, act='relu')
         fc_out = pfl_mpc.layers.fc(input=fc_1, size=10)
-        cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(logits=fc_out,
-                                                                  label=y,
-                                                                  soft_label=True,
-                                                                  return_softmax=True)
+        cost, softmax = pfl_mpc.layers.softmax_with_cross_entropy(
+            logits=fc_out, label=y, soft_label=True, return_softmax=True)
         return cost, softmax
+
 
 model = Model()
 cost, softmax = model.lenet5()
@@ -86,30 +101,39 @@ optimizer.minimize(avg_loss)
 # prepare train and test reader
 mpc_data_dir = "./mpc_data/"
 if not os.path.exists(mpc_data_dir):
-    raise ValueError("mpc_data_dir is not found. Please prepare encrypted data.")
+    raise ValueError(
+        "mpc_data_dir is not found. Please prepare encrypted data.")
 
 # train_reader
-feature_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_feature", id=role, shape=(1, 28, 28))
-label_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_label", id=role, shape=(10,))
+feature_reader = aby3.load_aby3_shares(
+    mpc_data_dir + "mnist10_feature", id=role, shape=(1, 28, 28))
+label_reader = aby3.load_aby3_shares(
+    mpc_data_dir + "mnist10_label", id=role, shape=(10, ))
 batch_feature = aby3.batch(feature_reader, BATCH_SIZE, drop_last=True)
 batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
 
 # test_reader
-test_feature_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_test_feature", id=role, shape=(1, 28, 28))
-test_label_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_test_label", id=role, shape=(10,))
-test_batch_feature = aby3.batch(test_feature_reader, BATCH_SIZE, drop_last=True)
+test_feature_reader = aby3.load_aby3_shares(
+    mpc_data_dir + "mnist10_test_feature", id=role, shape=(1, 28, 28))
+test_label_reader = aby3.load_aby3_shares(
+    mpc_data_dir + "mnist10_test_label", id=role, shape=(10, ))
+test_batch_feature = aby3.batch(
+    test_feature_reader, BATCH_SIZE, drop_last=True)
 test_batch_label = aby3.batch(test_label_reader, BATCH_SIZE, drop_last=True)
 
 place = fluid.CPUPlace()
 
 # async data loader
-loader = fluid.io.DataLoader.from_generator(feed_list=[x, y], capacity=BATCH_SIZE)
+loader = fluid.io.DataLoader.from_generator(
+    feed_list=[x, y], capacity=BATCH_SIZE)
 batch_sample = paddle.reader.compose(batch_feature, batch_label)
 loader.set_batch_generator(batch_sample, places=place)
 
-test_loader = fluid.io.DataLoader.from_generator(feed_list=[x, y], capacity=BATCH_SIZE)
+test_loader = fluid.io.DataLoader.from_generator(
+    feed_list=[x, y], capacity=BATCH_SIZE)
 test_batch_sample = paddle.reader.compose(test_batch_feature, test_batch_label)
 test_loader.set_batch_generator(test_batch_sample, places=place)
+
 
 # infer
 def infer():
@@ -134,15 +158,19 @@ def infer():
     start_time = time.time()
     for sample in test_loader():
         step += 1
-        prediction = exe.run(program=infer_program, feed=sample, fetch_list=[softmax])
+        prediction = exe.run(program=infer_program,
+                             feed=sample,
+                             fetch_list=[softmax])
         with open(prediction_file_part, 'ab') as f:
             f.write(np.array(prediction).tostring())
         if step % 10 == 0:
             end_time = time.time()
-            logger.info('MPC infer of step={}, cost time in seconds:{}'.format(step, (end_time - start_time)))
+            logger.info('MPC infer of step={}, cost time in seconds:{}'.format(
+                step, (end_time - start_time)))
 
     end_time = time.time()
     logger.info('MPC infer time in seconds:{}'.format((end_time - start_time)))
+
 
 # train
 exe = fluid.Executor(place)
@@ -160,13 +188,16 @@ for epoch_id in range(epoch_num):
         results = exe.run(feed=sample, fetch_list=[softmax])
         if step % 10 == 0:
             step_end_time = time.time()
-            logger.info('MPC training of epoch_id={} step={},  cost time in seconds:{}'
-                        .format(epoch_id, step, (step_end_time - step_start_time)))
-    
+            logger.info(
+                'MPC training of epoch_id={} step={},  cost time in seconds:{}'
+                .format(epoch_id, step, (step_end_time - step_start_time)))
+
     # For each epoch: infer or save infer program
     #infer()
-    mpc_model_dir = mpc_model_basedir + "epoch{}/party{}".format(epoch_id, role)
-    fluid.io.save_inference_model(dirname=mpc_model_dir,
+    mpc_model_dir = mpc_model_basedir + "epoch{}/party{}".format(epoch_id,
+                                                                 role)
+    fluid.io.save_inference_model(
+        dirname=mpc_model_dir,
         feeded_var_names=["x", "y"],
         target_vars=[softmax],
         executor=exe,
@@ -174,9 +205,9 @@ for epoch_id in range(epoch_num):
         model_filename="__model__")
 
     epoch_end_time = time.time()
-    logger.info('MPC training of epoch_num={} batch_size={}, cost time in seconds:{}'
-      .format(epoch_id, BATCH_SIZE, (epoch_end_time - epoch_start_time)))
+    logger.info(
+        'MPC training of epoch_num={} batch_size={}, cost time in seconds:{}'
+        .format(epoch_id, BATCH_SIZE, (epoch_end_time - epoch_start_time)))
 
 # infer
 infer()
-

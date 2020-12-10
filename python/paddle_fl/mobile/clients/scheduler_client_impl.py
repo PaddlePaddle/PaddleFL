@@ -164,8 +164,14 @@ def test_uniform_sample_user_list():
     global_user_list = []
     for i in range(10000):
         global_user_list.append((str(i), 100))
-    client.update_user_inst_num(global_user_list)
-    user_info = client.uniform_sample_user_list(0)
+    client.update_user_inst_num(date=None, user_info_dict=global_user_list)
+    user_info = client.uniform_sample_user_list(
+        date=0,
+        node_id=None,
+        sample_num=None,
+        shard_num=None,
+        node_num=None,
+        min_ins_num=None)
     user_list = [("101", 100), ("102", 100), ("103", 10000)]
     global_param = {"w0": [1.0, 1.0, 1.0], "w1": [2.0, 2.0, 2.0]}
     client.update_global_params(global_param)

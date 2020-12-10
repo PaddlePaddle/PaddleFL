@@ -774,7 +774,6 @@ public:
                 mpc_resize_hidden_prev_t.mutable_data<T>(mpc_splitted_gate_t[0].dims(), place);
                 ReduceTensorDims<T>(context, mpc_hidden_prev_t, mpc_resize_hidden_prev_t);
             }
-            input_grad->mutable_data<T>(context.GetPlace());
 
             // compute GRUUnitGrad
             GRUUnitGradCompute<DeviceContext, T>(context,
@@ -856,5 +855,3 @@ public:
 
 }  // namespace operators
 }  // namespace paddle
-
-

@@ -53,15 +53,13 @@ class MpcPrecisionRecallKernel : public MpcOpKernel<T> {
     mpc::MpcInstance::mpc_instance()->mpc_protocol()
         ->mpc_operators()->calc_precision_recall(&batch_stats, batch_metrics);
 
-    if (stats) {
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()
-            ->mpc_operators()->add(&batch_stats, stats, accum_stats);
+    mpc::MpcInstance::mpc_instance()->mpc_protocol()
+        ->mpc_operators()->add(&batch_stats, stats, accum_stats);
 
-        accum_metrics->mutable_data<T>(framework::make_ddim({3}), context.GetPlace(), 0);
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()
-            ->mpc_operators()->calc_precision_recall(accum_stats, accum_metrics);
-    }
-}
+    accum_metrics->mutable_data<T>(framework::make_ddim({3}), context.GetPlace(), 0);
+    mpc::MpcInstance::mpc_instance()->mpc_protocol()
+        ->mpc_operators()->calc_precision_recall(accum_stats, accum_metrics);
+  }
 };
 
 }  // namespace operators

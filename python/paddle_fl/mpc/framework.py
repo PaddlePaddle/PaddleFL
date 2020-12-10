@@ -23,11 +23,13 @@ from paddle.fluid.framework import Variable
 from paddle.fluid.framework import convert_np_dtype_to_dtype_
 from paddle.fluid.data_feeder import check_type, check_dtype
 
+
 class MpcVariable(Variable):
     """
     Extends from paddle.fluid.framework.Variable and rewrite
     the __init__ method where the shape is resized.
     """
+
     def __init__(self,
                  block,
                  type=core.VarDesc.VarType.LOD_TENSOR,
@@ -90,22 +92,22 @@ class MpcVariable(Variable):
             else:
                 old_dtype = self.dtype
                 if dtype != old_dtype:
-                    raise ValueError("MpcVariable {0} has been created before. "
-                                     "The previous data type is {1}; the new "
-                                     "data type is {2}. They are not "
-                                     "matched.".format(self.name, old_dtype,
-                                                       dtype))
+                    raise ValueError(
+                        "MpcVariable {0} has been created before. "
+                        "The previous data type is {1}; the new "
+                        "data type is {2}. They are not "
+                        "matched.".format(self.name, old_dtype, dtype))
 
         if lod_level is not None:
             if is_new_var:
                 self.desc.set_lod_level(lod_level)
             else:
                 if lod_level != self.lod_level:
-                    raise ValueError("MpcVariable {0} has been created before. "
-                                     "The previous lod_level is {1}; the new "
-                                     "lod_level is {2}. They are not "
-                                     "matched".format(self.name, self.lod_level,
-                                                      lod_level))
+                    raise ValueError(
+                        "MpcVariable {0} has been created before. "
+                        "The previous lod_level is {1}; the new "
+                        "lod_level is {2}. They are not "
+                        "matched".format(self.name, self.lod_level, lod_level))
         if persistable is not None:
             if is_new_var:
                 self.desc.set_persistable(persistable)
@@ -155,7 +157,8 @@ class MpcParameter(MpcVariable):
 
         if len(shape) == 0:
             raise ValueError(
-                "The dimensions of shape for MpcParameter must be greater than 0")
+                "The dimensions of shape for MpcParameter must be greater than 0"
+            )
 
         for each in shape:
             if each < 0:
@@ -173,7 +176,8 @@ class MpcParameter(MpcVariable):
             **kwargs)
         self.trainable = kwargs.get('trainable', True)
 
-        self.optimize_attr = kwargs.get('optimize_attr', {'learning_rate': 1.0})
+        self.optimize_attr = kwargs.get('optimize_attr',
+                                        {'learning_rate': 1.0})
 
         self.regularizer = kwargs.get('regularizer', None)
 
@@ -200,8 +204,8 @@ class MpcParameter(MpcVariable):
             additional_attr = ("trainable", "optimize_attr", "regularizer",
                                "gradient_clip_attr", "do_model_average")
             for attr_name in additional_attr:
-                res_str += "%s: %s\n" % (attr_name,
-                                         cpt.to_text(getattr(self, attr_name)))
+                res_str += "%s: %s\n" % (
+                    attr_name, cpt.to_text(getattr(self, attr_name)))
         else:
             res_str = MpcVariable.to_string(self, throw_on_error, False)
         return res_str
@@ -242,7 +246,8 @@ def create_mpc_parameter(block, *args, **kwargs):
         init_ops_len = len(init_ops)
         if init_ops_len > 1:
             raise RuntimeError("mpc_param " + mpc_param.name +
-                               " is inited by multiple init ops " + str(init_ops))
+                               " is inited by multiple init ops " + str(
+                                   init_ops))
         elif init_ops_len == 1:
             # TODO(Paddle 1.7): already inited, do nothing, should log a warning
             pass
@@ -268,6 +273,7 @@ def create_mpc_var(block, *args, **kwargs):
         kwargs['initializer'](var, block)
     return var
 
+
 def is_mpc_parameter(var):
     """
     Check whether the given variable is an instance of MpcParameter.
@@ -279,11 +285,15 @@ def is_mpc_parameter(var):
     """
     return type(var) == MpcParameter
 
+
 def check_mpc_variable_and_dtype(input,
                                  input_name,
                                  expected_dtype,
                                  op_name,
                                  extra_message=''):
+    """
+    check_mpc_variable_and_dtype
+    """
     check_type(input, input_name, MpcVariable, op_name, extra_message)
-    check_dtype(input.dtype, input_name, expected_dtype, op_name, extra_message)
-
+    check_dtype(input.dtype, input_name, expected_dtype, op_name,
+                extra_message)

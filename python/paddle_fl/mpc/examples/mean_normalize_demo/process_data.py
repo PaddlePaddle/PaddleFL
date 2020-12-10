@@ -27,8 +27,13 @@ def encrypted_data(data):
     """
     feature stat reader
     """
+
     def func():
+        """
+        make shares
+        """
         yield aby3.make_shares(data)
+
     return func
 
 
@@ -37,18 +42,18 @@ def generate_encrypted_data(party_id, f_mat):
     generate encrypted data from feature matrix (np.array)
     """
 
-    f_max  = np.amax(f_mat, axis=0)
-    f_min  = np.amin(f_mat, axis=0)
+    f_max = np.amax(f_mat, axis=0)
+    f_min = np.amin(f_mat, axis=0)
     f_mean = np.mean(f_mat, axis=0)
 
     suffix = '.' + str(party_id)
 
-    aby3.save_aby3_shares(encrypted_data(f_max),
-            data_path + "feature_max" + suffix)
-    aby3.save_aby3_shares(encrypted_data(f_min),
-            data_path + "feature_min" + suffix)
-    aby3.save_aby3_shares(encrypted_data(f_mean),
-            data_path + "feature_mean" + suffix)
+    aby3.save_aby3_shares(
+        encrypted_data(f_max), data_path + "feature_max" + suffix)
+    aby3.save_aby3_shares(
+        encrypted_data(f_min), data_path + "feature_min" + suffix)
+    aby3.save_aby3_shares(
+        encrypted_data(f_mean), data_path + "feature_mean" + suffix)
 
 
 def decrypt_data(filepath, shape):

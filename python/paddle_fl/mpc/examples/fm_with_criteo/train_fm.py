@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+train mpc fm
+"""
+
 import sys
 import numpy as np
 import time
@@ -28,13 +32,15 @@ import mpc_network
 import process_data
 import evaluate_accuracy
 
-
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
-def train(args):
 
+def train(args):
+    """
+    train
+    """
     # Init MPC
     role = int(args.role)
     pfl_mpc.init("aby3", role, "localhost", args.server, int(args.port))
@@ -44,9 +50,18 @@ def train(args):
     FIELD_NUM = args.num_field
     FEATURE_NUM = args.sparse_feature_number + 1
 
-    feat_idx = pfl_mpc.data(name='feat_idx', shape=[BATCH_SIZE, FIELD_NUM, FEATURE_NUM], lod_level=1, dtype="int64")
-    feat_value = pfl_mpc.data(name='feat_value', shape=[BATCH_SIZE, FIELD_NUM], lod_level=0, dtype="int64")
-    label = pfl_mpc.data(name='label', shape=[BATCH_SIZE, 1], lod_level=1, dtype="int64")
+    feat_idx = pfl_mpc.data(
+        name='feat_idx',
+        shape=[BATCH_SIZE, FIELD_NUM, FEATURE_NUM],
+        lod_level=1,
+        dtype="int64")
+    feat_value = pfl_mpc.data(
+        name='feat_value',
+        shape=[BATCH_SIZE, FIELD_NUM],
+        lod_level=0,
+        dtype="int64")
+    label = pfl_mpc.data(
+        name='label', shape=[BATCH_SIZE, 1], lod_level=1, dtype="int64")
     inputs = [feat_idx] + [feat_value] + [label]
 
     avg_cost, predict = mpc_network.FM(args, inputs, seed=2)
@@ -62,23 +77,36 @@ def train(args):
     mpc_data_dir = "./mpc_data/"
     mpc_train_data_dir = mpc_data_dir + 'train/'
     if not os.path.exists(mpc_train_data_dir):
-        raise ValueError("{} is not found. Please prepare encrypted data.".format(mpc_train_data_dir))    
-    feature_idx_reader = aby3.load_aby3_shares(mpc_train_data_dir + "criteo_feature_idx", id=role, shape=(FIELD_NUM, FEATURE_NUM))
-    feature_value_reader = aby3.load_aby3_shares(mpc_train_data_dir + "criteo_feature_value", id=role, shape=(FIELD_NUM,))
-    label_reader = aby3.load_aby3_shares(mpc_train_data_dir + "criteo_label", id=role, shape=(1,))
+        raise ValueError("{} is not found. Please prepare encrypted data.".
+                         format(mpc_train_data_dir))
+    feature_idx_reader = aby3.load_aby3_shares(
+        mpc_train_data_dir + "criteo_feature_idx",
+        id=role,
+        shape=(FIELD_NUM, FEATURE_NUM))
+    feature_value_reader = aby3.load_aby3_shares(
+        mpc_train_data_dir + "criteo_feature_value",
+        id=role,
+        shape=(FIELD_NUM, ))
+    label_reader = aby3.load_aby3_shares(
+        mpc_train_data_dir + "criteo_label", id=role, shape=(1, ))
 
-    batch_feature_idx = aby3.batch(feature_idx_reader, BATCH_SIZE, drop_last=True)
-    batch_feature_value = aby3.batch(feature_value_reader, BATCH_SIZE, drop_last=True)
+    batch_feature_idx = aby3.batch(
+        feature_idx_reader, BATCH_SIZE, drop_last=True)
+    batch_feature_value = aby3.batch(
+        feature_value_reader, BATCH_SIZE, drop_last=True)
     batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
 
-    loader = fluid.io.DataLoader.from_generator(feed_list=[feat_idx, feat_value, label], capacity=BATCH_SIZE)
-    batch_sample = paddle.reader.compose(batch_feature_idx, batch_feature_value, batch_label)
+    loader = fluid.io.DataLoader.from_generator(
+        feed_list=[feat_idx, feat_value, label], capacity=BATCH_SIZE)
+    batch_sample = paddle.reader.compose(batch_feature_idx,
+                                         batch_feature_value, batch_label)
     loader.set_batch_generator(batch_sample, places=place)
 
     # Training
     logger.info('******************************************')
     logger.info('Start Training...')
-    logger.info('batch_size = {}, learning_rate = {}'.format(args.batch_size, args.base_lr))
+    logger.info('batch_size = {}, learning_rate = {}'.format(args.batch_size,
+                                                             args.base_lr))
 
     mpc_model_basedir = "./mpc_model/"
     start_time = time.time()
@@ -90,13 +118,17 @@ def train(args):
             exe.run(feed=sample, fetch_list=[predict.name])
             batch_end = time.time()
             if step % 100 == 0:
-                print('Epoch={}, Step={}, current cost time: {}'.format(epoch_id, step, batch_end - start_time))
+                print('Epoch={}, Step={}, current cost time: {}'.format(
+                    epoch_id, step, batch_end - start_time))
 
-        print('Epoch={}, current cost time: {}'.format(epoch_id, batch_end - start_time))
+        print('Epoch={}, current cost time: {}'.format(epoch_id, batch_end -
+                                                       start_time))
 
         # For each epoch: save infer program
-        mpc_model_dir = mpc_model_basedir + "epoch{}/party{}".format(epoch_id, role)
-        fluid.io.save_inference_model(dirname=mpc_model_dir,
+        mpc_model_dir = mpc_model_basedir + "epoch{}/party{}".format(epoch_id,
+                                                                     role)
+        fluid.io.save_inference_model(
+            dirname=mpc_model_dir,
             feeded_var_names=["feat_idx", "feat_value", "label"],
             target_vars=[predict],
             executor=exe,

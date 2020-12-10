@@ -224,8 +224,7 @@ class MPCAdamOptimizer(Optimizer):
         assert beta2 is not None
         assert epsilon is not None
         super(MPCAdamOptimizer, self).__init__(
-            learning_rate=learning_rate,
-            name=name)
+            learning_rate=learning_rate, name=name)
         self.type = "adam"
         self._beta1 = beta1
         self._beta2 = beta2
@@ -268,7 +267,6 @@ class MPCAdamOptimizer(Optimizer):
         lr = self._create_param_lr(param_and_grad)
         # create the adam optimize op
 
-
         inputs = {
             "Param": [param_and_grad[0]],
             "Grad": [param_and_grad[1]],
@@ -285,9 +283,7 @@ class MPCAdamOptimizer(Optimizer):
             "Beta1PowOut": [beta1_pow_acc],
             "Beta2PowOut": [beta2_pow_acc],
         }
-        attrs = {
-            "epsilon": self._epsilon,
-        }
+        attrs = {"epsilon": self._epsilon, }
 
         if isinstance(self._beta1, Variable):
             inputs['Beta1Tensor'] = self._beta1
@@ -401,6 +397,7 @@ class MPCAdamOptimizer(Optimizer):
             #  dgc_op should be the last op of one grad.
             self._append_dgc_ops(params_grads)
         return params_grads
+
 
 def create_global_var(shape,
                       value,
