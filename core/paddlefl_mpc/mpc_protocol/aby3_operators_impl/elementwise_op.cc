@@ -14,25 +14,26 @@ limitations under the License. */
 
 // Description: implementations of elementwise_add_op according to ABY3 protocol
 
-#pragma once
 
-#include "paddle/fluid/framework/tensor.h"
+#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/common.h"
 #include "core/paddlefl_mpc/operators/math/elementwise_op_function.h"
-#include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_op.h"
 
 namespace paddle {
 namespace operators {
-namespace aby3impl {
+namespace aby3 {
 
+using paddle::framework::Tensor;
 using namespace paddle::operators::math;
-using namespace paddle::mpc;
 using CPUDeviceContext = paddle::platform::CPUDeviceContext;
+using ::aby3::ABY3Context;
+using paddle::mpc::ContextHolder;
 
-static void add_impl(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis) {
+void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis) {
 
-    PADDLE_ENFORCE(lhs->dims()[0] == 2, "The first dimension of input x should be equal to 2.");
-    PADDLE_ENFORCE(rhs->dims()[0] == 2, "The first dimension of input y should be equal to 2.");
+    PADDLE_ENFORCE(lhs->dims()[0] == 2 && rhs->dims()[0] == 2, 
+        "The first dimension of input x of protocol ABY3 should be equal to 2.");
 
     if (lhs->dims() == rhs->dims()) {
         auto lhs_tuple = from_tensor(lhs);
@@ -87,7 +88,7 @@ static void add_impl(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis
     }
 }
 
-static void add_grad_impl(const Tensor *in_x_t, const Tensor *in_y_t, const Tensor *dout, Tensor *dx, Tensor *dy, int axis) {
+void add_grad(const Tensor *in_x_t, const Tensor *in_y_t, const Tensor *dout, Tensor *dx, Tensor *dy, int axis) {
     auto ctx = ContextHolder::exec_ctx();
     auto dout_data = dout->data<int64_t>();
     if (dx) {
@@ -132,6 +133,18 @@ static void add_grad_impl(const Tensor *in_x_t, const Tensor *in_y_t, const Tens
     }
 }
 
-} // aby3impl
+void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out) {
+    auto lhs_tuple = from_tensor(lhs);
+    auto rhs_tuple = from_tensor(rhs);
+    auto out_tuple = from_tensor(out);
+
+    auto lhs_ = std::get<0>(lhs_tuple).get();
+    auto rhs_ = std::get<0>(rhs_tuple).get();
+    auto out_ = std::get<0>(out_tuple).get();
+
+    lhs_->sub(rhs_, out_);
+}
+
+} // aby3
 } // operators
 } // paddle

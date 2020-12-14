@@ -26,36 +26,34 @@ limitations under the License. */
 #include "core/privc3/fixedpoint_tensor.h"
 #include "core/privc3/boolean_tensor.h"
 #include "core/common/paddle_tensor.h"
-#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_add_op.h"
-#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_sub_op.h"
-//#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/matmul.h"
-
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_op.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/common.h"
 
 namespace paddle {
 namespace mpc {
 
 using paddle::framework::Tensor;
 using aby3::ABY3Context;
-using namespace paddle::operators::aby3impl;
 // TODO: decide scaling factor
 const size_t ABY3_SCALING_FACTOR = FIXED_POINTER_SCALING_FACTOR;
 using FixedTensor = aby3::FixedPointTensor<int64_t, ABY3_SCALING_FACTOR>;
 using BoolTensor = aby3::BooleanTensor<int64_t>;
 using PaddleTensor = common::PaddleTensor<int64_t>;
+namespace aby3_op = paddle::operators::aby3;
 
 class Aby3OperatorsImpl : public MpcOperators {
 public:
 
     void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) override {
-        add_impl(lhs, rhs, out, axis);
+        aby3_op::add(lhs, rhs, out, axis);
     }
 
     void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) override {
-        add_grad_impl(lhs, rhs, dout, dx, dy, axis);
+        aby3_op::add_grad(lhs, rhs, dout, dx, dy, axis);
     }
 
     void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
-        sub_impl(lhs, rhs, out);
+        aby3_op::sub(lhs, rhs, out);
     }
 
     void neg(const Tensor *op, Tensor *out) override {
@@ -94,8 +92,8 @@ public:
     }
 
     void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
-                 int x_num_col_dims = 1, int y_num_col_dims = 1) override {
-        //matmul_impl(lhs, rhs, out, x_num_col_dims, y_num_col_dims);        
+                bool trans_lhs = false, bool trans_rhs = false) override {
+
         auto lhs_tuple = from_tensor(lhs);
         auto rhs_tuple = from_tensor(rhs);
         auto out_tuple = from_tensor(out);
@@ -104,7 +102,7 @@ public:
         auto rhs_ = std::get<0>(rhs_tuple).get();
         auto out_ = std::get<0>(out_tuple).get();
 
-        lhs_->mat_mul(rhs_, out_);
+        lhs_->mat_mul(rhs_, out_, trans_lhs, trans_rhs);
     }
 
     void scale(const Tensor *lhs, const double factor, Tensor *out) override {

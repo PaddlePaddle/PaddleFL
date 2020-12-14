@@ -41,8 +41,11 @@ public:
 
     virtual void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
 
-    virtual void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
-                        int x_num_col_dims = 1, int y_num_col_dims = 1) = 0;
+    virtual void matmul(const Tensor *lhs,
+                        const Tensor *rhs,
+                        Tensor *out,
+                        bool trans_lhs = false,
+                        bool trans_rhs = false) = 0;
 
     virtual void scale(const Tensor *lhs, const double factor, Tensor *out) = 0;
 

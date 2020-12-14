@@ -1,4 +1,3 @@
-aux_source_directory(./aby3_operators_impl ABY3_IMPL_SRCS)
 set(PROTO_SRCS
     "./aby3_protocol.cc"
     "./mesh_network.cc"
@@ -6,8 +5,10 @@ set(PROTO_SRCS
     "./context_holder.cc"
     "./mpc_instance.cc"
     "./mpc_protocol_factory.cc"
+    "./aby3_operators_impl/elementwise_op.cc"
+    "./aby3_operators_impl/common.cc"
 )
-add_library(mpc_protocol_o OBJECT ${PROTO_SRCS} ${ABY3_IMPL_SRCS})
+add_library(mpc_protocol_o OBJECT ${PROTO_SRCS})
 add_dependencies(mpc_protocol_o fluid_framework gloo hiredis)
 
 add_library(mpc_protocol STATIC $<TARGET_OBJECTS:mpc_protocol_o>)

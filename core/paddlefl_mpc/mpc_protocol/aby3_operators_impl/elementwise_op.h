@@ -12,32 +12,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-// Description: implementations of elementwise_sub_op according to ABY3 protocol
+// Description: implementations of elementwise_add_op according to ABY3 protocol
+
 #pragma once
 
-#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/common.h"
+#include "paddle/fluid/framework/tensor.h"
 
 namespace paddle {
 namespace operators {
-namespace aby3impl {
+namespace aby3 {
 
-using namespace paddle::operators::math;
-using namespace paddle::mpc;
-using CPUDeviceContext = paddle::platform::CPUDeviceContext;
+using paddle::framework::Tensor;
 
-static void sub_impl(const Tensor *lhs, const Tensor *rhs, Tensor *out) {
-    auto lhs_tuple = from_tensor(lhs);
-    auto rhs_tuple = from_tensor(rhs);
-    auto out_tuple = from_tensor(out);
+void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis);
 
-    auto lhs_ = std::get<0>(lhs_tuple).get();
-    auto rhs_ = std::get<0>(rhs_tuple).get();
-    auto out_ = std::get<0>(out_tuple).get();
+void add_grad(const Tensor *in_x_t, const Tensor *in_y_t, const Tensor *dout, Tensor *dx, Tensor *dy, int axis);
 
-    lhs_->sub(rhs_, out_);
-}
+void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out);
 
-} // aby3impl
+} // aby3
 } // operators
 } // paddle
-

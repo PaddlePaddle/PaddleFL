@@ -142,21 +142,34 @@ inline bool IsExpand(const std::vector<int64_t>& filter_dim,
 template <typename DeviceContext, typename T>
 inline void ResizeToChannelFirst(const framework::ExecutionContext& context,
                                  const Tensor* input,
-                                 Tensor* transformed_input) {
+                                 Tensor* transformed_input,
+                                 bool is_output = false) {
   // extra 1 for leading share dim S
   int dim = input->dims().size() - 2 - 1;
   if (dim == 3) {
     // input
     transformed_input->Resize(input->dims());
 
-    // SNDHWC -> NCSDHW
     auto in_dims_vec = framework::vectorize(input->dims());
-    in_dims_vec[0] = input->dims()[1];
-    in_dims_vec[1] = input->dims()[5];
-    in_dims_vec[2] = input->dims()[0];
-    in_dims_vec[3] = input->dims()[2];
-    in_dims_vec[4] = input->dims()[3];
-    in_dims_vec[5] = input->dims()[4];
+    if (is_output) {
+        // same as paddle, resize output of conv op
+        // SNDHWC -> SNCDHW
+        // all for simulate paddle conv op (plaintext)'s behavior
+        in_dims_vec[0] = input->dims()[0];
+        in_dims_vec[1] = input->dims()[1];
+        in_dims_vec[2] = input->dims()[5];
+        in_dims_vec[3] = input->dims()[2];
+        in_dims_vec[4] = input->dims()[3];
+        in_dims_vec[5] = input->dims()[4];
+    } else {
+        // SNDHWC -> NCSDHW
+        in_dims_vec[0] = input->dims()[1];
+        in_dims_vec[1] = input->dims()[5];
+        in_dims_vec[2] = input->dims()[0];
+        in_dims_vec[3] = input->dims()[2];
+        in_dims_vec[4] = input->dims()[3];
+        in_dims_vec[5] = input->dims()[4];
+    }
     transformed_input->Resize(framework::make_ddim(in_dims_vec));
     transformed_input->mutable_data<T>(context.GetPlace());
 
@@ -164,13 +177,21 @@ inline void ResizeToChannelFirst(const framework::ExecutionContext& context,
     // input
     transformed_input->Resize(input->dims());
 
-    // SNHWC -> NCSHW
     auto in_dims_vec = framework::vectorize(input->dims());
-    in_dims_vec[0] = input->dims()[1];
-    in_dims_vec[1] = input->dims()[4];
-    in_dims_vec[2] = input->dims()[0];
-    in_dims_vec[3] = input->dims()[2];
-    in_dims_vec[4] = input->dims()[3];
+    if (is_output) {
+        in_dims_vec[0] = input->dims()[0];
+        in_dims_vec[1] = input->dims()[1];
+        in_dims_vec[2] = input->dims()[4];
+        in_dims_vec[3] = input->dims()[2];
+        in_dims_vec[4] = input->dims()[3];
+    } else {
+        // SNHWC -> NCSHW
+        in_dims_vec[0] = input->dims()[1];
+        in_dims_vec[1] = input->dims()[4];
+        in_dims_vec[2] = input->dims()[0];
+        in_dims_vec[3] = input->dims()[2];
+        in_dims_vec[4] = input->dims()[3];
+    }
     transformed_input->Resize(framework::make_ddim(in_dims_vec));
     transformed_input->mutable_data<T>(context.GetPlace());
   }
@@ -246,19 +267,30 @@ inline void ResizeToShareFirst(const framework::ExecutionContext& context,
 template <typename DeviceContext, typename T>
 inline void TransToChannelFirst(const framework::ExecutionContext& context,
                                 const Tensor* input,
-                                Tensor* transformed_input) {
+                                Tensor* transformed_input,
+                                bool is_output = false) {
   // extra 1 for leading share dim
   // swap share and batch_size
   int dim = input->dims().size() - 2 - 1;
   if (dim == 3) {
     auto& dev_ctx = context.template device_context<DeviceContext>();
-    std::vector<int> axis{1, 5, 0, 2, 3, 4};
+    std::vector<int> axis;
+    if (is_output) {
+        axis = std::vector<int>{0, 1, 5, 2, 3, 4};
+    } else {
+        axis = std::vector<int>{1, 5, 0, 2, 3, 4};
+    }
     math::Transpose<DeviceContext, T, 6> trans6;
     trans6(dev_ctx, *input, transformed_input, axis);
 
   } else if (dim == 2) {
     auto& dev_ctx = context.template device_context<DeviceContext>();
     std::vector<int> axis{1, 4, 0, 2, 3};
+    if (is_output) {
+        axis = std::vector<int>{0, 1, 4, 2, 3};
+    } else {
+        axis = std::vector<int>{1, 4, 0, 2, 3};
+    }
     math::Transpose<DeviceContext, T, 5> trans5;
     trans5(dev_ctx, *input, transformed_input, axis);
   }
@@ -272,13 +304,13 @@ inline void TransToChannelLast(const framework::ExecutionContext& context,
   int dim = input->dims().size() - 2 - 1;
   if (dim == 3) {
     auto& dev_ctx = context.template device_context<DeviceContext>();
-    std::vector<int> axis{2, 0, 3, 4, 5, 1};
+    std::vector<int> axis{0, 1, 3, 4, 5, 2};
     math::Transpose<DeviceContext, T, 6> trans6;
     trans6(dev_ctx, *input, transformed_input, axis);
 
   } else if (dim == 2) {
     auto& dev_ctx = context.template device_context<DeviceContext>();
-    std::vector<int> axis{2, 0, 3, 4, 1};
+    std::vector<int> axis{0, 1, 3, 4, 2};
     math::Transpose<DeviceContext, T, 5> trans5;
     trans5(dev_ctx, *input, transformed_input, axis);
   }
@@ -290,7 +322,7 @@ inline void TransToShareFirst(const framework::ExecutionContext& context,
   int dim = input->dims().size();
 
   PADDLE_ENFORCE_GT(
-      dim, 4,
+      dim, 3,
       platform::errors::InvalidArgument(
           "The input's dim is expected to be greater than 4."));
 
@@ -308,6 +340,11 @@ inline void TransToShareFirst(const framework::ExecutionContext& context,
   auto& dev_ctx = context.template device_context<DeviceContext>();
 
   switch(dim) {
+
+  case 4:
+    math::Transpose<DeviceContext, T, 4> trans4;
+    trans4(dev_ctx, *input, transformed_input, axis);
+    break;
 
   case 5:
     math::Transpose<DeviceContext, T, 5> trans5;
@@ -631,15 +668,14 @@ class GemmConvKernel : public MpcOpKernel<T> {
       TransToChannelFirst<DeviceContext, T>(context, input, &transformed_input);
 
       ResizeToChannelFirst<DeviceContext, T>(context, output,
-                                                   &transformed_output);
+                                             &transformed_output, true);
 
     } else {
       ResizeToShareLast<DeviceContext, T>(context, input,
                                           &transformed_input);
       TransToShareLast<DeviceContext, T>(context, input, &transformed_input);
 
-      ResizeToShareLast<DeviceContext, T>(context, output,
-                                          &transformed_output);
+      transformed_output = *output;
     }
 
     // update padding and dilation
@@ -697,7 +733,6 @@ class GemmConvKernel : public MpcOpKernel<T> {
 
     framework::DDim col_shape(framework::make_ddim(col_shape_vec));
 
-
     framework::DDim col_matrix_shape(framework::make_ddim(col_matrix_shape_vec));
 
     bool is_expand = IsExpand(filter_shape_vec, strides, paddings, dilations);
@@ -722,30 +757,53 @@ class GemmConvKernel : public MpcOpKernel<T> {
                                            filter.numel() / (filter.dims()[0] * filter.dims()[1]) };
     filter.Resize(filter_matrix_shape);
 
-    // OSIHW or OSIDHW
-    Tensor filter_ = SwapedLeadingDims<DeviceContext, T>(context, &filter);
+    int in_step = static_cast<int>(transformed_input.dims()[1]) / groups;
+    int out_step = static_cast<int>(transformed_output.dims()[2]) / groups;
 
-    // CS(H * W) or CS(D * H * W)
+    // S, N*groups, C/groups, H*W or D*H*W
     framework::DDim output_matrix_shape = {
-        transformed_output.dims()[1],
-        transformed_output.dims()[2],
+        transformed_output.dims()[0],
+        batch_size * groups,
+        out_step,
         transformed_output.numel() /
             (transformed_output.dims()[0]
              * transformed_output.dims()[1]
              * transformed_output.dims()[2])};
 
     // convolution operator: im2col(or vol2col) + gemm
-    int in_step = static_cast<int>(transformed_input.dims()[1]) / groups;
-    int out_step = static_cast<int>(transformed_output.dims()[1]) / groups;
-
     math::Vol2ColFunctor<DeviceContext, T> vol2col;
     math::Im2ColFunctor<math::ColFormat::kCFO, DeviceContext, T> im2col;
+
+    Tensor batched_col;
+    Tensor batched_filter;
+
+    batched_col.mutable_data<T>(framework::make_ddim({batch_size * groups,
+                                                     col_matrix_shape[0],
+                                                     col_matrix_shape[1],
+                                                     col_matrix_shape[2]}),
+                                context.GetPlace(), 0);
+
+    batched_filter.mutable_data<T>(framework::make_ddim({batch_size,
+                                                        filter_matrix_shape[0],
+                                                        groups,
+                                                        out_step,
+                                                        filter_matrix_shape[2],
+                                                        }),
+                                   context.GetPlace(), 0);
+
+    auto original_out_dims = transformed_output.dims();
+
+    transformed_output.Resize(output_matrix_shape);
+    transformed_output.mutable_data<T>(context.GetPlace());
 
     for (int i = 0; i < batch_size; i++) {
       Tensor in_batch =
           transformed_input.Slice(i, i + 1).Resize(in_matrix_shape);
-      Tensor out_batch =
-          transformed_output.Slice(i, i + 1).Resize(output_matrix_shape);
+
+      Tensor filter_slice = batched_filter.Slice(i, i + 1);
+
+      std::memcpy(filter_slice.data<T>(),
+                  filter.data<T>(), filter.numel() *sizeof(T));
 
       for (int g = 0; g < groups; g++) {
         Tensor in_slice = in_batch.Slice(g * in_step, (g + 1) * in_step);
@@ -764,25 +822,33 @@ class GemmConvKernel : public MpcOpKernel<T> {
           SharesToCols<DeviceContext, T>(context, &in_slice_, dilations, strides, paddings, &col, vol2col);
         }
 
-        // gemm
-        Tensor out_slice = out_batch.Slice(g * out_step, (g + 1) * out_step);
-        Tensor filter_slice = filter_.Slice(g * out_step, (g + 1) * out_step);
-        Tensor out_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &out_slice);
-        Tensor filter_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &filter_slice);
+        size_t col_matrix_size = col_matrix.numel();
+        size_t col_group_size = col_matrix_size * groups;
 
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
-                        &filter_slice_, &col_matrix, &out_slice_);
+        std::memcpy(batched_col.template data<T>()
+                    + i * col_group_size + g * col_matrix_size,
+                    col_matrix.template data<T>(),
+                    col_matrix_size * sizeof(T));
 
-        TransToSwapedLeadingDims<DeviceContext, T>(context, &out_slice_,
-                                                   &out_slice);
       }
     }
+    Tensor batched_col_ = SwapedLeadingDims<DeviceContext, T>(context, &batched_col);
+    Tensor batched_fil_ = SwapedLeadingDims<DeviceContext, T>(context, &batched_filter);
+    batched_fil_.Resize(framework::make_ddim({filter_matrix_shape[0],
+                                                batch_size * groups,
+                                                out_step,
+                                                filter_matrix_shape[2],
+                                                }));
+    // TransToShareFirst<DeviceContext, T>(context, &batched_filter, &batched_fil_);
+
+    mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
+                    &batched_fil_, &batched_col_, &transformed_output);
+
+    transformed_output.Resize(original_out_dims);
+
     if (channel_last) {
       TransToChannelLast<DeviceContext, T>(context, &transformed_output,
                                            output);
-    } else {
-      TransToShareFirst<DeviceContext, T>(context, &transformed_output,
-                                          output);
     }
   }
 };
@@ -824,16 +890,15 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
       TransToChannelFirst<DeviceContext, T>(context, input, &transformed_input);
 
       ResizeToChannelFirst<DeviceContext, T>(context, output_grad,
-                                             &transformed_output_grad);
+                                             &transformed_output_grad, true);
       TransToChannelFirst<DeviceContext, T>(context, output_grad,
-                                            &transformed_output_grad);
+                                            &transformed_output_grad, true);
     } else {
       ResizeToShareLast<DeviceContext, T>(context, input,
                                              &transformed_input);
       TransToShareLast<DeviceContext, T>(context, input, &transformed_input);
-      ResizeToShareLast<DeviceContext, T>(context, output_grad,
-                                          &transformed_output_grad);
-      TransToShareLast<DeviceContext, T>(context, output_grad, &transformed_output_grad);
+
+      transformed_output_grad = *output_grad;
     }
 
     // update padding and dilation
@@ -892,25 +957,12 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
     framework::DDim filter_matrix_shape = {filter.dims()[0], filter.dims()[1],
                                            filter.numel() / (filter.dims()[0] * filter.dims()[1]) };
 
-    // OSIHW or OSIDHW
-    framework::DDim filter_matrix_shape_ = {filter.dims()[1], filter.dims()[0],
-                                           filter.numel() / (filter.dims()[0] * filter.dims()[1]) };
     filter.Resize(filter_matrix_shape);
 
-    Tensor filter_ = SwapedLeadingDims<DeviceContext, T>(context, &filter);
-
-    // CS(H * W) or CS(D * H * W)
-    framework::DDim output_matrix_shape = {
-        transformed_output_grad.dims()[1],
-        transformed_output_grad.dims()[2],
-        transformed_output_grad.numel() /
-            (transformed_output_grad.dims()[0]
-             * transformed_output_grad.dims()[1]
-             * transformed_output_grad.dims()[2])};
     // convolution backward input operator:  gemm + col2im(or col2vol)
     // convolution backward weight operator: im2col(or vol2col) + gemm
     int in_step = static_cast<int>(transformed_input.dims()[1]) / groups;
-    int out_step = static_cast<int>(transformed_output_grad.dims()[1]) / groups;
+    int out_step = static_cast<int>(transformed_output_grad.dims()[2]) / groups;
 
     bool is_expand = IsExpand(filter_shape_vec, strides, paddings, dilations);
 
@@ -927,6 +979,42 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
 
     math::SetConstant<DeviceContext, T> set_zero;
 
+    Tensor batched_filter;
+
+    batched_filter.mutable_data<T>(framework::make_ddim({batch_size,
+                                                        filter_matrix_shape[0],
+                                                        groups,
+                                                        out_step,
+                                                        filter_matrix_shape[2],
+                                                        }),
+                                   context.GetPlace(), 0);
+
+    Tensor batched_fil_ = SwapedLeadingDims<DeviceContext, T>(context, &batched_filter);
+
+    batched_fil_.Resize(framework::make_ddim({filter_matrix_shape[0],
+                                                batch_size * groups,
+                                                out_step,
+                                                filter_matrix_shape[2],
+                                                }));
+#pragma omp for
+    for (int i = 0; i < batch_size; i++) {
+
+      Tensor filter_slice = batched_filter.Slice(i, i + 1);
+
+      std::memcpy(filter_slice.data<T>(),
+                  filter.data<T>(), filter.numel() * sizeof(T));
+    }
+
+    transformed_output_grad.Resize(framework::make_ddim({
+        transformed_output_grad.dims()[0],
+        batch_size * groups,
+        out_step,
+        transformed_output_grad.numel() / (
+            transformed_output_grad.dims()[0] *
+            transformed_output_grad.dims()[1] *
+            transformed_output_grad.dims()[2])
+        }));
+
     if (input_grad) {
       input_grad->mutable_data<T>(context.GetPlace());
       Tensor transformed_input_grad(input_grad->type());
@@ -938,38 +1026,50 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
         ResizeToShareLast<DeviceContext, T>(context, input_grad,
                                             &transformed_input_grad);
       }
+      Tensor transformed_input_grad_(input_grad->type());
+      transformed_input_grad_.Resize(framework::make_ddim({col_matrix_shape[0],
+                                                         batch_size * groups,
+                                                         col_matrix_shape[1],
+                                                         col_matrix_shape[2],
+                                                         }));
+      transformed_input_grad_.mutable_data<T>(context.GetPlace());
+
       // if is_expand is false, the operation of set_zero is unnecessary,
       // because math::matmul will reset input_grad.
       if (is_expand) {
         set_zero(dev_ctx, &transformed_input_grad, static_cast<T>(0));
       }
+
+      mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
+          &batched_fil_, &transformed_output_grad, &transformed_input_grad_, true, false);
+
+      transformed_input_grad_ = SwapedLeadingDims<DeviceContext, T>(
+          context, &transformed_input_grad_);
+
+      transformed_input_grad_.Resize(framework::make_ddim({batch_size,
+                                                          groups,
+                                                          col_matrix_shape[0],
+                                                          col_matrix_shape[1],
+                                                          col_matrix_shape[2],
+                                                          }));
       math::Col2VolFunctor<DeviceContext, T> col2vol;
       math::Col2ImFunctor<math::ColFormat::kCFO, DeviceContext, T> col2im;
 
       for (int i = 0; i < batch_size; i++) {
-        Tensor out_grad_batch =
-            transformed_output_grad.Slice(i, i + 1).Resize(output_matrix_shape);
         Tensor in_grad_batch =
             transformed_input_grad.Slice(i, i + 1).Resize(input_shape);
+        Tensor in_grad_batch_ =
+            transformed_input_grad_.Slice(i, i + 1).Resize(input_shape);
         for (int g = 0; g < groups; g++) {
-          // gemm
-          Tensor out_grad_slice =
-              out_grad_batch.Slice(g * out_step, (g + 1) * out_step);
-          Tensor filter_slice = filter_.Slice(g * out_step, (g + 1) * out_step);
-
           Tensor in_grad_slice =
               in_grad_batch.Slice(g * in_step, (g + 1) * in_step);
 
-          Tensor in_grad_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &in_grad_slice);
+          Tensor in_grad_slice_ =
+              SwapedLeadingDims<DeviceContext, T>(context, &in_grad_slice);
           if (!is_expand) {
             col_matrix.ShareDataWith(in_grad_slice);
             col_matrix.Resize(col_matrix_shape);
           }
-          Tensor filter_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &filter_slice);
-          Tensor out_grad_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &out_grad_slice);
-          Tensor filter_slice_t = TransposeMpcMat<DeviceContext, T>(context, &filter_slice_);
-          mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
-              &filter_slice_t, &out_grad_slice_, &col_matrix);
 
           if (is_expand && data_dim == 2U) {
             SharesToCols<DeviceContext, T>(context, &col, dilations, strides,
@@ -979,8 +1079,8 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
           } else if (is_expand && data_dim == 3U) {
               SharesToCols<DeviceContext, T>(context, &col, dilations, strides, paddings, &in_grad_slice_, col2vol);
           }
-          TransToSwapedLeadingDims<DeviceContext, T>(context, &in_grad_slice_,
-                                                     &in_grad_slice);
+          // TransToSwapedLeadingDims<DeviceContext, T>(context, &in_grad_slice_,
+          //                                            &in_grad_slice);
         }
       }
       if (channel_last) {
@@ -996,20 +1096,28 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
       filter_grad->mutable_data<T>(context.GetPlace());
       auto filter_grad_dims = filter_grad->dims();
 
-      Tensor filter_grad_ = SwapedLeadingDims<DeviceContext, T>(context, filter_grad);
-      filter_grad_.Resize(filter_matrix_shape_);
+      Tensor filter_grad_;
 
-      set_zero(dev_ctx, filter_grad, static_cast<T>(0));
+      filter_grad_.mutable_data<T>(framework::make_ddim({filter_matrix_shape[0],
+                                               batch_size * groups,
+                                               out_step,
+                                               filter_matrix_shape[2]
+                                               }), context.GetPlace(), 0);
+
       math::Im2ColFunctor<math::ColFormat::kCFO, DeviceContext, T> im2col;
       math::Vol2ColFunctor<DeviceContext, T> vol2col;
+
+      Tensor batched_col;
+
+      batched_col.mutable_data<T>(framework::make_ddim({batch_size * groups,
+                                                       col_matrix_shape[0],
+                                                       col_matrix_shape[1],
+                                                       col_matrix_shape[2]}),
+                                  context.GetPlace(), 0);
+
       for (int i = 0; i < batch_size; i++) {
-        Tensor out_grad_batch =
-            transformed_output_grad.Slice(i, i + 1).Resize(output_matrix_shape);
         Tensor in_batch = transformed_input.Slice(i, i + 1).Resize(input_shape);
         for (int g = 0; g < groups; g++) {
-          // im2col
-          Tensor out_grad_slice =
-              out_grad_batch.Slice(g * out_step, (g + 1) * out_step);
           Tensor in_slice = in_batch.Slice(g * in_step, (g + 1) * in_step);
 
           Tensor in_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &in_slice);
@@ -1025,21 +1133,45 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
           } else if (data_dim == 3U) {
             SharesToCols<DeviceContext, T>(context, &in_slice_, dilations, strides, paddings, &col, vol2col);
           }
+          size_t col_matrix_size = col_matrix.numel();
+          size_t col_group_size = col_matrix_size * groups;
 
-          Tensor out_grad_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &out_grad_slice);
-          Tensor col_mat_t = TransposeMpcMat<DeviceContext, T>(context, &col_matrix);
-          // gemm
-          Tensor filter_grad_slice =
-              filter_grad_.Slice(g * out_step, (g + 1) * out_step);
-          Tensor filter_grad_slice_ = SwapedLeadingDims<DeviceContext, T>(context, &filter_grad_slice);
-          mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(&out_grad_slice_, &col_mat_t, &filter_grad_slice_);
-          TransToSwapedLeadingDims<DeviceContext, T>(context, &filter_grad_slice_,
-                                                     &filter_grad_slice);
+          std::memcpy(batched_col.template data<T>()
+                      + i * col_group_size + g * col_matrix_size,
+                      col_matrix.template data<T>(),
+                      col_matrix_size * sizeof(T));
         }
       }
-      TransToSwapedLeadingDims<DeviceContext, T>(context, &filter_grad_,
-                                                 filter_grad);
+      Tensor batched_col_ = SwapedLeadingDims<DeviceContext, T>(context, &batched_col);
+      // gemm
+
+      mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
+          &transformed_output_grad, &batched_col_, &filter_grad_, 0, 1);
+
+
+      filter_grad_.Resize(framework::make_ddim({filter_matrix_shape[0],
+                                               batch_size,
+                                               groups,
+                                               out_step,
+                                               filter_matrix_shape[2]
+                                               }));
+
+      using EigenTensor5 = paddle::framework::EigenTensor<T, 5>;
+      using EigenTensor4 = paddle::framework::EigenTensor<T, 4>;
+
+      filter_grad->Resize(framework::make_ddim({filter_matrix_shape[0],
+                                               groups,
+                                               out_step,
+                                               filter_matrix_shape[2]
+                                               }));
+
+      auto eigen_filter_grad_ = EigenTensor5::From(filter_grad_);
+      auto eigen_filter_grad = EigenTensor4::From(*filter_grad);
+
+      eigen_filter_grad.device(*dev_ctx.eigen_device()) =
+          eigen_filter_grad_.sum(Eigen::array<int,1>({1}));
       filter_grad->Resize(filter_grad_dims);
+
     }
   }
 };
