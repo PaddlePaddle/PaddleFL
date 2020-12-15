@@ -213,6 +213,25 @@ private:
     template<typename T_>
     void softmax_impl(FixedPointTensor<T, N>* ret, bool use_relu, Type2Type<int64_t>) const;
 
+    static void to_gc_num(const TensorAdapter<int64_t>* input, size_t party_in,
+                                       TensorBlock* gc_share);
+
+    static void gc_add(const TensorBlock* lhs, const TensorBlock* rhs,
+                                TensorBlock* ret);
+    static void gc_div(const TensorBlock* lhs, const TensorBlock* rhs,
+                TensorBlock* ret);
+
+    static void abs(const TensorBlock* lhs, TensorBlock* ret);
+
+    static void relu_bc(const TensorBlock* lhs, TensorAdapter<int64_t>* ret);
+
+    static void argmax_one_hot(const TensorBlock* op,
+                       TensorBlock* ret);
+
+    static void to_ac_num(const TensorAdapter<int64_t>* input,
+                    TensorAdapter<int64_t>* ret);
+    static void logistic(const TensorBlock* lhs, TensorBlock* ret);
+
     TensorAdapter<T>* _share;
 
 };
@@ -220,3 +239,4 @@ private:
 } //namespace privc
 
 #include "fixedpoint_tensor_imp.h"
+#include "fixedpoint_tensor_gc_imp.h"

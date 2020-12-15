@@ -145,6 +145,10 @@ public:
           axis);
   }
 
+  std::shared_ptr<TensorAdapter<T>> operator[](size_t index);
+
+  const std::shared_ptr<TensorAdapter<T>> operator[](size_t index) const;
+
 private:
   paddle::platform::Place place() const { return _device_ctx->GetPlace(); }
 
