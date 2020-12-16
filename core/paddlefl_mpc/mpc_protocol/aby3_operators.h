@@ -26,6 +26,8 @@ limitations under the License. */
 #include "core/privc3/fixedpoint_tensor.h"
 #include "core/privc3/boolean_tensor.h"
 #include "core/common/paddle_tensor.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_op.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/common.h"
 
 namespace paddle {
 namespace mpc {
@@ -37,36 +39,21 @@ const size_t ABY3_SCALING_FACTOR = FIXED_POINTER_SCALING_FACTOR;
 using FixedTensor = aby3::FixedPointTensor<int64_t, ABY3_SCALING_FACTOR>;
 using BoolTensor = aby3::BooleanTensor<int64_t>;
 using PaddleTensor = common::PaddleTensor<int64_t>;
+namespace aby3_op = paddle::operators::aby3;
 
 class Aby3OperatorsImpl : public MpcOperators {
 public:
 
-    void add(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
-
-        auto lhs_tuple = from_tensor(lhs);
-        auto rhs_tuple = from_tensor(rhs);
-        auto out_tuple = from_tensor(out);
-
-        auto lhs_ = std::get<0>(lhs_tuple).get();
-        auto rhs_ = std::get<0>(rhs_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
-
-        lhs_->add(rhs_, out_);
-
+    void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) override {
+        aby3_op::add(lhs, rhs, out, axis);
     }
 
-    // TODO: override
+    void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) override {
+        aby3_op::add_grad(lhs, rhs, dout, dx, dy, axis);
+    }
+
     void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
-
-        auto lhs_tuple = from_tensor(lhs);
-        auto rhs_tuple = from_tensor(rhs);
-        auto out_tuple = from_tensor(out);
-
-        auto lhs_ = std::get<0>(lhs_tuple).get();
-        auto rhs_ = std::get<0>(rhs_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
-
-        lhs_->sub(rhs_, out_);
+        aby3_op::sub(lhs, rhs, out);
     }
 
     void neg(const Tensor *op, Tensor *out) override {

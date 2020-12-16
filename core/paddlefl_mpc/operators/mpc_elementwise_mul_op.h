@@ -18,12 +18,14 @@ limitations under the License. */
 #pragma once
 #include "mpc_op.h"
 #include "paddle/fluid/platform/transform.h"
-#include "mpc_elementwise_add_op.h"
+#include "core/paddlefl_mpc/operators/math/elementwise_op_function.h"
 
 namespace paddle {
 namespace operators {
 
 using Tensor = framework::Tensor;
+
+const size_t SHARE_NUM =  2;
 
 template <typename DeviceContext, typename T>
 void Expand(const framework::LoDTensor* in_y_t, int axis, Tensor* y_expand_t, const framework::DDim &expand_dims, const framework::ExecutionContext &ctx) {
@@ -47,7 +49,7 @@ void Expand(const framework::LoDTensor* in_y_t, int axis, Tensor* y_expand_t, co
                          "Axis should be in range [0, x_dims)");
 
           int pre, n, post;
-          GetMidDims get_mid_dims;
+          math::GetMidDims get_mid_dims;
           get_mid_dims(y_expand_dims, y_dims, axis, &pre, &n, &post);
 
           auto y_expand_ = y_expand_t_slice.data<T>();
@@ -57,12 +59,12 @@ void Expand(const framework::LoDTensor* in_y_t, int axis, Tensor* y_expand_t, co
           paddle::platform::Transform<DeviceContext> trans;
           if (post == 1) {
               trans(ctx.template device_context<DeviceContext>(), y_expand_, y_expand_ + nx_, 
-                    RowwiseTransformIterator<T, DeviceContext>(y_, n),
-                    y_expand_, AddFunctor<T>());
+                    math::RowwiseTransformIterator<T, DeviceContext>(y_, n),
+                    y_expand_, math::AddFunctor<T>());
           } else {
               trans(ctx.template device_context<DeviceContext>(), y_expand_, y_expand_ + nx_, 
-                    MidWiseTransformIterator<T, DeviceContext>(y_, n, post),
-                    y_expand_, AddFunctor<T>());
+                    math::MidWiseTransformIterator<T, DeviceContext>(y_, n, post),
+                    y_expand_, math::AddFunctor<T>());
           }
     }
 }
@@ -137,7 +139,7 @@ public:
                  "Axis should be in range [0, x_dims)");
 
             int pre, n, post;
-            GetMidDims get_mid_dims;
+            math::GetMidDims get_mid_dims;
             get_mid_dims(x_dims, y_dims, axis, &pre, &n, &post);
 
             std::fill(dy_data, dy_data + dy->numel(), static_cast<T>(0));

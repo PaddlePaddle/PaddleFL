@@ -29,7 +29,9 @@ const size_t FIXED_POINTER_SCALING_FACTOR = 16;
 
 class MpcOperators {
 public:
-    virtual void add(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
+    virtual void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) = 0;
+
+    virtual void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) = 0;
 
     virtual void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
 
