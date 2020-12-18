@@ -145,6 +145,10 @@ public:
           axis);
   }
 
+  // slice by shape[0] of index
+  // e.g. x.shape = [2, 3, 4]
+  //      data of x[1] = x.slice(1, 2)
+  //      x[1]->shape = [3, 4]
   std::shared_ptr<TensorAdapter<T>> operator[](size_t index);
 
   const std::shared_ptr<TensorAdapter<T>> operator[](size_t index) const;

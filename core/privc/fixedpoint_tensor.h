@@ -96,22 +96,16 @@ public:
     void exp(FixedPointTensor<T, N>* ret, size_t iter = 8) const;
 
     // element-wise mul with FixedPointTensor using truncate1
-    void mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const {
-      mul_impl<T>(rhs, ret, Type2Type<T>());
-    }
+    void mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const;
 
     // element-wise mul with TensorAdapter
-    void mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const {
-      mul_impl<T>(rhs, ret, Type2Type<T>());
-    }
+    void mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
 
     // div by TensorAdapter
     void div(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
 
     // div by FixedPointTensor using gc div
-    void long_div(const FixedPointTensor* rhs, FixedPointTensor* ret) const {
-      long_div_impl<T>(rhs, ret, Type2Type<T>());
-    }
+    void long_div(const FixedPointTensor* rhs, FixedPointTensor* ret) const;
 
     //sum all element
     void sum(FixedPointTensor* ret) const;
@@ -120,99 +114,25 @@ public:
     void reduce(FixedPointTensor* ret) const;
 
     // mat_mul with FixedPointTensor
-    void mat_mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const {
-      mat_mul_impl<T>(rhs, ret, Type2Type<T>());
-    }
+    void mat_mul(const FixedPointTensor* rhs, FixedPointTensor* ret) const;
 
     // mat_mul with TensorAdapter
     void mat_mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
 
     // element-wise relu
-    void relu(FixedPointTensor* ret) const {
-      relu_impl<T>(ret, Type2Type<T>());
-    }
+    void relu(FixedPointTensor* ret) const;
 
     // element-wise sigmoid
-    void sigmoid(FixedPointTensor* ret) const {
-      sigmoid_impl<T>(ret, Type2Type<T>());
-    }
+    void sigmoid(FixedPointTensor* ret) const;
 
     // element-wise softmax
-    void softmax(FixedPointTensor* ret, bool use_relu = false) const {
-      softmax_impl<T>(ret, use_relu, Type2Type<T>());
-    }
+    void softmax(FixedPointTensor* ret, bool use_relu = false) const;
 
     // matrix argmax
     // return max index in one-hot
-    void argmax(FixedPointTensor<T, N>* ret) const {
-      argmax_impl<T>(ret, Type2Type<T>());
-    }
+    void argmax(FixedPointTensor<T, N>* ret) const;
 
 private:
-    // mul_impl with FixedPointTensor
-    template<typename T_>
-    void mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor mul is not implemented yet");
-    }
-    template<typename T_>
-    void mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
-
-    // mul_impl with TensorAdapter
-    template<typename T_>
-    void mul_impl(const TensorAdapter<T>* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor mul is not implemented yet");
-    }
-    template<typename T_>
-    void mul_impl(const TensorAdapter<T>* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
-
-    // long_div_impl with FixedPointTensor
-    template<typename T_>
-    void long_div_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor long div is not implemented yet");
-    }
-    template<typename T_>
-    void long_div_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
-
-    // mat_mul_impl with FixedPointTensor
-    template<typename T_>
-    void mat_mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor mat mul is not implemented yet");
-    }
-    template<typename T_>
-    void mat_mul_impl(const FixedPointTensor* rhs, FixedPointTensor* ret, Type2Type<int64_t>) const;
-
-    // relu_impl with FixedPointTensor
-    template<typename T_>
-    void relu_impl(FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor relu is not implemented yet");
-    }
-    template<typename T_>
-    void relu_impl(FixedPointTensor* ret, Type2Type<int64_t>) const;
-
-    // sigmoid_impl with FixedPointTensor
-    template<typename T_>
-    void sigmoid_impl(FixedPointTensor* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor sigmoid is not implemented yet");
-    }
-    template<typename T_>
-    void sigmoid_impl(FixedPointTensor* ret, Type2Type<int64_t>) const;
-
-    // argmax_impl with FixedPointTensor
-    template<typename T_>
-    void argmax_impl(FixedPointTensor<T, N>* ret, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor argmax is not implemented yet");
-    }
-    template<typename T_>
-    void argmax_impl(FixedPointTensor<T, N>* ret, Type2Type<int64_t>) const;
-
-    // softmax_impl with FixedPointTensor
-    template<typename T_>
-    void softmax_impl(FixedPointTensor<T, N>* ret, bool use_relu, Type2Type<T_>) const {
-      PADDLE_THROW("type except `int64_t` for fixedtensor softmax is not implemented yet");
-    }
-    template<typename T_>
-    void softmax_impl(FixedPointTensor<T, N>* ret, bool use_relu, Type2Type<int64_t>) const;
-
     static void to_gc_num(const TensorAdapter<int64_t>* input, size_t party_in,
                                        TensorBlock* gc_share);
 

@@ -125,10 +125,12 @@ public:
     //      y.shape = [ 1, 3, 4]
     virtual void slice(size_t begin_idx, size_t end_idx, TensorAdapter* out) const = 0;
 
-    // return point of slice(index, index + 1)
+    // slice by shape[0] of index
+    // e.g. x.shape = [2, 3, 4]
+    //      data of x[1] = x.slice(1, 2)
+    //      x[1]->shape = [3, 4]
     virtual std::shared_ptr<TensorAdapter<T>> operator[](size_t index) = 0;
 
-    // return point of slice(index, index + 1)
     virtual const std::shared_ptr<TensorAdapter<T>> operator[](size_t index) const = 0;
 };
 

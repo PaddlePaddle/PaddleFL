@@ -436,16 +436,7 @@ std::shared_ptr<TensorAdapter<T>> PaddleTensor<T>::operator[](size_t index) {
 
 template<typename T>
 const std::shared_ptr<TensorAdapter<T>> PaddleTensor<T>::operator[](size_t index) const {
-    PADDLE_ENFORCE_GT(this->shape().size(), 1,
-                     "lhs's shape must great than 1.");
-    auto slice_shape = this->shape();
-    slice_shape.erase(slice_shape.begin());
-    std::shared_ptr<PaddleTensor<T>> ret = std::make_shared<PaddleTensor<T>>(_device_ctx);
-    ret->reshape(slice_shape);
-
-    this->slice(index, index + 1, ret.get());
-    ret->reshape(slice_shape);
-    return ret;
+    return const_cast<PaddleTensor*>(this)->operator[](index);
 }
 
 } // namespace common

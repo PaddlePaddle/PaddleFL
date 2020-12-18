@@ -147,10 +147,8 @@ void FixedPointTensor<T, N>::exp(FixedPointTensor<T, N>* ret,
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::mul_impl(const FixedPointTensor<T, N>* rhs,
-                                 FixedPointTensor<T, N>* ret,
-                                 const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::mul(const FixedPointTensor<T, N>* rhs,
+                                 FixedPointTensor<T, N>* ret) const {
     auto shape128 = shape();
     shape128.insert(shape128.begin(), 2);
     auto trip_shape = shape();
@@ -230,10 +228,8 @@ void FixedPointTensor<T, N>::mul_impl(const FixedPointTensor<T, N>* rhs,
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::mul_impl(const TensorAdapter<T>* rhs,
-                                 FixedPointTensor<T, N>* ret,
-                                 const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::mul(const TensorAdapter<T>* rhs,
+                                 FixedPointTensor<T, N>* ret) const {
     fixed64_tensor_mult<N>(share(), rhs, ret->mutable_share());
 }
 
@@ -263,10 +259,8 @@ void FixedPointTensor<T, N>::sum(FixedPointTensor* ret) const {
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::mat_mul_impl(const FixedPointTensor<T, N>* rhs,
-                                 FixedPointTensor<T, N>* ret,
-                                 const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::mat_mul(const FixedPointTensor<T, N>* rhs,
+                                 FixedPointTensor<T, N>* ret) const {
     // A dot B, assume A.shape = [a, b], B.shape = [b, c]
     // expand A and B to shape [a, c, b], and element-wise cal A * B
     // then reduce result shape to [a, c]

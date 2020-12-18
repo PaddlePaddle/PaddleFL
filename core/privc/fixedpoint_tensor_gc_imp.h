@@ -832,44 +832,6 @@ inline void if_then_else_bc(TensorBlock* cond,
     // cal bc_mux
     bc_mux(lsb_cond.get(), lsb_t_int.get(), lsb_f_int.get(), ret);
 }
-/*
-template<size_t N>
-void gc_mul(const TensorBlock* rhs, const TensorBlock* rhs,
-                 TensorBlock* ret) const {
-    PADDLE_ENFORCE_EQ(lhs->numel(), ret->numel(),
-                        "input of lhs's numel no match with return.");
-    PADDLE_ENFORCE_EQ(rhs->numel(), ret->numel(),
-                        "input of rhs's numel no match with return.");
-
-    std::vector<size_t> shape = lhs->shape();
-
-    const unsigned int full_size = size + N;
-    std::vector<size_t> shape_mul = shape;
-    shape_mul[0] = full_size;
-    //TensorBlock<N> l_(shape_mul);
-    //TensorBlock<N> r_(shape_mul);
-    //TensorBlock<N> res_(shape_mul);
-    auto l_ = create_gc_share(shape_mul);
-    auto r_ = create_gc_share(shape_mul);
-    auto res_ = create_gc_share(shape_mul);
-
-    for (int i = 0; i < size; i += 1) {
-        (*lhs)[i]->copy((*l_)[i].get());
-        (*rhs)[i]->copy((*r_)[i].get());
-    }
-
-    for (int i = 0; (unsigned)i < N; i += 1) {
-        (*lhs)[size - 1]->copy((*l_)[size + i]);
-        (*rhs)[size - 1]->copy((*r_)[size + i]);
-    }
-
-    mul_full(res_.get(), l_.get(), r_.get(), full_size);
-
-    auto ret_ = tensor_factory()->template create<int64_t>(shape);
-    res_->slice(N, full_size, ret_.get());
-    ret_->copy(ret);s
-}
-*/
 
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::gc_div(const TensorBlock* lhs, const TensorBlock* rhs, TensorBlock* ret) {
@@ -1002,7 +964,7 @@ inline void get_row_element(int row, const TensorBlock* share, TensorBlock* ret)
 }
 
 inline void get_element_from_vector(int col,
-                TensorBlock* share_v, TensorBlock* ret) {
+                const TensorBlock* share_v, TensorBlock* ret) {
     auto shape = share_v->shape();
     auto gc_element_size = sizeof(int64_t) * _g_block_size_expand * 8;
     
@@ -1015,7 +977,7 @@ inline void get_element_from_vector(int col,
               ret->data());
 }
 
-inline block* get_bit_element(int row, int col,
+inline block* get_mutable_bit_element(int row, int col,
                 TensorBlock* bit_tensor) {
     auto shape = bit_tensor->shape();
     
@@ -1047,7 +1009,7 @@ void FixedPointTensor<T, N>::argmax_one_hot(const TensorBlock* op,
     // enumerate matrix column
     for (int i = 0; i < val_shape[0]; ++i) {
         // assign first cmp result to true
-        block* cmp_i_0 = get_bit_element(i, 0, max_one_hot.get());
+        block* cmp_i_0 = get_mutable_bit_element(i, 0, max_one_hot.get());
         auto bit_true = create_gc_share(one_bit_shape);
         to_gc_bit(true_.get(), 0, bit_true.get());
         *cmp_i_0 = *reinterpret_cast<const block*>(bit_true->data());
@@ -1064,7 +1026,7 @@ void FixedPointTensor<T, N>::argmax_one_hot(const TensorBlock* op,
 
             auto cmp = create_gc_share(one_bit_shape);
             geq(op_i_j.get(), max.get(), cmp.get());
-            block* cmp_i_j = get_bit_element(i, j, max_one_hot.get());
+            block* cmp_i_j = get_mutable_bit_element(i, j, max_one_hot.get());
             *cmp_i_j = *reinterpret_cast<const block*>(cmp->data());
             if_then_else(cmp.get(), op_i_j.get(), max.get(), max.get());
         }
@@ -1079,7 +1041,7 @@ void FixedPointTensor<T, N>::argmax_one_hot(const TensorBlock* op,
         to_gc_bit(false_.get(), 0, has_found.get());
         for (int j = val_shape[1] - 1; j >= 0; --j) {
             // found = has_found || bit[j]
-            block* bit_share_i_j = get_bit_element(i, j, max_one_hot.get());
+            block* bit_share_i_j = get_mutable_bit_element(i, j, max_one_hot.get());
             auto bit_i_j = create_gc_share(one_bit_shape);
 
             *reinterpret_cast<block*>(bit_i_j->data()) = *bit_share_i_j;
@@ -1215,9 +1177,7 @@ void FixedPointTensor<T, N>::to_ac_num(const TensorAdapter<int64_t>* input,
 
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::relu_impl(FixedPointTensor<T, N>* ret,
-                                       const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::relu(FixedPointTensor<T, N>* ret) const {
     PADDLE_ENFORCE_EQ(ret->numel(), numel(), "input numel mot match.");
     // ac to gc
     auto gc_shape = get_gc_shape(shape());
@@ -1239,9 +1199,7 @@ void FixedPointTensor<T, N>::relu_impl(FixedPointTensor<T, N>* ret,
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::sigmoid_impl(FixedPointTensor<T, N>* ret,
-                                       const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::sigmoid(FixedPointTensor<T, N>* ret) const {
     PADDLE_ENFORCE_EQ(ret->numel(), numel(), "input numel mot match.");
     // ac to gc
     auto gc_shape = get_gc_shape(shape());
@@ -1266,9 +1224,7 @@ void FixedPointTensor<T, N>::sigmoid_impl(FixedPointTensor<T, N>* ret,
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::argmax_impl(FixedPointTensor<T, N>* ret,
-                                       const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::argmax(FixedPointTensor<T, N>* ret) const {
     PADDLE_ENFORCE_EQ(ret->shape()[1], shape()[1],
                       "lhs column not match with return column.");
     PADDLE_ENFORCE_EQ(ret->numel(), numel(),
@@ -1304,10 +1260,8 @@ void FixedPointTensor<T, N>::argmax_impl(FixedPointTensor<T, N>* ret,
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::long_div_impl(const FixedPointTensor<T, N>* rhs,
-                                       FixedPointTensor<T, N>* ret,
-                                       const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
+                                       FixedPointTensor<T, N>* ret) const {
     PADDLE_ENFORCE_EQ(ret->numel(), numel(),
             "input of lhs's numel no match with return.");
     PADDLE_ENFORCE_EQ(ret->numel(), rhs->numel(),
@@ -1362,10 +1316,8 @@ void FixedPointTensor<T, N>::reduce(FixedPointTensor<T, N>* ret) const {
 }
 
 template<typename T, size_t N>
-template<typename T_>
-void FixedPointTensor<T, N>::softmax_impl(FixedPointTensor<T, N>* ret,
-                                     bool use_relu,
-                                     const Type2Type<int64_t>) const {
+void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
+                                     bool use_relu) const {
     auto tmp = tensor_factory()->template create<int64_t>(shape());
     FixedPointTensor<T, N> x(tmp.get());
     if (use_relu) {
