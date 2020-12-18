@@ -104,7 +104,7 @@ public:
     // div by TensorAdapter
     void div(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
 
-    // div by FixedPointTensor using gc div
+    // AC division for fixedpoint tesnor
     void long_div(const FixedPointTensor* rhs, FixedPointTensor* ret) const;
 
     //sum all element
@@ -138,6 +138,8 @@ private:
 
     static void gc_add(const TensorBlock* lhs, const TensorBlock* rhs,
                                 TensorBlock* ret);
+    
+    // GC division for fixedpoint tensor using long division algorithm
     static void gc_div(const TensorBlock* lhs, const TensorBlock* rhs,
                 TensorBlock* ret);
 

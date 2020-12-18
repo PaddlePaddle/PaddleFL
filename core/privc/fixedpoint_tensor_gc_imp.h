@@ -522,6 +522,8 @@ inline void cond_neg(TensorBlock* cond, TensorBlock *dest,
     c->bitwise_xor((*src)[i].get(), (*dest)[i].get());
 }
 
+// gc division for integer tensor
+// using long division algorithm
 inline void div_full(TensorBlock*vquot, TensorBlock *vrem,
               const TensorBlock *op1, const TensorBlock *op2) {
 
@@ -833,6 +835,8 @@ inline void if_then_else_bc(TensorBlock* cond,
     bc_mux(lsb_cond.get(), lsb_t_int.get(), lsb_f_int.get(), ret);
 }
 
+// gc division for fixedpoint tensor
+// which calls div_full
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::gc_div(const TensorBlock* lhs, const TensorBlock* rhs, TensorBlock* ret) {
 
