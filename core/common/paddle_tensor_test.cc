@@ -32,6 +32,7 @@ public:
     std::shared_ptr<TensorAdapterFactory> _tensor_factory;
 
     CPUDeviceContext _cpu_ctx;
+    const static size_t SCALING_FACTOR = 32;
 
     virtual ~PaddleTensorTest() noexcept {}
 
@@ -476,12 +477,14 @@ TEST_F(PaddleTensorTest, mul128_test1) {
         pt1->data()[i] = 0;
     }
 
-    pt0->data()[2] = 2;
-    pt1->data()[2] = 1;
+    pt0->data()[2] = (int64_t) 2 << SCALING_FACTOR;
+    pt1->data()[2] = (int64_t) 1 << SCALING_FACTOR;
+    pt0->scaling_factor() = SCALING_FACTOR;
+
     dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), true, true);
     // | 0 2| * | 0 1| = | 0 2|
     EXPECT_EQ(pt2->data()[0], 0);
-    EXPECT_EQ(pt2->data()[1], 2);
+    EXPECT_EQ(pt2->data()[1], (int64_t) 2 << SCALING_FACTOR);
 }
 
 TEST_F(PaddleTensorTest, mul128_test2) {
@@ -496,12 +499,14 @@ TEST_F(PaddleTensorTest, mul128_test2) {
         pt1->data()[i] = 0;
     }
 
-    pt0->data()[1] = 2;
-    pt1->data()[1] = 1;
+    pt0->data()[1] = (int64_t) 2 << SCALING_FACTOR;
+    pt1->data()[1] = (int64_t) 1 << SCALING_FACTOR;
+    pt0->scaling_factor() = SCALING_FACTOR;
+
     dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), false, false);
     // | 0 2| * | 0 1| = | 0 2|
     EXPECT_EQ(pt2->data()[0], 0);
-    EXPECT_EQ(pt2->data()[1], 2);
+    EXPECT_EQ(pt2->data()[1], (int64_t) 2 << SCALING_FACTOR);
 }
 
 TEST_F(PaddleTensorTest, mul128_test3) {
@@ -515,13 +520,15 @@ TEST_F(PaddleTensorTest, mul128_test3) {
         pt1->data()[i] = 0;
     }
 
-    pt0->data()[1] = 2;
+    pt0->data()[1] = (int64_t) 2 << SCALING_FACTOR;
     pt0->data()[0] = 0;
-    pt1->data()[2] = 1;
+    pt1->data()[2] = (int64_t) 1 << SCALING_FACTOR;
+    pt0->scaling_factor() = SCALING_FACTOR;
+
     dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), false, true);
     // | 0 2| * | 0 1| = | 0 2|
     EXPECT_EQ(pt2->data()[0], 0);
-    EXPECT_EQ(pt2->data()[1], 2);
+    EXPECT_EQ(pt2->data()[1], (int64_t) 2 << SCALING_FACTOR);
 }
 
 TEST_F(PaddleTensorTest, mul128_test4) {
@@ -536,11 +543,13 @@ TEST_F(PaddleTensorTest, mul128_test4) {
     }
 
     pt1->data()[0] = 0;
-    pt1->data()[1] = 2;
-    pt0->data()[2] = 1;
+    pt1->data()[1] = (int64_t) 2 << SCALING_FACTOR;
+    pt0->data()[2] = (int64_t) 1 << SCALING_FACTOR;
+    pt0->scaling_factor() = SCALING_FACTOR;
+
     dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->mul128_with_truncate(pt1.get(), pt2.get(), true, false);
     // | 0 1| * | 0 2| = | 0 2|
     EXPECT_EQ(pt2->data()[0], 0);
-    EXPECT_EQ(pt2->data()[1], 2);
+    EXPECT_EQ(pt2->data()[1], (int64_t) 2 << SCALING_FACTOR);
 }
 } // namespace common
