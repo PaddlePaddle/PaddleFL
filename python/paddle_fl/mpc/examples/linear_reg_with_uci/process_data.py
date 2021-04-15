@@ -19,6 +19,8 @@ import paddle
 import six
 import os
 from paddle_fl.mpc.data_utils import aby3
+import paddle.fluid as fluid
+import paddle_fl.mpc as pfl_mpc
 
 sample_reader = paddle.dataset.uci_housing.train()
 
@@ -45,6 +47,58 @@ def generate_encrypted_data():
     aby3.save_aby3_shares(encrypted_housing_features, "/tmp/house_feature")
     aby3.save_aby3_shares(encrypted_housing_labels, "/tmp/house_label")
 
+def generate_encrypted_data_online(role, server, port):
+    """
+    generate encrypted samples
+    """
+
+    def save_aby3_share(share_reader, role, part_name):
+        with open(part_name + ".part" + str(role), 'wb') as share_file:
+            for share in share_reader():
+                share_file.write(share.tostring())
+
+    def encrypted_housing_features():
+        main_program = fluid.Program()
+        startup_program = fluid.Program()
+        with fluid.program_guard(main_program, startup_program):
+            pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+            input = fluid.data(name='input', shape=[13], dtype='float32')
+            data_location = 0
+            out = pfl_mpc.layers.share(input, role=data_location)
+
+            place=fluid.CPUPlace()
+            exe = fluid.Executor(place)
+            exe.run(fluid.default_startup_program())
+            for instance in sample_reader():
+                if role == data_location:
+                    feed_data = np.array(instance[0], dtype='float32')
+                else:
+                    feed_data = np.zeros(shape=(13,), dtype ='float32')#dummy_data
+                out_share = exe.run(feed={'input': feed_data}, fetch_list=[out])
+                yield np.array(out_share)
+
+    def encrypted_housing_labels():
+        main_program = fluid.Program()
+        startup_program = fluid.Program()
+        with fluid.program_guard(main_program, startup_program):
+            pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+            input = fluid.data(name='input', shape=[1], dtype='float32')
+            data_location = 1
+            out = pfl_mpc.layers.share(input, role=data_location)
+
+            place=fluid.CPUPlace()
+            exe = fluid.Executor(place)
+            exe.run(fluid.default_startup_program())
+            for instance in sample_reader():
+                if role == data_location:
+                    feed_data = np.array(instance[1], dtype='float32')
+                else:
+                    feed_data = np.zeros(shape=(1,), dtype ='float32')#dummy_data
+                out_share = exe.run(feed={'input': feed_data}, fetch_list=[out])
+                yield np.array(out_share)
+
+    save_aby3_share(encrypted_housing_features, role,  "/tmp/house_feature")
+    save_aby3_share(encrypted_housing_labels, role, "/tmp/house_label")
 
 def load_decrypt_data(filepath, shape, decrypted_file):
     """

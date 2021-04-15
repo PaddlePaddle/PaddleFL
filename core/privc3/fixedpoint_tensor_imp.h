@@ -105,6 +105,42 @@ void FixedPointTensor<T, N>::share(const TensorAdapter<T>* input,
     }
 }
 
+//convert TensorAdapter to shares and distribute to all parties
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::online_share(size_t party, 
+                                    const TensorAdapter<T>* input,
+                                    FixedPointTensor<T, N>* ret) {
+    if (party == FixedPointTensor::party()) {
+        // encrypt input into 3 shares
+        TensorAdapter<T>* temp[3];
+        for (int i = 0; i < 3; i++) {
+            temp[i] = new PaddleTensor<int64_t>(paddle::mpc::ContextHolder::device_ctx());
+            dynamic_cast<PaddleTensor<int64_t>*>(temp[i])->reshape(input->shape());
+        }
+        share(input, temp);
+
+        // share 0&1
+        temp[0]->copy(ret->_share[0]);
+        temp[1]->copy(ret->_share[1]);
+ 
+        // send share 1&2 to next_party
+        aby3_ctx()->network()->template send(next_party(), *(temp[1]));
+        aby3_ctx()->network()->template send(next_party(), *(temp[2]));
+        
+        // send share 2&0 to pre_party
+        aby3_ctx()->network()->template send(pre_party(), *(temp[2]));
+        aby3_ctx()->network()->template send(pre_party(), *(temp[0]));
+    } else if (party == next_party()) {
+        // recv share from next_party
+        aby3_ctx()->network()->template recv(next_party(), *(ret->_share[0]));
+        aby3_ctx()->network()->template recv(next_party(), *(ret->_share[1]));
+    } else {
+        // recv share from pre_party
+        aby3_ctx()->network()->template recv(pre_party(), *(ret->_share[0]));
+        aby3_ctx()->network()->template recv(pre_party(), *(ret->_share[1]));
+    }
+}
+
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::add(const FixedPointTensor<T, N>* rhs,
                                 FixedPointTensor<T, N>* ret) const {

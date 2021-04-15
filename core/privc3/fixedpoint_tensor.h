@@ -62,6 +62,10 @@ public:
     static void share(const TensorAdapter<T>* input,
                       TensorAdapter<T>* output_shares[3],
                       block seed = g_zero_block);
+    //convert TensorAdapter to shares and distribute to all parties
+    static void online_share(size_t party, 
+                             const TensorAdapter<T>* input,
+                             FixedPointTensor* ret);
 
     // element-wise add with FixedPointTensor
     void add(const FixedPointTensor* rhs, FixedPointTensor* ret) const;

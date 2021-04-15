@@ -24,6 +24,7 @@ __all__ = [
     'elementwise_add',
     'elementwise_sub',
     'elementwise_mul',
+    'share',
 ]
 
 
@@ -129,3 +130,21 @@ def elementwise_mul(x, y, axis=-1, act=None, name=None):
     Examples: todo
     """
     return _elementwise_op(MpcLayerHelper('elementwise_mul', **locals()))
+
+
+def share(input, role=0, act=None, name=None):
+    """
+    share operator.
+    """
+
+    check_variable_and_dtype(input, "input", ['float32'], "share")
+    inputs = {'X': [input]}
+    attrs = {
+        'party': int(role),
+    }
+    helper = MpcLayerHelper('share', **locals())
+    out = helper.create_mpc_variable_for_type_inference(dtype='int64', stop_gradient=True)
+
+    helper.append_op(
+        type='mpc_share', inputs=inputs, outputs={'Out': out}, attrs=attrs)
+    return helper.append_activation(out)

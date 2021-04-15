@@ -24,11 +24,15 @@ import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 import paddle_fl.mpc.data_utils.aby3 as aby3
 
+import process_data
+
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 role = int(role)
 
 # data preprocessing
+process_data.generate_encrypted_data_online(role, server, port)
+
 BATCH_SIZE = 10
 
 feature_reader = aby3.load_aby3_shares(

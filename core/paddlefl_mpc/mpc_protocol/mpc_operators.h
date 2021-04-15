@@ -115,6 +115,8 @@ public:
     // reveal(tensor_in, tensor_to_print);
     // std::cout << tensor_to_print;
     virtual void reveal(const Tensor *in, Tensor* out) {};
+
+    virtual void online_share(size_t party, const Tensor *input, Tensor *out) = 0;
 };
 
 } // mpc
