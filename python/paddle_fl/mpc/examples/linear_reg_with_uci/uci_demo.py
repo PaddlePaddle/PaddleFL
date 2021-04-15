@@ -24,16 +24,26 @@ import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 import paddle_fl.mpc.data_utils.aby3 as aby3
 
+import process_data
+
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
 role = int(role)
 
 # data preprocessing
-BATCH_SIZE = 10
+# generate share online
+feature_reader, label_reader = process_data.generate_encrypted_data_online(role, server, port)
 
+'''
+# load shares from file
+process_data.generate_encrypted_data_online(role, server, port)
 feature_reader = aby3.load_aby3_shares(
     "/tmp/house_feature", id=role, shape=(13, ))
 label_reader = aby3.load_aby3_shares("/tmp/house_label", id=role, shape=(1, ))
+'''
+
+BATCH_SIZE = 10
+
 batch_feature = aby3.batch(feature_reader, BATCH_SIZE, drop_last=True)
 batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
 

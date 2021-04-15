@@ -24,6 +24,7 @@ __all__ = [
     'elementwise_add',
     'elementwise_sub',
     'elementwise_mul',
+    'share',
 ]
 
 
@@ -129,3 +130,32 @@ def elementwise_mul(x, y, axis=-1, act=None, name=None):
     Examples: todo
     """
     return _elementwise_op(MpcLayerHelper('elementwise_mul', **locals()))
+
+
+def share(input, party_id=0, name=None):
+    """
+    share operator.
+    Args:
+        input (MpcVariable): The input Tensor/LoDTensor of share_op.
+        data_party_id (int): The id of the party who has original data.
+        name (string, optional): Name of the output. Default is None. It is used to print debug info for developers.
+    Returns:
+       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of elementwise mul op.
+    """
+
+    check_variable_and_dtype(input, "input", ['float32'], "share")
+    inputs = {'X': [input]}
+    attrs = {
+        'party': int(party_id),
+    }
+    helper = MpcLayerHelper('share', **locals())
+    if name is None:
+        out = helper.create_mpc_variable_for_type_inference(dtype='int64', stop_gradient=True)
+    else:
+        out = helper.create_mpc_variable(
+            name=name, dtype='int64', persistable=False, stop_gradient=True)
+
+
+    helper.append_op(
+        type='mpc_share', inputs=inputs, outputs={'Out': out}, attrs=attrs)
+    return helper.append_activation(out)
