@@ -155,7 +155,6 @@ def share(input, party_id=0, name=None):
         out = helper.create_mpc_variable(
             name=name, dtype='int64', persistable=False, stop_gradient=True)
 
-
     helper.append_op(
         type='mpc_share', inputs=inputs, outputs={'Out': out}, attrs=attrs)
     return helper.append_activation(out)
