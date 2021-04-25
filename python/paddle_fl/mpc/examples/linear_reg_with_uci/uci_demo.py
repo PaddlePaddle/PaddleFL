@@ -106,4 +106,7 @@ for sample in loader():
                          fetch_list=[y_pre])
     with open(prediction_file, 'ab') as f:
         f.write(np.array(prediction).tostring())
+
+    print("revealed result: {}".format(process_data.decrypt_online(prediction, (2, BATCH_SIZE))))
+
     break

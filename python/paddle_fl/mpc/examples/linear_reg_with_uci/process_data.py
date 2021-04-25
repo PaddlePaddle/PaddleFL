@@ -139,3 +139,18 @@ def load_decrypt_data(filepath, shape, decrypted_file):
         with open(decrypted_file, 'a+') as f:
             for i in p:
                 f.write(str(i) + '\n')
+
+
+def decrypt_online(shares, shape):
+    main_program = fluid.Program()
+    startup_program = fluid.Program()
+    with fluid.program_guard(main_program, startup_program):
+        input = pfl_mpc.data(name='input', shape=shape[1:], dtype='int64')
+        out = pfl_mpc.layers.reveal(input)
+
+        place=fluid.CPUPlace()
+        exe = fluid.Executor(place)
+        exe.run(fluid.default_startup_program())
+        out_ = exe.run(feed={'input': np.array(shares).reshape(shape)}, fetch_list=[out])
+        return out_
+

@@ -25,6 +25,7 @@ __all__ = [
     'elementwise_sub',
     'elementwise_mul',
     'share',
+    'reveal',
 ]
 
 
@@ -140,7 +141,7 @@ def share(input, party_id=0, name=None):
         data_party_id (int): The id of the party who has original data.
         name (string, optional): Name of the output. Default is None. It is used to print debug info for developers.
     Returns:
-       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of elementwise mul op.
+       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of share op.
     """
 
     check_variable_and_dtype(input, "input", ['float32'], "share")
@@ -157,4 +158,28 @@ def share(input, party_id=0, name=None):
 
     helper.append_op(
         type='mpc_share', inputs=inputs, outputs={'Out': out}, attrs=attrs)
+    return helper.append_activation(out)
+
+
+def reveal(input, name=None):
+    """
+    reveal operator.
+    Args:
+        input (MpcVariable): The input Tensor/LoDTensor of reveal_op.
+        name (string, optional): Name of the output. Default is None. It is used to print debug info for developers.
+    Returns:
+       MpcVariable(Tensor/LoDTensor): The output Tensor/LoDTensor of reveal op.
+    """
+
+    check_mpc_variable_and_dtype(input, 'input', ['int64'], 'reveal')
+    inputs = {'X': [input]}
+    helper = MpcLayerHelper('reveal', **locals())
+    if name is None:
+        out = helper.create_variable_for_type_inference(dtype='float32', stop_gradient=True)
+    else:
+        out = helper.create_variable(
+            name=name, dtype='float32', persistable=False, stop_gradient=True)
+
+    helper.append_op(
+        type='mpc_reveal', inputs=inputs, outputs={'Out': out})
     return helper.append_activation(out)
