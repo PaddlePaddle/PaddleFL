@@ -57,16 +57,14 @@ def generate_encrypted_data_online(role, server, port):
             for share in share_reader():
                 share_file.write(share.tostring())
 
-    feature_list = []
-    label_list = []
-
-    def encrypted_housing_features():
+    # extract data from reader 'sample_reader' for party 'data_location_party', then online share
+    def encrypted_data_generator(data_location_party, sample_reader, index1, index2_begin, index2_end):
+        feature_num = index2_end - index2_begin
         main_program = fluid.Program()
         startup_program = fluid.Program()
         with fluid.program_guard(main_program, startup_program):
             pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
-            input = fluid.data(name='input', shape=[13], dtype='float32')
-            data_location_party = 0 # party_0 has features
+            input = fluid.data(name='input', shape=[feature_num], dtype='float32')
             out = pfl_mpc.layers.share(input, party_id=data_location_party)
 
             place=fluid.CPUPlace()
@@ -74,43 +72,26 @@ def generate_encrypted_data_online(role, server, port):
             exe.run(fluid.default_startup_program())
             for instance in sample_reader():
                 if role == data_location_party:
-                    feed_data = np.array(instance[0], dtype='float32')
+                    feed_data = np.array(instance[index1][index2_begin:index2_end], dtype='float32')
                 else:
-                    feed_data = np.zeros(shape=(13,), dtype ='float32')#dummy_data
-                out_share = exe.run(feed={'input': feed_data}, fetch_list=[out])
-                yield np.array(out_share)
-
-    def encrypted_housing_labels():
-        main_program = fluid.Program()
-        startup_program = fluid.Program()
-        with fluid.program_guard(main_program, startup_program):
-            pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
-            input = fluid.data(name='input', shape=[1], dtype='float32')
-            data_location_party = 1 # party_1 has labels
-            out = pfl_mpc.layers.share(input, party_id=data_location_party)
-
-            place=fluid.CPUPlace()
-            exe = fluid.Executor(place)
-            exe.run(fluid.default_startup_program())
-            for instance in sample_reader():
-                if role == data_location_party:
-                    feed_data = np.array(instance[1], dtype='float32')
-                else:
-                    feed_data = np.zeros(shape=(1,), dtype ='float32')#dummy_data
+                    feed_data = np.zeros(shape=(feature_num,), dtype ='float32')#dummy_data
                 out_share = exe.run(feed={'input': feed_data}, fetch_list=[out])
                 yield np.array(out_share)
 
     # ** return generator **
+    # assume: each party has different partial data of sample_reader(uci housing dataset reader)
+    feature_list_1 = list(encrypted_data_generator(0, sample_reader, 0, 0, 5)) #party_0 has features 0~4
+    feature_list_2 = list(encrypted_data_generator(1, sample_reader, 0, 5, 13)) #party_1 has features 5~12
+    label_list = list(encrypted_data_generator(2, sample_reader, 1, 0, 1)) #party_2 has label
+
     def feature_reader():
-        for feature in feature_list:
-            yield np.array(feature).reshape((2, 13))
+        for feature_1, feature_2 in zip(feature_list_1, feature_list_2):
+            feature = np.concatenate((feature_1[0], feature_2[0]), axis=1)
+            yield feature
 
     def label_reader():
         for label in label_list:
             yield np.array(label).reshape((2, 1))
-
-    feature_list = list(encrypted_housing_features())
-    label_list = list(encrypted_housing_labels())
 
     return feature_reader, label_reader
     # ** return generator **
