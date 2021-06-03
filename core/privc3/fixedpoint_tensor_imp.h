@@ -105,6 +105,52 @@ void FixedPointTensor<T, N>::share(const TensorAdapter<T>* input,
     }
 }
 
+//convert TensorAdapter to shares and distribute to all parties
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::online_share(const size_t party, 
+                                          const TensorAdapter<T>* input,
+                                          FixedPointTensor<T, N>* ret) {
+    // create a tensor which contains two shares to send/recv   
+    auto shape = input->shape();
+    std::vector<size_t> shape_ = shape;
+    shape_.insert(shape_.begin(), 2);
+    auto one_party_shares = tensor_factory()->template create<T>(shape_);
+
+    if (party == FixedPointTensor::party()) {
+        // this party has original data: 
+        // encrypt input into 3 shares
+        auto temp = tensor_factory()->template malloc_tensor<T>(3, input->shape());
+        TensorAdapter<T>* shares[3]{temp[0].get(), temp[1].get(), temp[2].get()};
+        share(input, shares);
+
+        // share 0&1
+        shares[0]->copy(ret->_share[0]);
+        shares[1]->copy(ret->_share[1]);
+ 
+        // send share 1&2 to next_party 
+        std::copy(shares[1]->data(), shares[1]->data() + shares[1]->numel(),
+                  one_party_shares.get()->data());
+        std::copy(shares[2]->data(), shares[2]->data() + shares[2]->numel(), 
+                  one_party_shares.get()->data() + shares[1]->numel());
+        aby3_ctx()->network()->template send(next_party(), *one_party_shares);
+        
+        // send share 2&0 to pre_party
+        std::copy(shares[2]->data(), shares[2]->data() + shares[2]->numel(), 
+                  one_party_shares.get()->data());
+        std::copy(shares[0]->data(), shares[0]->data() + shares[0]->numel(), 
+                  one_party_shares.get()->data() + shares[2]->numel());
+        aby3_ctx()->network()->template send(pre_party(), *one_party_shares);
+    } else {
+        // recv share from 'party' who has original data
+        aby3_ctx()->network()->template recv(party, *(one_party_shares));
+        std::copy(one_party_shares->data(), one_party_shares->data() + one_party_shares->numel() / 2, 
+                  ret->_share[0]->data());
+        std::copy(one_party_shares->data() + one_party_shares->numel() / 2, 
+                  one_party_shares->data() + one_party_shares->numel(),
+                  ret->_share[1]->data());
+    }
+}
+
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::add(const FixedPointTensor<T, N>* rhs,
                                 FixedPointTensor<T, N>* ret) const {

@@ -416,6 +416,18 @@ public:
                            return in / pow(2, ABY3_SCALING_FACTOR); });
     };
 
+    void online_share(size_t party, 
+                      const Tensor *input,
+                      Tensor *out) {
+        PaddleTensor input_(ContextHolder::device_ctx(), *input);
+        input_.from_float_point_type<float>(*input, ABY3_SCALING_FACTOR);
+
+        auto out_tuple = from_tensor(out);
+        auto out_ = std::get<0>(out_tuple).get();
+
+        FixedTensor::online_share(party, &input_, out_);
+    }
+
 private:
     template <typename T>
     std::tuple<
