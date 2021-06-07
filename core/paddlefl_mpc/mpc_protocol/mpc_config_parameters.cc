@@ -20,15 +20,19 @@
 namespace paddle {
 namespace mpc {
 
-// aby3 protocol parameters and defaults
-const std::string Aby3Config::ROLE("role");
-const std::string Aby3Config::LOCAL_ADDR("local.address");
-const std::string Aby3Config::NET_SERVER_ADDR("net_server.address");
-const std::string Aby3Config::NET_SERVER_PORT("net_server.port");
+const std::string MpcConfig::ROLE("role");
+const std::string MpcConfig::NET_SIZE("net_size");
+const std::string MpcConfig::LOCAL_ADDR("local.address");
+const std::string MpcConfig::NET_SERVER_ADDR("net_server.address");
+const std::string MpcConfig::NET_SERVER_PORT("net_server.port");
+const std::string MpcConfig::ENDPOINTS("endpoints");
+const std::string MpcConfig::NETWORK_MODE("network_mode");
 
-const std::string Aby3Config::LOCAL_ADDR_DEFAULT("localhost");
-const std::string Aby3Config::NET_SERVER_ADDR_DEFAULT("localhost");
-const int Aby3Config::NET_SERVER_PORT_DEFAULT =
+const std::string MpcConfig::LOCAL_ADDR_DEFAULT("localhost");
+const std::string MpcConfig::NET_SERVER_ADDR_DEFAULT("localhost");
+const std::string MpcConfig::ENDPOINTS_DEFAULT("localhost:8900;localhost:8901;localhost:8902");
+const std::string MpcConfig::NETWORK_MODE_DEFAULT("grpc");
+const int MpcConfig::NET_SERVER_PORT_DEFAULT =
     6379; // default redis server port
 
 } // mpc

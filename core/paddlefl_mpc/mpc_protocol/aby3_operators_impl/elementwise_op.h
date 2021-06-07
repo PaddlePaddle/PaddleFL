@@ -30,6 +30,12 @@ void add_grad(const Tensor *in_x_t, const Tensor *in_y_t, const Tensor *dout, Te
 
 void sub(const Tensor *lhs, const Tensor *rhs, Tensor *out);
 
+void elementwise_mul_with_same_dim(const Tensor *lhs, const Tensor *rhs, Tensor *out);
+
+void elementwise_mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis);
+
+void elementwise_mul_grad(const Tensor *in_x_t, const Tensor *in_y_t, const Tensor *dout, Tensor *dx, Tensor *dy, int axis);
+
 } // aby3
 } // operators
 } // paddle

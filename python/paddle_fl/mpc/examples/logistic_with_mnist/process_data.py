@@ -20,7 +20,7 @@ import logging
 import numpy as np
 import six
 import paddle
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,6 +28,7 @@ logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
 
+mpc_du = get_datautils('aby3')
 sample_reader = paddle.dataset.mnist.train()
 test_reader = paddle.dataset.mnist.test()
 
@@ -42,7 +43,7 @@ def generate_encrypted_train_data(mpc_data_dir, class_num):
         feature reader
         """
         for instance in sample_reader():
-            yield aby3.make_shares(instance[0])
+            yield mpc_du.make_shares(instance[0])
 
     def encrypted_mnist_labels():
         """
@@ -55,10 +56,10 @@ def generate_encrypted_train_data(mpc_data_dir, class_num):
                 label = np.eye(N=1, M=10, k=instance[1], dtype=float).reshape(10)
             else:
                 raise ValueError("class_num should be 2 or 10, but received {}.".format(class_num))
-            yield aby3.make_shares(label)
+            yield mpc_du.make_shares(label)
 
-    aby3.save_aby3_shares(encrypted_mnist_features, mpc_data_dir + "mnist{}_feature".format(class_num))
-    aby3.save_aby3_shares(encrypted_mnist_labels, mpc_data_dir + "mnist{}_label".format(class_num))
+    mpc_du.save_shares(encrypted_mnist_features, mpc_data_dir + "mnist{}_feature".format(class_num))
+    mpc_du.save_shares(encrypted_mnist_labels, mpc_data_dir + "mnist{}_label".format(class_num))
 
 
 def generate_encrypted_test_data(mpc_data_dir, class_num, label_mnist_filepath):
@@ -71,7 +72,7 @@ def generate_encrypted_test_data(mpc_data_dir, class_num, label_mnist_filepath):
         feature reader
         """
         for instance in test_reader():
-            yield aby3.make_shares(instance[0])
+            yield mpc_du.make_shares(instance[0])
 
     def encrypted_mnist_labels():
         """
@@ -88,10 +89,10 @@ def generate_encrypted_test_data(mpc_data_dir, class_num, label_mnist_filepath):
                     f.write(str(instance[1]) + '\n')
             else:
                 raise ValueError("class_num should be 2 or 10, but received {}.".format(class_num))
-            yield aby3.make_shares(label)
+            yield mpc_du.make_shares(label)
 
-    aby3.save_aby3_shares(encrypted_mnist_features, mpc_data_dir + "mnist{}_test_feature".format(class_num))
-    aby3.save_aby3_shares(encrypted_mnist_labels, mpc_data_dir + "mnist{}_test_label".format(class_num))
+    mpc_du.save_shares(encrypted_mnist_features, mpc_data_dir + "mnist{}_test_feature".format(class_num))
+    mpc_du.save_shares(encrypted_mnist_labels, mpc_data_dir + "mnist{}_test_label".format(class_num))
 
 
 def load_decrypt_data(filepath, shape):
@@ -100,11 +101,11 @@ def load_decrypt_data(filepath, shape):
     """
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         logger.info(p)
 
 
@@ -114,10 +115,10 @@ def load_decrypt_bs_data(filepath, shape):
     """
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
-    for instance in aby3_share_reader():
+    for instance in mpc_share_reader():
         p = np.bitwise_xor(np.array(instance[0]), np.array(instance[1]))
         p = np.bitwise_xor(p, np.array(instance[2]))
         logger.info(p)
@@ -131,11 +132,11 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
         os.remove(decrypted_filepath)
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         with open(decrypted_filepath, 'a+') as f:
             for i in p:
                 f.write(str(np.argmax(i)) + '\n')
@@ -149,10 +150,10 @@ def decrypt_bs_data_to_file(filepath, shape, decrypted_filepath):
         os.remove(decrypted_filepath)
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
-    for instance in aby3_share_reader():
+    for instance in mpc_share_reader():
         p = np.bitwise_xor(np.array(instance[0]), np.array(instance[1]))
         p = np.bitwise_xor(p, np.array(instance[2]))
         with open(decrypted_filepath, 'a+') as f:

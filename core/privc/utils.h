@@ -65,7 +65,7 @@ static std::shared_ptr<common::TensorAdapterFactory> tensor_factory() {
     return paddle::mpc::ContextHolder::tensor_factory();
 }
 
-static std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> tripletor() {
+static std::shared_ptr<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>> tripletor() {
     return std::dynamic_pointer_cast<PrivCContext>(privc_ctx())->triplet_generator();
 }
 

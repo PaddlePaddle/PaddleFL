@@ -16,13 +16,15 @@ This module test metric op.
 
 """
 import unittest
-
 import numpy as np
+import test_op_base
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 import mpc_data_utils as mdu
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-import test_op_base
+
+aby3 = get_datautils('aby3')
 
 
 def precision_recall_naive(input, label, threshold=0.5, stat=None):
@@ -93,7 +95,7 @@ class TestOpPrecisionRecall(test_op_base.TestOpBase):
         self.threshold = np.random.random()
         preds, labels = [], []
         self.exp_res = (0, [0] * 3)
-        share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64').reshape(
+        share = lambda x: np.array([x * aby3.MPC_ONE_SHARE] * 2).astype('int64').reshape(
                 [2] + self.input_size)
 
         for _ in range(n):

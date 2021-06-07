@@ -10,10 +10,10 @@ User can decrypt encrypted model (three model shares) with Paddle-MPC. The decry
 
 How to decrypt and use prediction model:
 
-1. **Decrypt Model**：user decrypts encryped model with api `aby3.decrypt_model`.
+1. **Decrypt Model**：user decrypts encryped model with api `mpc_du.decrypt_model`.
 
    ```python
-   aby3.decrypt_model(mpc_model_dir=mpc_model_dir,
+   mpc_du.decrypt_model(mpc_model_dir=mpc_model_dir,
                       plain_model_path=decrypted_paddle_model_dir,
                       mpc_model_filename=mpc_model_filename,
                       plain_model_filename=paddle_model_filename)

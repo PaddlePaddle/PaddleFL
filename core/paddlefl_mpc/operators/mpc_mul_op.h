@@ -30,51 +30,11 @@ public:
 
         int x_num_col_dims = ctx.template Attr<int>("x_num_col_dims");
         int y_num_col_dims = ctx.template Attr<int>("y_num_col_dims");
-        auto x_dims = x->dims();
-        auto y_dims = y->dims();
 
-        int x_mat_width = 1;
-        int x_mat_height = 1;
-        int y_mat_width = 1;
-        int y_mat_height = 1;
-
-        for (size_t i = 1; i < x_dims.size(); i++) {
-            if (i <= x_num_col_dims) {
-                x_mat_width *= x_dims[i];
-            } else {
-                x_mat_height *= x_dims[i];
-            }
-        }
-        for (size_t i = 1; i < y_dims.size(); i++) {
-            if (i <= y_num_col_dims) {
-                y_mat_width *= y_dims[i];
-            } else {
-                y_mat_height *= y_dims[i];
-            }
-        }
- 
-        Tensor x_matrix;
-        Tensor y_matrix;
-        x_matrix.ShareDataWith(*x);
-        y_matrix.ShareDataWith(*y);
-
-        x_matrix.Resize({2, x_mat_width, x_mat_height});
-        y_matrix.Resize({2, y_mat_width, y_mat_height});
- 
         out->mutable_data<T>(ctx.GetPlace());
-        
-        auto out_dim = out->dims();
-        if (out_dim.size() > 3) {
-            out->Resize({2, x_mat_width, y_mat_height});
-        }
-       
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
-            &x_matrix, &y_matrix, out); 
-        
-        if (out_dim.size() > 3) {
-            out->Resize(out_dim);
-        }
-       
+
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul(
+            x, y, out, x_num_col_dims, y_num_col_dims); 
     }
 };
 
@@ -90,100 +50,18 @@ public:
         auto *dy = ctx.Output<framework::LoDTensor>(framework::GradVarName("Y"));
         int x_num_col_dims = ctx.template Attr<int>("x_num_col_dims");
         int y_num_col_dims = ctx.template Attr<int>("y_num_col_dims");
-        auto x_dims = x->dims();
-        auto y_dims = y->dims();
-        auto dout_dims = dout->dims();
-
-        int x_mat_width = 1;
-        int x_mat_height = 1;
-        int y_mat_width = 1;
-        int y_mat_height = 1;
-
-        for (size_t i = 1; i < x_dims.size(); i++) {
-            if (i <= x_num_col_dims) {
-                x_mat_width *= x_dims[i];
-            } else {
-                x_mat_height *= x_dims[i];
-            }
-        }
-        for (size_t i = 1; i < y_dims.size(); i++) {
-            if (i <= y_num_col_dims) {
-                y_mat_width *= y_dims[i];
-            } else {
-                y_mat_height *= y_dims[i];
-            }
-        }
-
-        Tensor x_matrix;
-        Tensor y_matrix;
-        Tensor dout_matrix;
-        x_matrix.ShareDataWith(*x);
-        y_matrix.ShareDataWith(*y);
-        dout_matrix.ShareDataWith(*dout);
-
-        x_matrix.Resize({2, x_mat_width, x_mat_height});
-        y_matrix.Resize({2, y_mat_width, y_mat_height});
-        dout_matrix.Resize({2, x_mat_width, y_mat_height});
 
         if (dx != nullptr) {
-          dx->set_lod(x->lod());
+            dx->set_lod(x->lod());
+            dx->mutable_data<T>(ctx.GetPlace());
         }
         if (dy != nullptr) {
-          dy->set_lod(y->lod());
-        }
-
-        Tensor x_matrix_trans;
-        Tensor y_matrix_trans;
-        x_matrix_trans.mutable_data<T>(x->dims(), ctx.GetPlace());
-        y_matrix_trans.mutable_data<T>(y->dims(), ctx.GetPlace());
-
-        x_matrix_trans.Resize({2, x_mat_height, x_mat_width});
-        y_matrix_trans.Resize({2, y_mat_height, y_mat_width});
-    
-        auto& dev_ctx = ctx.template device_context<DeviceContext>();
-        const int Rank = 3;
-            
-        Eigen::array<int, Rank>  permute;
-        permute[0] = 0;
-        permute[1] = 2;
-        permute[2] = 1;
-
-        if (dx) {
-            dx->mutable_data<T>(ctx.GetPlace());
-            auto dx_dim = dx->dims();
-            if (dx->dims().size() > 3) {
-                dx->Resize({2, x_mat_width, x_mat_height});
-            }
-            auto eigen_in = framework::EigenTensor<T, Rank>::From(y_matrix);
-            auto eigen_out = framework::EigenTensor<T, Rank>::From(y_matrix_trans);
-            auto* dev = dev_ctx.eigen_device();
-            eigen_out.device(*dev) = eigen_in.shuffle(permute);
-            // dx = dout * y'. dx: M x K, dout : M x N, y : K x N
-            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
-                &dout_matrix, &y_matrix_trans, dx);  
-            if (dx_dim.size() > 3) {
-                dx->Resize(dx_dim);
-            }
-        }
-
-        if (dy) {
+            dy->set_lod(y->lod());
             dy->mutable_data<T>(ctx.GetPlace());
-            auto dy_dim = dy->dims();
-            if (dy->dims().size() > 3) {
-                dy->Resize({2, y_mat_width, y_mat_height});
-            }
-
-            auto eigen_in = framework::EigenTensor<T, Rank>::From(x_matrix);
-            auto eigen_out = framework::EigenTensor<T, Rank>::From(x_matrix_trans);
-            auto* dev = dev_ctx.eigen_device();
-            eigen_out.device(*dev) = eigen_in.shuffle(permute);
-            // dy = x' * dout. dy K x N, dout : M x N, x : M x K
-            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
-                &x_matrix_trans, &dout_matrix, dy);  
-            if (dy_dim.size() > 3) {
-                dy->Resize(dy_dim);
-            }
         }
+
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul_grad(
+            x, y, dout, dx, dy, x_num_col_dims, y_num_col_dims);
     }
 };
 

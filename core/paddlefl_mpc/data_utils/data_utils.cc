@@ -22,16 +22,17 @@ limitations under the License. */
 #include <pybind11/stl.h>
 
 #include "core/privc3/fixedpoint_util.h"
+#include "core/privc/fixedpoint_util.h"
 #include "core/paddlefl_mpc/mpc_protocol/aby3_operators.h"
 #include "core/psi/psi_api.h"
 
 namespace py = pybind11;
 
-namespace aby3 {
+namespace mpc {
 
 // split plaintext into three shares.
 template<typename T, size_t N>
-py::array_t<T> share(double input) {
+py::array_t<T> aby3_share(double input) {
     size_t share_num = 3;
     auto shares = py::array_t<T>(share_num);
     py::buffer_info shares_buf = shares.request();
@@ -41,14 +42,14 @@ py::array_t<T> share(double input) {
         ret_ptr[i] = &shares_buf_ptr[i];
     }
 
-    FixedPointUtil<T, N>::share(input, ret_ptr);
+    aby3::FixedPointUtils<T, N>::share(input, ret_ptr);
 
     return shares;
 }
 
 // combine three shares to reveal plaintext.
 template<typename T, size_t N>
-double reveal(py::array_t<T> shares) {
+double aby3_reveal(py::array_t<T> shares) {
     size_t share_num = 3;
     py::buffer_info shares_buf = shares.request();
     T *shares_buf_ptr = (T *) shares_buf.ptr;
@@ -58,7 +59,41 @@ double reveal(py::array_t<T> shares) {
         ret[idx] = &shares_buf_ptr[idx];
     }
 
-    double result = FixedPointUtil<T, N>::reveal(ret);
+    double result = aby3::FixedPointUtils<T, N>::reveal(ret);
+
+    return result;
+}
+
+// split plaintext into two shares.
+template<typename T, size_t N>
+py::array_t<T> privc_share(double input) {
+    size_t share_num = 2;
+    auto shares = py::array_t<T>(share_num);
+    py::buffer_info shares_buf = shares.request();
+    T* shares_buf_ptr = (T*)shares_buf.ptr;
+    T* ret_ptr[share_num];
+    for (size_t i = 0; i < share_num; ++i) {
+        ret_ptr[i] = &shares_buf_ptr[i];
+    }
+
+    privc::FixedPointUtils<T, N>::share(input, ret_ptr);
+
+    return shares;
+}
+
+// combine two shares to reveal plaintext.
+template<typename T, size_t N>
+double privc_reveal(py::array_t<T> shares) {
+    size_t share_num = 2;
+    py::buffer_info shares_buf = shares.request();
+    T *shares_buf_ptr = (T *) shares_buf.ptr;
+    T *ret[share_num];
+
+    for (size_t idx = 0; idx < share_num; ++idx) {
+        ret[idx] = &shares_buf_ptr[idx];
+    }
+
+    double result = privc::FixedPointUtils<T, N>::reveal(ret);
 
     return result;
 }
@@ -88,17 +123,25 @@ PYBIND11_MODULE(mpc_data_utils, m)
     // optional module docstring
     m.doc() = "pybind11 paddle-mpc plugin: data_utils (share, reveal, psi)";
 
-    m.def("share", &share<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
+    m.def("aby3_share", &aby3_share<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
           "split plaintext into three shares.");
-    m.def("reveal", &reveal<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
+    m.def("aby3_reveal", &aby3_reveal<long long, paddle::mpc::ABY3_SCALING_FACTOR>,
           "combine three shares to reveal plaintext.");
+
+    m.def("privc_share", &privc_share<long long, privc::PRIVC_FIXED_POINT_SCALING_FACTOR>,
+          "split plaintext into two shares.");
+    m.def("privc_reveal", &privc_reveal<long long, privc::PRIVC_FIXED_POINT_SCALING_FACTOR>,
+          "combine two shares to reveal plaintext.");
 
     m.def("send_psi", &send_psi, "Send input in two party PSI.");
     m.def("recv_psi", &recv_psi, "Send input and return PSI result as output in two party PSI.");
 
-    m.attr("mpc_one_share") = (1 << paddle::mpc::ABY3_SCALING_FACTOR) / 3;
+    int64_t ONE = 1;
+    m.attr("mpc_one_share") = (ONE << paddle::mpc::ABY3_SCALING_FACTOR) / 3; // todo: remove
+    m.attr("aby3_one_share") = (ONE << paddle::mpc::ABY3_SCALING_FACTOR) / 3;
+    m.attr("privc_one_share") = (ONE <<  privc::PRIVC_FIXED_POINT_SCALING_FACTOR) / 2;
 }
 
-}  // namespace aby3
+}  // namespace mpc
 
 

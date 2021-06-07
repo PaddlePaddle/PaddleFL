@@ -18,8 +18,10 @@ import numpy as np
 import six
 import os
 import paddle
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
+
+mpc_du = get_datautils('aby3')
 data_path = './data/'
 
 
@@ -32,7 +34,7 @@ def encrypted_data(data):
         """
         make shares
         """
-        yield aby3.make_shares(data)
+        yield mpc_du.make_shares(data)
 
     return func
 
@@ -48,11 +50,11 @@ def generate_encrypted_data(party_id, f_mat):
 
     suffix = '.' + str(party_id)
 
-    aby3.save_aby3_shares(
+    mpc_du.save_shares(
         encrypted_data(f_max), data_path + "feature_max" + suffix)
-    aby3.save_aby3_shares(
+    mpc_du.save_shares(
         encrypted_data(f_min), data_path + "feature_min" + suffix)
-    aby3.save_aby3_shares(
+    mpc_du.save_shares(
         encrypted_data(f_mean), data_path + "feature_mean" + suffix)
 
 
@@ -63,11 +65,11 @@ def decrypt_data(filepath, shape):
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(
-            aby3.load_aby3_shares(
+            mpc_du.load_shares(
                 filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
                                               part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         return p

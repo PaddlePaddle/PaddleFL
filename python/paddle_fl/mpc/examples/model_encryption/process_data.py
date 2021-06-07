@@ -19,7 +19,10 @@ import numpy as np
 import six
 import paddle
 import paddle.fluid as fluid
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+
+
+mpc_du = get_datautils('aby3')
 
 #BATCH_SIZE = 10
 #TRAIN_EPOCH = 20
@@ -35,10 +38,10 @@ def get_mpc_dataloader(feature_file, label_file, feature_shape, label_shape,
     """
     x = fluid.default_main_program().global_block().var(feature_name)
     y = fluid.default_main_program().global_block().var(label_name)
-    feature_reader = aby3.load_aby3_shares(feature_file, id=role, shape=feature_shape)
-    label_reader = aby3.load_aby3_shares(label_file, id=role, shape=label_shape)
-    batch_feature = aby3.batch(feature_reader, batch_size, drop_last=True)
-    batch_label = aby3.batch(label_reader, batch_size, drop_last=True)
+    feature_reader = mpc_du.load_shares(feature_file, id=role, shape=feature_shape)
+    label_reader = mpc_du.load_shares(label_file, id=role, shape=label_shape)
+    batch_feature = mpc_du.batch(feature_reader, batch_size, drop_last=True)
+    batch_label = mpc_du.batch(label_reader, batch_size, drop_last=True)
     # async data loader
     loader = fluid.io.DataLoader.from_generator(feed_list=[x, y], capacity=batch_size)
     batch_sample = paddle.reader.compose(batch_feature, batch_label)
@@ -52,8 +55,8 @@ def get_mpc_test_dataloader(feature_file, feature_shape, role, batch_size):
     Read feature test data for prediction.
 
     """
-    feature_reader = aby3.load_aby3_shares(feature_file, id=role, shape=feature_shape)
-    batch_feature = aby3.batch(feature_reader, batch_size, drop_last=True)
+    feature_reader = mpc_du.load_shares(feature_file, id=role, shape=feature_shape)
+    batch_feature = mpc_du.batch(feature_reader, batch_size, drop_last=True)
     return batch_feature
 
 
@@ -65,13 +68,13 @@ def load_decrypt_data(filepath, shape):
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(
-            aby3.load_aby3_shares(
+            mpc_du.load_shares(
                 filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
                                               part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         print(p)
 
 
@@ -86,16 +89,16 @@ def generate_encrypted_data(mpc_data_dir):
         feature reader
         """
         for instance in sample_reader():
-            yield aby3.make_shares(instance[0])
+            yield mpc_du.make_shares(instance[0])
 
     def encrypted_housing_labels():
         """
         label reader
         """
         for instance in sample_reader():
-            yield aby3.make_shares(instance[1])
-    aby3.save_aby3_shares(encrypted_housing_features, mpc_data_dir + "house_feature")
-    aby3.save_aby3_shares(encrypted_housing_labels, mpc_data_dir + "house_label")
+            yield mpc_du.make_shares(instance[1])
+    mpc_du.save_shares(encrypted_housing_features, mpc_data_dir + "house_feature")
+    mpc_du.save_shares(encrypted_housing_labels, mpc_data_dir + "house_label")
 
 
 if __name__ == '__main__':

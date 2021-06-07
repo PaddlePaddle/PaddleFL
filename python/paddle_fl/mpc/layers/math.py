@@ -14,7 +14,8 @@
 """
 mpc math op layers.
 """
-
+import numpy
+import paddle.fluid as fluid
 from ..framework import MpcVariable
 from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
@@ -50,7 +51,7 @@ def mean(x, name=None):
             name=name, dtype=x.dtype, persistable=False)
 
     helper.append_op(
-        type="mpc_mean", inputs={"X": x}, attrs={}, outputs={"Out": out})
+        type="mpc_mean", inputs={"X": x}, outputs={"Out": out})
 
     return out
 

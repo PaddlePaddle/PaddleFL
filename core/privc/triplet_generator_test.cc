@@ -21,16 +21,16 @@ limitations under the License. */
 #include "paddle/fluid/framework/scope.h"
 
 #include "./privc_context.h"
-#include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/network/mesh_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "fixedpoint_tensor.h"
-#include "core/privc/triplet_generator.h"
+#include "core/privc/he_triplet.h"
 #include "core/common/paddle_tensor.h"
 
 namespace privc {
 
 using g_ctx_holder = paddle::mpc::ContextHolder;
-using Fix64N32 = FixedPointTensor<int64_t, SCALING_N>;
+using Fix64N32 = FixedPointTensor<int64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>;
 using AbstractContext = paddle::mpc::AbstractContext;
 
 class TripletGeneratorTest : public ::testing::Test {
@@ -125,12 +125,12 @@ TEST_F(TripletGeneratorTest, triplet) {
         uint64_t a_idx = i;
         uint64_t b_idx = num_triplet + i;
         uint64_t c_idx = 2 * num_triplet + i;
-        int64_t c = fixed64_mult<SCALING_N>(*(ret0_ptr + a_idx), *(ret0_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret0_ptr + a_idx), *(ret1_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
+        int64_t c = fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret0_ptr + a_idx), *(ret0_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret0_ptr + a_idx), *(ret1_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
 
-        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N) * 0.00001);
+        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR) * 0.00001);
     }
 }
 
@@ -174,18 +174,18 @@ TEST_F(TripletGeneratorTest, penta_triplet) {
         uint64_t b_idx = 2 * num_triplet + i;
         uint64_t c_idx = 3 * num_triplet + i;
         uint64_t alpha_c_idx = 4 * num_triplet + i;
-        int64_t c = fixed64_mult<SCALING_N>(*(ret0_ptr + a_idx), *(ret0_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret0_ptr + a_idx), *(ret1_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
-        int64_t alpha_c = fixed64_mult<SCALING_N>(*(ret0_ptr + alpha_idx), *(ret0_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret0_ptr + alpha_idx), *(ret1_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret1_ptr + alpha_idx), *(ret0_ptr + b_idx))
-                    + fixed64_mult<SCALING_N>(*(ret1_ptr + alpha_idx), *(ret1_ptr + b_idx));
+        int64_t c = fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret0_ptr + a_idx), *(ret0_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret0_ptr + a_idx), *(ret1_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret1_ptr + a_idx), *(ret0_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret1_ptr + a_idx), *(ret1_ptr + b_idx));
+        int64_t alpha_c = fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret0_ptr + alpha_idx), *(ret0_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret0_ptr + alpha_idx), *(ret1_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret1_ptr + alpha_idx), *(ret0_ptr + b_idx))
+                    + fixed_mult<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>(*(ret1_ptr + alpha_idx), *(ret1_ptr + b_idx));
 
         // sometimes the difference big than 200
-        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, SCALING_N) * 0.00001);
-        EXPECT_NEAR(alpha_c , (*(ret0_ptr + alpha_c_idx) + *(ret1_ptr + alpha_c_idx)), std::pow(2, SCALING_N) * 0.00001);
+        EXPECT_NEAR(c , (*(ret0_ptr + c_idx) + *(ret1_ptr + c_idx)), std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR) * 0.00001);
+        EXPECT_NEAR(alpha_c , (*(ret0_ptr + alpha_c_idx) + *(ret1_ptr + alpha_c_idx)), std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR) * 0.00001);
     }
 }
 

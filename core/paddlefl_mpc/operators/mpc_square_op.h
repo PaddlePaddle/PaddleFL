@@ -27,7 +27,7 @@ public:
         auto *in_x_t = ctx.Input<Tensor>("X");
         auto *out_t = ctx.Output<Tensor>("Out");
         out_t->mutable_data<T>(ctx.GetPlace());
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul(in_x_t, in_x_t, out_t);
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->elementwise_mul(in_x_t, in_x_t, out_t);
     }
 };
 
@@ -43,7 +43,7 @@ public:
             dx_t->mutable_data<T>(ctx.GetPlace());
             // dx = dout * 2 * x
             mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(in_x_t, 2.0, dx_t);
-            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul(dx_t, dout_t, dx_t);
+            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->elementwise_mul(dx_t, dout_t, dx_t);
         }
     }
 };

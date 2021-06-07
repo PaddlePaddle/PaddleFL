@@ -104,43 +104,22 @@ inline void ComputGRUUint(const framework::ExecutionContext& context,
         mpc_operator->add(&r_h_t, &gate_t[1], &gate_t[1]);
     }
 
-    auto GateActProcess = [&gate_t](const GateActivation fun) {
-        fun(&gate_t[0], &gate_t[0]);
-        fun(&gate_t[1], &gate_t[1]);
-    };
-    GateActivation activ_functor;
     std::string active_gate = context.Attr<std::string>("gate_activation");
-    if (active_gate == "sigmoid_chebyshev") {
-        activ_functor = std::bind(&paddle::mpc::MpcOperators::sigmoid_chebyshev,
-                                  mpc_operator.get(),
-                                  std::placeholders::_1,
-                                  std::placeholders::_2);
-    } else if (active_gate == "sigmoid") {
-        activ_functor = std::bind(&paddle::mpc::MpcOperators::sigmoid,
-                                  mpc_operator.get(),
-                                  std::placeholders::_1,
-                                  std::placeholders::_2);
-    } else if (active_gate == "sigmoid_enhanced") {
-        activ_functor = std::bind(&paddle::mpc::MpcOperators::sigmoid_enhanced,
-                                  mpc_operator.get(),
-                                  std::placeholders::_1,
-                                  std::placeholders::_2);
-    } else if (active_gate == "sigmoid_high_precision") {
-        activ_functor = std::bind(&paddle::mpc::MpcOperators::sigmoid_high_precision,
-                                  mpc_operator.get(),
-                                  std::placeholders::_1,
-                                  std::placeholders::_2);
+    //const std::string sigmoid_str = "sigmoid";
+    //if (active_gate.substr(0, sigmoid_str.length()) == sigmoid_str) {
+    if (active_gate.find("sigmoid") != std::string::npos) {
+        mpc_operator->sigmoid(&gate_t[0], &gate_t[0], active_gate);
+        mpc_operator->sigmoid(&gate_t[1], &gate_t[1], active_gate);
     } else {
         PADDLE_THROW("gate activation of %s is not implemented yet.", active_gate);
     }
-    GateActProcess(activ_functor);
 
     if (has_hidden_prev) {
         // reset_hidden_prev_t = gate[1] * hidden_prev_t
         // compute candidate gate: gate_t[2] += reset_hidden_prev_t matmul state_weight
         Tensor r_h_tmp;
         r_h_tmp.mutable_data<T>(gate_t[2].dims(), context.GetPlace());
-        mpc_operator->mul(&gate_t[1], &hidden_prev_t, &reset_hidden_prev_t);
+        mpc_operator->elementwise_mul(&gate_t[1], &hidden_prev_t, &reset_hidden_prev_t);
         mpc_operator->matmul(&reset_hidden_prev_t, &weight_t[2], &r_h_tmp);
         mpc_operator->add(&r_h_tmp, &gate_t[2], &gate_t[2]);
     } else {
@@ -162,15 +141,15 @@ inline void ComputGRUUint(const framework::ExecutionContext& context,
     ops_u_h_tmp.mutable_data<T>(hidden_t.dims(), context.GetPlace());
     if (origin_mode) {
         // compute output hidden_t = (gate[0] * hidden_prev_t + gate[2] - gate[0] * gate[2])
-        mpc_operator->mul(&gate_t[0], &hidden_prev_t, &u_h_tmp);
+        mpc_operator->elementwise_mul(&gate_t[0], &hidden_prev_t, &u_h_tmp);
         mpc_operator->add(&gate_t[2], &u_h_tmp, &u_h_tmp);
-        mpc_operator->mul(&gate_t[0], &gate_t[2], &ops_u_h_tmp);
+        mpc_operator->elementwise_mul(&gate_t[0], &gate_t[2], &ops_u_h_tmp);
         mpc_operator->sub(&u_h_tmp, &ops_u_h_tmp, &hidden_t);
     } else {
         // compute output hidden_t = (gate[0] * gate[2] + hidden_prev_t - gate[0] * hidden_prev_t)
-        mpc_operator->mul(&gate_t[0], &gate_t[2], &u_h_tmp);
+        mpc_operator->elementwise_mul(&gate_t[0], &gate_t[2], &u_h_tmp);
         mpc_operator->add(&hidden_prev_t, &u_h_tmp, &u_h_tmp);
-        mpc_operator->mul(&gate_t[0], &hidden_prev_t, &ops_u_h_tmp);
+        mpc_operator->elementwise_mul(&gate_t[0], &hidden_prev_t, &ops_u_h_tmp);
         mpc_operator->sub(&u_h_tmp, &ops_u_h_tmp, &hidden_t);
     }
 }
@@ -486,29 +465,29 @@ inline void BackwardStateGrad(const framework::ExecutionContext& context,
     if (origin_mode) {
         // batch_gate_grad[0] = hidden_grad * (hidden_prev - batch_gate[2])
         mpc_operator->sub(&mpc_hidden_prev_t, &mpc_splitted_gate_t[2], &mpc_splitted_gate_grad_t[0]);
-        mpc_operator->mul(&mpc_hidden_grad_t, &mpc_splitted_gate_grad_t[0], &mpc_splitted_gate_grad_t[0]);
+        mpc_operator->elementwise_mul(&mpc_hidden_grad_t, &mpc_splitted_gate_grad_t[0], &mpc_splitted_gate_grad_t[0]);
         // hidden_prev_grad += hidden_grad * batch_gate[0]
         Tensor tmp;
         tmp.mutable_data<T>(mpc_hidden_prev_grad_t.dims(), context.GetPlace());
-        mpc_operator->mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp);
+        mpc_operator->elementwise_mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp);
         mpc_operator->add(&mpc_hidden_prev_grad_t, &tmp, &mpc_hidden_prev_grad_t);
 
         // batch_gate_grad[2] = activation(hidden_grad * (1-batch_gate[0]), batch_gate[2])
         // activation = grad_relu (return a * (b > 0.0 ? 1.0 : 0.0);)
         Tensor tmp1;
         tmp1.mutable_data<T>(mpc_splitted_gate_grad_t[2].dims(), context.GetPlace());
-        mpc_operator->mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp1);
+        mpc_operator->elementwise_mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp1);
         mpc_operator->sub(&mpc_hidden_grad_t, &tmp1, &tmp1);
         mpc_operator->relu_grad(&mpc_splitted_gate_t[2], &tmp1, &mpc_splitted_gate_grad_t[2], 0);
 
     } else {
         // batch_gate_grad[0] = hidden_grad * (batch_gate[2] - hidden_prev)
         mpc_operator->sub(&mpc_splitted_gate_t[2], &mpc_hidden_prev_t, &mpc_splitted_gate_grad_t[0]);
-        mpc_operator->mul(&mpc_hidden_grad_t, &mpc_splitted_gate_grad_t[0], &mpc_splitted_gate_grad_t[0]);
+        mpc_operator->elementwise_mul(&mpc_hidden_grad_t, &mpc_splitted_gate_grad_t[0], &mpc_splitted_gate_grad_t[0]);
         // hidden_prev_grad += hidden_grad * (1 - batch_gate[0])
         Tensor tmp;
         tmp.mutable_data<T>(mpc_hidden_prev_grad_t.dims(), context.GetPlace());
-        mpc_operator->mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp);
+        mpc_operator->elementwise_mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp);
         mpc_operator->sub(&mpc_hidden_grad_t, &tmp, &tmp);
         mpc_operator->add(&mpc_hidden_prev_grad_t, &tmp, &mpc_hidden_prev_grad_t);
 
@@ -516,7 +495,7 @@ inline void BackwardStateGrad(const framework::ExecutionContext& context,
         // activation = grad_relu
         Tensor tmp1;
         tmp1.mutable_data<T>(mpc_splitted_gate_grad_t[2].dims(), context.GetPlace());
-        mpc_operator->mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp1);
+        mpc_operator->elementwise_mul(&mpc_hidden_grad_t, &mpc_splitted_gate_t[0], &tmp1);
         mpc_operator->relu_grad(&mpc_splitted_gate_t[2], &tmp1, &mpc_splitted_gate_grad_t[2], 0);
     }
 }
@@ -543,11 +522,11 @@ inline void BackwarsResetGrad(const framework::ExecutionContext& context,
         zero(dev_ctx, &mpc_reset_hidden_prev_grad_t, static_cast<T>(0));
     }
     // batch_gate_grad[1] = reset_hidden_grad * hidden_prev
-    mpc_operator->mul(&mpc_reset_hidden_prev_grad_t, &mpc_hidden_prev_t, &mpc_splitted_gate_grad_t[1]);
+    mpc_operator->elementwise_mul(&mpc_reset_hidden_prev_grad_t, &mpc_hidden_prev_t, &mpc_splitted_gate_grad_t[1]);
     // hidden_prev_grad += reset_hidden_grad * batch_gate[1]
     Tensor tmp;
     tmp.mutable_data<T>(mpc_hidden_prev_grad_t.dims(), context.GetPlace());
-    mpc_operator->mul(&mpc_reset_hidden_prev_grad_t, &mpc_splitted_gate_t[1], &tmp);
+    mpc_operator->elementwise_mul(&mpc_reset_hidden_prev_grad_t, &mpc_splitted_gate_t[1], &tmp);
     mpc_operator->add(&mpc_hidden_prev_grad_t, &tmp, &mpc_hidden_prev_grad_t);
     // batch_gate_grad[0] = sigmoid_grad(batch_gate_grad[0], batch_gate[0])
     ComputeSigmoidGrad<T>(context, mpc_splitted_gate_grad_t[0],
@@ -566,10 +545,10 @@ inline void ComputeSigmoidGrad(const framework::ExecutionContext& context,
     auto mpc_operator = mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators();
     Tensor tmp;
     tmp.mutable_data<T>(dx.dims(), context.GetPlace());
-    mpc_operator->mul(&dy, &y, &tmp);
+    mpc_operator->elementwise_mul(&dy, &y, &tmp);
     Tensor tmp1;
     tmp1.mutable_data<T>(dx.dims(), context.GetPlace());
-    mpc_operator->mul(&tmp, &y, &tmp1);
+    mpc_operator->elementwise_mul(&tmp, &y, &tmp1);
     mpc_operator->sub(&tmp, &tmp1, &dx);
 }
 

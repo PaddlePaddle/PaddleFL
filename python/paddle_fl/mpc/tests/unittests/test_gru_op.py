@@ -19,15 +19,11 @@ import numpy as np
 import math
 import functools
 from op_test import OpTest
-
 from multiprocessing import Manager
-
 import test_op_base
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
 import paddle.fluid as fluid
 import paddle.fluid.core as core
-#from test_lstm_op import ACTIVATION
+
 
 SIGMOID_THRESHOLD_MIN = -40.0
 SIGMOID_THRESHOLD_MAX = 13.0
@@ -171,13 +167,12 @@ class TestGRUOp(OpTest):
             N, self.D).astype(self.dtype) if self.with_h0 else np.zeros(
                 (N, self.D), dtype=self.dtype)
 
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64')
-        self.mpc_input = share(input) # shape 2 * 7 * 6
+        self.mpc_input = self.lazy_share(input) # shape 2 * 7 * 6
         # transpose mpc tensor to set lod for input
         mpc_input_trans = np.transpose(self.mpc_input, [1, 0, 2]) # shape 7 * 2 * 6
-        self.mpc_weight = share(weight)
-        mpc_bias = share(bias)
-        mpc_h0 = share(h0)
+        self.mpc_weight = self.lazy_share(weight)
+        mpc_bias = self.lazy_share(bias)
+        mpc_h0 = self.lazy_share(h0)
 
         batch_gate, batch_reset_hidden_prev, batch_hidden, hidden = gru(
             input, self.lod, h0, weight, bias, self.is_reverse,
@@ -287,7 +282,6 @@ class TestGRUOpWithBias(TestGRUOp):
             place, ['Input', 'Weight', 'Bias'], ['Hidden'],
             max_relative_error=50, check_dygraph=False,
             transpose_input_list=["Input"])
-
 """
 class TestGRUOpReverse(TestGRUOp):
     def set_confs(self):

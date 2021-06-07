@@ -28,15 +28,19 @@ import paddle
 import paddle.fluid as fluid
 import paddle.fluid.profiler as profiler
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
+
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 # modify host(localhost).
-pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port))
 role = int(role)
 
 # data preprocessing
@@ -64,16 +68,16 @@ if not os.path.exists(mpc_data_dir):
     raise ValueError("mpc_data_dir is not found. Please prepare encrypted data.")
 
 # train_reader
-feature_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_feature", id=role, shape=(1, 28, 28))
-label_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_label", id=role, shape=(10,))
-batch_feature = aby3.batch(feature_reader, BATCH_SIZE, drop_last=True)
-batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
+feature_reader = mpc_du.load_shares(mpc_data_dir + "mnist10_feature", id=role, shape=(1, 28, 28))
+label_reader = mpc_du.load_shares(mpc_data_dir + "mnist10_label", id=role, shape=(10,))
+batch_feature = mpc_du.batch(feature_reader, BATCH_SIZE, drop_last=True)
+batch_label = mpc_du.batch(label_reader, BATCH_SIZE, drop_last=True)
 
 # test_reader
-test_feature_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_test_feature", id=role, shape=(1, 28, 28))
-test_label_reader = aby3.load_aby3_shares(mpc_data_dir + "mnist10_test_label", id=role, shape=(10,))
-test_batch_feature = aby3.batch(test_feature_reader, BATCH_SIZE, drop_last=True)
-test_batch_label = aby3.batch(test_label_reader, BATCH_SIZE, drop_last=True)
+test_feature_reader = mpc_du.load_shares(mpc_data_dir + "mnist10_test_feature", id=role, shape=(1, 28, 28))
+test_label_reader = mpc_du.load_shares(mpc_data_dir + "mnist10_test_label", id=role, shape=(10,))
+test_batch_feature = mpc_du.batch(test_feature_reader, BATCH_SIZE, drop_last=True)
+test_batch_label = mpc_du.batch(test_label_reader, BATCH_SIZE, drop_last=True)
 
 place = fluid.CPUPlace()
 

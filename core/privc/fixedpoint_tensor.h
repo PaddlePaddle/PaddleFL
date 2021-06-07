@@ -19,9 +19,8 @@
 #include "core/privc/privc_context.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "../common/paddle_tensor.h"
-#include "./triplet_generator.h"
 #include "core/common/tensor_adapter_factory.h"
-#include "core/privc/triplet_generator.h"
+#include "core/privc/he_triplet.h"
 #include "core/privc/utils.h"
 
 namespace privc {
@@ -37,7 +36,7 @@ inline void fixed64_tensor_mult(const TensorAdapter<int64_t>* lhs,
     std::transform(lhs->data(), lhs->data() + lhs->numel(),
                    rhs->data(), ret->data(),
                    [] (const int64_t& lhs, const int64_t& rhs) -> int64_t {
-                        return fixed64_mult<N>(lhs, rhs);
+                        return fixed_mult<int64_t, N>(lhs, rhs);
                      });
 }
 
@@ -138,7 +137,7 @@ private:
 
     static void gc_add(const TensorBlock* lhs, const TensorBlock* rhs,
                                 TensorBlock* ret);
-    
+
     // GC division for fixedpoint tensor using long division algorithm
     static void gc_div(const TensorBlock* lhs, const TensorBlock* rhs,
                 TensorBlock* ret);

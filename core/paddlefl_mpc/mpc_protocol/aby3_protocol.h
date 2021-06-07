@@ -21,7 +21,6 @@
 #include "abstract_network.h"
 #include "aby3_operators.h"
 #include "gloo/rendezvous/hash_store.h"
-#include "mesh_network.h"
 #include "mpc_operators.h"
 #include "mpc_protocol.h"
 #include "core/paddlefl_mpc/mpc_protocol/abstract_context.h"
@@ -37,7 +36,7 @@ public:
   Aby3Protocol() : MpcProtocol("aby3") {}
   // virtual ~Aby3Protocol() = default;
 
-  void init(const MpcConfig &config) override;
+  void init(MpcConfig &config) override;
 
   // for test purpose
   void init_with_store(const MpcConfig &config,
@@ -50,7 +49,9 @@ public:
   std::shared_ptr<AbstractContext> mpc_context() override;
 
 private:
+
   bool _is_initialized = false;
+  const size_t net_size = 3;
   const std::string PROT_INIT_ERR = "The protocol is not yet initialized.";
   std::shared_ptr<MpcOperators> _operators;
   std::shared_ptr<AbstractNetwork> _network;

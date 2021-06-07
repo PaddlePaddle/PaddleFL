@@ -167,8 +167,8 @@ void PsiSender::recv_masks(size_t begin_idx, size_t end_idx,
 }
 
 const std::vector<uint8_t> &PsiSender::send_oprf_outputs(size_t idx) {
-  if (idx >= std::max((int)_max_stash_size, 3)) {
-    throw std::invalid_argument("psi error: idx exceed: " + std::to_string(idx));
+  if (idx >= _max_stash_size) {
+    throw std::invalid_argument("psi error: idx exceed");
   }
 
   // buf[0] reused for stash

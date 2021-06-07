@@ -105,6 +105,7 @@ void FixedPointTensor<T, N>::share(const TensorAdapter<T>* input,
     }
 }
 
+
 //convert TensorAdapter to shares and distribute to all parties
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::online_share(const size_t party, 

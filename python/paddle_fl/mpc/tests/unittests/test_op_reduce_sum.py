@@ -17,11 +17,14 @@ This module test sub op.
 """
 import unittest
 from multiprocessing import Manager
+import test_op_base
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
-import test_op_base
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+
+
+aby3 = get_datautils('aby3')
 
 
 class TestOpReduceSum(test_op_base.TestOpBase):
@@ -50,7 +53,7 @@ class TestOpReduceSum(test_op_base.TestOpBase):
 
         data_1 = np.full(shape=(3, 4), fill_value=2)
         data_1_shares = aby3.make_shares(data_1)
-        data_1_all3shares = np.array([aby3.get_aby3_shares(data_1_shares, i) for i in range(3)])
+        data_1_all3shares = np.array([aby3.get_shares(data_1_shares, i) for i in range(3)])
 
         return_results = Manager().list()
         ret = self.multi_party_run(target=self.reduce_sum,

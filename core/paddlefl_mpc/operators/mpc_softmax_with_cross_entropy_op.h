@@ -99,7 +99,7 @@ public:
         Tensor softmax_minus_label;
         T* softmax_minus_label_data = softmax_minus_label.mutable_data<T>(dx->dims(), ctx.GetPlace());
         mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->sub(in_softmax_t, in_label_t, &softmax_minus_label);
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul(&dout_expand, &softmax_minus_label, dx);
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->elementwise_mul(&dout_expand, &softmax_minus_label, dx);
     }
 };
 

@@ -31,8 +31,6 @@ import unittest
 import redis
 
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
 import paddle.fluid as fluid
 import paddle.fluid.core as core
 from paddle_fl.mpc.backward import append_backward
@@ -41,8 +39,14 @@ from paddle.fluid.executor import Executor
 from paddle.fluid.framework import Program, OpProtoHolder, Variable
 from testsuite import create_op, set_input, append_input_output, append_loss_ops
 from paddle.fluid import unique_name
-
 import traceback
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+import mpc_data_utils as mdu
+from paddle_fl.mpc.framework import MpcProtocols
+
+
+aby3 = get_datautils('aby3')
+
 
 def _set_use_system_allocator(value=None):
     USE_SYSTEM_ALLOCATOR_FLAG = "FLAGS_use_system_allocator"
@@ -128,6 +132,12 @@ class OpTest(unittest.TestCase):
         """
         r = redis.Redis(host=self.server, port=int(self.port))
         r.flushall()
+
+    def lazy_reconstruct(self, shares):
+        return np.array(shares[0] / mdu.aby3_one_share).astype('float')
+
+    def lazy_share(self, plain):
+        return np.array([plain * mdu.aby3_one_share] * 2).astype('int64')
 
     def multi_party_run(self, **kwargs):
         """
@@ -525,6 +535,20 @@ class OpTest(unittest.TestCase):
                                 inplace_atol=None):
         self.infer_dtype_from_inputs_outputs(self.inputs, self.outputs)
 
+        prog = Program()
+        block = prog.global_block()
+        # wirte protocol name and index into global scope
+        op_init = block.append_op(
+            type="mpc_init",
+            #inputs=inputs,
+            #outputs=outputs,
+            attrs={"protocol_name": "aby3"})
+        op_init.desc.infer_shape(block.desc)
+
+        mpc_protocol_index = MpcProtocols["ABY3"].value
+        fluid.global_scope().var("mpc_protocol_index").get_tensor().set(
+            np.array((mpc_protocol_index)), fluid.CPUPlace())
+
         outs, fetch_list = self._calc_output(place, no_check_set=no_check_set)
         for out_name, out_dup in Operator.get_op_outputs(self.op_type):
             if out_name not in self.outputs:
@@ -566,6 +590,7 @@ class OpTest(unittest.TestCase):
                     actual_t = np.array(actual)
                     expect_t = expect[0] \
                         if isinstance(expect, tuple) else expect
+                    expect_t = self.lazy_reconstruct(expect_t)
                     self.assertTrue(
                         np.allclose(
                             actual_t, expect_t, atol=atol, equal_nan=equal_nan),
@@ -582,6 +607,7 @@ class OpTest(unittest.TestCase):
                 actual_t = np.array(actual)
                 expect = self.outputs[out_name]
                 expect_t = expect[0] if isinstance(expect, tuple) else expect
+                expect_t = self.lazy_reconstruct(expect_t)
                 self.assertTrue(
                     np.allclose(
                         actual_t, expect_t, atol=atol, equal_nan=equal_nan),
@@ -656,6 +682,20 @@ class OpTest(unittest.TestCase):
         op_inputs = self.inputs if hasattr(self, "inputs") else dict()
         op_outputs = self.outputs if hasattr(self, "outputs") else dict()
         op_attrs = self.attrs if hasattr(self, "attrs") else dict()
+
+        prog = Program()
+        block = prog.global_block()
+        # wirte protocol name and index into global scope
+        op_init = block.append_op(
+            type="mpc_init",
+            #inputs=inputs,
+            #outputs=outputs,
+            attrs={"protocol_name": "aby3"})
+        op_init.desc.infer_shape(block.desc)
+
+        mpc_protocol_index = MpcProtocols["ABY3"].value
+        fluid.global_scope().var("mpc_protocol_index").get_tensor().set(
+            np.array((mpc_protocol_index)), fluid.CPUPlace())
 
         self._check_grad_helper()
 
@@ -733,27 +773,25 @@ class OpTest(unittest.TestCase):
         prog = Program()
         block = prog.global_block()
         self._append_ops(block)
-        loss = append_loss_ops(block, output_names)
-        param_grad_list = append_backward(
-            loss=loss, parameter_list=input_to_check, no_grad_set=no_grad_set)
-
-        inputs = self._get_inputs(block)
-        feed_dict = self.feed_var(inputs, place)
-
-        fetch_list = [g for p, g in param_grad_list]
 
         # Manager() can not store LoDTensor directly
         # So, use one additional element to store output lod
-        return_results = [Manager().list() for _ in range(len(fetch_list) + 1)]
+        fetch_list = []
+        fetch_list_len = len(input_to_check)
+        return_results = [Manager().list() for _ in range(fetch_list_len + 1)]
 
         def closure(**kwargs):
             role = kwargs['role']
 
             pfl_mpc.init("aby3", role, "localhost", self.server, int(self.port))
+            loss = append_loss_ops(block, output_names)
+            param_grad_list = append_backward(
+                loss=loss, parameter_list=input_to_check, no_grad_set=no_grad_set)
 
-            #init_op = fluid.default_main_program().global_block().ops[0]
+            inputs = self._get_inputs(block)
+            feed_dict = self.feed_var(inputs, place)
 
-            #_insert_init_op(program, init_op)
+            fetch_list = [g for p, g in param_grad_list]
 
             executor = Executor(place)
 
@@ -764,23 +802,23 @@ class OpTest(unittest.TestCase):
                             return_numpy=False)
             # append lod information in last position
             lod = []
-            for idx in range(len(fetch_list)):
+            for idx in range(fetch_list_len):
                 return_results[idx].append(np.array(outs[idx]))
                 lod_i = outs[idx].lod()
                 lod_concat = []
                 for i in lod_i:
                     lod_concat.append(i)
                 lod.append(lod_concat)
-            return_results[len(fetch_list)].append(lod)
+            return_results[fetch_list_len].append(lod)
 
         ret = self.multi_party_run(target=closure)
         self.assertEqual(ret[0], True)
 
         outs = []
 
-        lod = np.array(return_results[len(fetch_list)])
+        lod = np.array(return_results[fetch_list_len])
         # from numpy array to LoDTensor
-        for idx in range(len(fetch_list)):
+        for idx in range(fetch_list_len):
             t = fluid.LoDTensor()
             reveal_data = aby3.reconstruct(np.array(return_results[idx]))
             t.set(reveal_data, place)

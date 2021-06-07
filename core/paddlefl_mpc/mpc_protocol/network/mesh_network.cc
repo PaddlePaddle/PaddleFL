@@ -23,11 +23,13 @@
 namespace paddle {
 namespace mpc {
 
+// for test purpose
 void MeshNetwork::init() {
   if (_is_initialized) {
     return;
   }
-  auto context =
+
+  auto context = 
       std::make_shared<gloo::rendezvous::Context>(_party_id, _net_size);
   auto dev = gloo::transport::tcp::CreateDevice(_local_addr.c_str());
   auto prefix_store = gloo::rendezvous::PrefixStore(_store_prefix, *_store);

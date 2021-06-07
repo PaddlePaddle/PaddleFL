@@ -17,13 +17,14 @@ This module test square_error_cost op.
 """
 import unittest
 from multiprocessing import Manager
-
+import test_op_base
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-import test_op_base
+
+aby3 = get_datautils('aby3')
 
 
 class TestOpSquareErrorCost(test_op_base.TestOpBase):
@@ -54,8 +55,8 @@ class TestOpSquareErrorCost(test_op_base.TestOpBase):
         data_2 = np.full(shape=(2, 2), fill_value=2)
         data_1_shares = aby3.make_shares(data_1)
         data_2_shares = aby3.make_shares(data_2)
-        data_1_all3shares = np.array([aby3.get_aby3_shares(data_1_shares, i) for i in range(3)])
-        data_2_all3shares = np.array([aby3.get_aby3_shares(data_2_shares, i) for i in range(3)])
+        data_1_all3shares = np.array([aby3.get_shares(data_1_shares, i) for i in range(3)])
+        data_2_all3shares = np.array([aby3.get_shares(data_2_shares, i) for i in range(3)])
 
         return_results = Manager().list()
         ret = self.multi_party_run(target=self.square_error_cost,

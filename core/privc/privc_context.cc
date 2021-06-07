@@ -14,9 +14,10 @@
 #include <algorithm>
 #include <memory>
 
-#include "core/privc/triplet_generator.h"
 #include "core/privc/privc_context.h"
+#include "core/privc/he_triplet.h"
 #include "core/privc/ot.h"
+
 namespace privc {
 
 PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> network,
@@ -37,21 +38,24 @@ PrivCContext::PrivCContext(size_t party, std::shared_ptr<AbstractNetwork> networ
                     this->party(),
                     this->next_party());
   _ot->init();
-  _tripletor = std::make_shared<TripletGenerator<int64_t, SCALING_N>>(
-                                                &_prng,
-                                                _ot.get(),
-                                                this->network(),
+  _tripletor = std::make_shared<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>>(
                                                 this->party(),
-                                                this->next_party());
+                                                this->network(),
+                                                _prng);
+  _tripletor->init();
 }
 
-std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> PrivCContext::triplet_generator() {
+std::shared_ptr<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>> PrivCContext::triplet_generator() {
   PADDLE_ENFORCE_NE(_tripletor, nullptr, "must set triplet generator first.");
   return _tripletor;
 }
 
 std::shared_ptr<OT>& PrivCContext::ot() {
   return _ot;
+}
+
+void PrivCContext::set_triplet_generator(std::shared_ptr<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>> tripletor) {
+  _tripletor = tripletor;
 }
 
 } // namespace privc

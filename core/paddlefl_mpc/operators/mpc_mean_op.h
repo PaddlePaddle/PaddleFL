@@ -31,9 +31,7 @@ public:
         auto *in_x_t = ctx.Input<Tensor>("X");
         auto *out_t = ctx.Output<Tensor>("Out");
         out_t->mutable_data<T>(ctx.GetPlace());
-        double scale = 1.0 / (in_x_t->numel() / 2.0);
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->sum(in_x_t, out_t);
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(out_t, scale, out_t);
+        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mean(in_x_t, out_t);
     }
 };
 
@@ -42,21 +40,11 @@ class MpcMeanGradKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext &ctx) const override {
         auto dout = ctx.Input<Tensor>(framework::GradVarName("Out"));
-        PADDLE_ENFORCE(dout->numel() == 2, "numel of MpcMean Gradient should be 2.");
         auto dx = ctx.Output<Tensor>(framework::GradVarName("X"));
-        auto dout_data = dout->data<T>();
 
         if (dx) {
-            auto dx_data = dx->mutable_data<T>(ctx.GetPlace());
-            for (size_t i = 0; i < dx->numel() / 2; ++i) {
-                dx_data[i] = dout_data[0];
-            }
-            for (size_t i = dx->numel() / 2; i < dx->numel(); ++i) {
-                dx_data[i] = dout_data[1];
-            }
-        
-            double scale_factor = 1.0 / (dx->numel() / 2);
-            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(dx, scale_factor, dx);
+            dx->mutable_data<T>(ctx.GetPlace());
+            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mean_grad(dout, dx);
         }
     }
 };

@@ -31,7 +31,12 @@ public:
         PADDLE_ENFORCE_EQ(
             ctx->HasOutput("Out"), true,
             platform::errors::NotFound("Output(Out) of MpcMeanOp should not be null."));
-        ctx->SetOutputDim("Out", {2, 1});
+        std::string protocol_name = mpc::MpcInstance::get_protocol_name();
+        if (protocol_name == "aby3") {
+            ctx->SetOutputDim("Out", {2, 1});
+        } else {
+            ctx->SetOutputDim("Out", {1});
+        }
     }
 };
 

@@ -176,34 +176,27 @@ if(${CMAKE_VERSION} VERSION_GREATER "3.5.2")
 endif()
 
 ########################### include third_party according to flags ###############################
-#include(external/zlib)      # download, build, install zlib
+include(external/paddle)      # download, build, install paddle
+
+include(external/zlib)      # download, build, install zlib
+
+include(external/gmp)      # download, build, install gmp
+
+include(external/seal)      # download, build, install seal
 #include(external/gflags)    # download, build, install gflags
-#include(external/boost)     # download boost
-#include(external/eigen)     # download eigen3
-#include(external/threadpool)# download threadpool
-#include(external/dlpack)    # download dlpack
-#include(external/xxhash)    # download, build, install xxhash
-#include(external/warpctc)   # download, build, install warpctc
 
 set(third_party_deps)
-#list(APPEND third_party_deps extern_eigen3 extern_gflags extern_boost)
-#list(APPEND third_party_deps extern_zlib extern_dlpack extern_warpctc extern_threadpool)
 
-# if(WITH_AMD_GPU)
-#     include(external/rocprim)   # download, build, install rocprim
-#     list(APPEND third_party_deps extern_rocprim)
-# endif()
+list(APPEND third_party_deps extern_zlib extern_paddle)
 
-#include(cblas)              	# find first, then download, build, install openblas
-#if(${CBLAS_PROVIDER} STREQUAL MKLML)
-#    list(APPEND third_party_deps extern_mklml)
-#elseif(${CBLAS_PROVIDER} STREQUAL EXTERN_OPENBLAS)
-#    list(APPEND third_party_deps extern_openblas)
-#endif()
+include(external/protobuf)  	# find first, then download, build, install protobuf
+if(NOT PROTOBUF_FOUND OR WIN32)
+    list(APPEND third_party_deps extern_protobuf)
+endif()
 
-if(NOT WIN32 AND NOT APPLE)
-    include(external/gloo)
-    list(APPEND third_party_deps extern_gloo)
+if(WITH_GRPC)
+    include(external/grpc)
+    list(APPEND third_party_deps extern_grpc)
 endif()
 
 if(NOT WIN32 AND NOT APPLE)
@@ -211,26 +204,20 @@ if(NOT WIN32 AND NOT APPLE)
     list(APPEND third_party_deps extern_hiredis)
 endif()
 
+if(NOT WIN32 AND NOT APPLE)
+    include(external/gloo)
+    list(APPEND third_party_deps extern_gloo)
+endif()
+
 # if(WITH_MKLDNN)
 #     include(external/mkldnn)    # download, build, install mkldnn
 #     list(APPEND third_party_deps extern_mkldnn)
-# endif()
-
-#include(external/protobuf)  	# find first, then download, build, install protobuf
-# if(NOT PROTOBUF_FOUND OR WIN32)
-#     list(APPEND third_party_deps extern_protobuf)
 # endif()
 
 if(NOT WIN32 AND NOT APPLE)
     include(external/pybind11)
     list(APPEND third_party_deps extern_pybind11)
 endif()
-
-# if(WITH_PYTHON)
-#     include(external/python)    # find python and python_module
-#     include(external/pybind11)  # download pybind11
-#     list(APPEND third_party_deps extern_pybind)
-# endif()
 
 IF(WITH_TESTING OR (WITH_DISTRIBUTE AND NOT WITH_GRPC))
     include(external/gtest)     # download, build, install gtest
@@ -246,65 +233,5 @@ ENDIF()
 #     include(external/cub)       # download cub
 #     list(APPEND third_party_deps extern_cub)
 # endif(WITH_GPU)
-
-# if(WITH_PSLIB)
-#     include(external/pslib)          # download, build, install pslib
-#     list(APPEND third_party_deps extern_pslib)
-#     if(WITH_LIBMCT)
-#         include(external/libmct)     # download, build, install libmct
-#         list(APPEND third_party_deps extern_libxsmm)
-#     endif()
-#     if(WITH_PSLIB_BRPC)
-#         include(external/pslib_brpc) # download, build, install pslib_brpc
-#         list(APPEND third_party_deps extern_pslib_brpc)
-#     endif()
-# endif(WITH_PSLIB)
-
-# if(WITH_BOX_PS)
-#     include(external/box_ps)
-#     list(APPEND third_party_deps extern_box_ps)
-# endif(WITH_BOX_PS)
-
-# if(WITH_DISTRIBUTE)
-#     if(WITH_GRPC)
-#         list(APPEND third_party_deps extern_grpc)
-#     else()
-#         list(APPEND third_party_deps extern_leveldb)
-#         list(APPEND third_party_deps extern_brpc)
-#     endif()
-# endif()
-
-# if(WITH_NGRAPH)
-#     if(WITH_MKLDNN)
-#         include(external/ngraph)    # download, build, install nGraph
-#         list(APPEND third_party_deps extern_ngraph)
-#     else()
-#         MESSAGE(WARNING
-#             "nGraph needs mkl-dnn to be enabled."
-#             "Force WITH_NGRAPH=OFF")
-#         SET(WITH_NGRAPH OFF CACHE STRING "Disable nGraph if mkl-dnn is disabled" FORCE)
-#     endif()
-# endif()
-
-# if(WITH_XBYAK)
-#     include(external/xbyak)         # download, build, install xbyak
-#     list(APPEND third_party_deps extern_xbyak)
-# endif()
-
-# if(WITH_LIBXSMM)
-#     include(external/libxsmm)       # download, build, install libxsmm
-#     list(APPEND third_party_deps extern_libxsmm)
-# endif()
-
-# if(WITH_DGC)
-#     message(STATUS "add dgc lib.")
-#     include(external/dgc)           # download, build, install dgc
-#     add_definitions(-DPADDLE_WITH_DGC)
-#     list(APPEND third_party_deps extern_dgc)
-# endif()
-
-# if (WITH_LITE)
-#     include(external/lite)
-# endif (WITH_LITE)
 
 add_custom_target(third_party DEPENDS ${third_party_deps})

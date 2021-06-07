@@ -14,7 +14,8 @@
 """
 mpc matrix op layers.
 """
-
+import paddle.fluid as fluid
+import numpy
 from ..framework import MpcVariable
 from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper

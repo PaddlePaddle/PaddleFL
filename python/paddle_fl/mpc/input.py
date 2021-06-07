@@ -24,7 +24,6 @@ from paddle.fluid.data_feeder import check_variable_and_dtype, check_dtype
 import warnings
 from .framework import MpcVariable
 from .mpc_layer_helper import MpcLayerHelper
-from .data_utils import aby3
 
 __all__ = ['embedding']
 

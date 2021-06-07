@@ -33,7 +33,7 @@ public:
 
   virtual std::string name() const { return _name; }
 
-  virtual void init(const MpcConfig &config) = 0;
+  virtual void init(MpcConfig &config) = 0;
 
   // for test purpose
   virtual void

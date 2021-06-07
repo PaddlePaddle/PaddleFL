@@ -17,16 +17,16 @@
 // test
 namespace aby3 {
 
-TEST(FixedPointUtil, int64_test) {
+TEST(FixedPointUtils, int64_test) {
   double input = 5.1;
   long long *ret[3];
   for (int i = 0; i < 3; i++) {
     ret[i] = (long long *)malloc(sizeof(long long));
   }
 
-  FixedPointUtil<long long, 32>::share(input, ret);
+  FixedPointUtils<long long, 32>::share(input, ret);
 
-  double result = FixedPointUtil<long long, 32>::reveal(ret);
+  double result = FixedPointUtils<long long, 32>::reveal(ret);
 
   for (int i = 0; i < 3; i++) {
     free(ret[i]);
@@ -35,16 +35,16 @@ TEST(FixedPointUtil, int64_test) {
   EXPECT_LT(std::abs(input - result), 0.0001);
 }
 
-TEST(FixedPointUtil, int32_test) {
+TEST(FixedPointUtils, int32_test) {
   float input = -10;
   long *ret[3];
   for (int i = 0; i < 3; i++) {
     ret[i] = (long *)malloc(sizeof(long));
   }
 
-  FixedPointUtil<long, 16>::share(input, ret);
+  FixedPointUtils<long, 16>::share(input, ret);
 
-  double result = FixedPointUtil<long, 16>::reveal(ret);
+  double result = FixedPointUtils<long, 16>::reveal(ret);
 
   for (int i = 0; i < 3; i++) {
     free(ret[i]);
