@@ -57,6 +57,7 @@ ExternalProject_Add(
                     -DCMAKE_INSTALL_PREFIX=${PADDLE_INSTALL_ROOT}
                     -DWITH_GPU=off
                     -DWITH_MKL=ON
+                    -DWITH_DISTRIBUTE=ON
                     -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
                     ${EXTERNAL_OPTIONAL_ARGS}
     CMAKE_CACHE_ARGS      -DCMAKE_INSTALL_PREFIX:PATH=${PADDLE_INSTALL_DIR}
