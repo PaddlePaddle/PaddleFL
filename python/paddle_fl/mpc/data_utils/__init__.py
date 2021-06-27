@@ -15,7 +15,6 @@
 Import data_utils module.
 """
 
-from . import aby3
 from . import alignment
 from . import one_hot_encoding
 from .alignment import *

@@ -16,6 +16,10 @@ This module provide basic data structure and related methods
 for paddle_mpc, namely MpcVariable and MpcParameter, which
 are similar to Variable and Parameter in PaddlePaddle.
 """
+
+from enum import Enum
+import numpy
+import paddle.fluid as fluid
 from paddle import compat as cpt
 from paddle.fluid import core
 from paddle.fluid import unique_name
@@ -23,6 +27,10 @@ from paddle.fluid.framework import Variable
 from paddle.fluid.framework import convert_np_dtype_to_dtype_
 from paddle.fluid.data_feeder import check_type, check_dtype
 
+
+class MpcProtocols(Enum):
+    ABY3 = 0
+    PRIVC = 1
 
 class MpcVariable(Variable):
     """
@@ -76,7 +84,9 @@ class MpcVariable(Variable):
             if is_new_var:
                 # resize the shape for MpcVariable
                 mpc_shape = list(shape)
-                mpc_shape.insert(0, 2)
+                mpc_protocol_index = numpy.array(fluid.global_scope().find_var("mpc_protocol_index").get_tensor())
+                if MpcProtocols(mpc_protocol_index) is MpcProtocols.ABY3:
+                    mpc_shape.insert(0, 2)
                 self.desc.set_shape(mpc_shape)
             else:
                 old_shape = self.shape

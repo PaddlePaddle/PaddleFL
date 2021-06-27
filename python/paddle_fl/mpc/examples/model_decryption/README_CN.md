@@ -10,12 +10,12 @@
 
 由于针对训练、更新和预测模型的解密步骤基本是一致的，所以这里以预测模型的解密为例，介绍模型解密使用的主要步骤。
 
-1. **解密模型**：模型解密需求方从各方获取保存的密文预测模型（即模型分片），使用paddle-mpc提供的模型解密接口`aby3.decrypt_model`解密恢复出明文预测模型。
+1. **解密模型**：模型解密需求方从各方获取保存的密文预测模型（即模型分片），使用paddle-mpc提供的模型解密接口`mpc_du.decrypt_model`解密恢复出明文预测模型。
 
-   假设获取到的三个密文模型分片存放于`mpc_model_dir`目录，使用`aby3.decrypt_model`进行解密，分别指定密文模型的路径和名字，明文模型的存放路径和名字：
+   假设获取到的三个密文模型分片存放于`mpc_model_dir`目录，使用`mpc_du.decrypt_model`进行解密，分别指定密文模型的路径和名字，明文模型的存放路径和名字：
 
    ```python
-   aby3.decrypt_model(mpc_model_dir=mpc_model_dir,
+   mpc_du.decrypt_model(mpc_model_dir=mpc_model_dir,
                       plain_model_path=decrypted_paddle_model_dir,
                       mpc_model_filename=mpc_model_filename,
                       plain_model_filename=paddle_model_filename)

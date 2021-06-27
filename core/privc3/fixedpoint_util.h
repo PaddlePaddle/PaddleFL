@@ -21,7 +21,7 @@
 
 namespace aby3 {
 template<typename T, size_t N>
-class FixedPointUtil {
+class FixedPointUtils {
 public:
 
     static double reveal(T* shares[3]) {
@@ -42,6 +42,6 @@ public:
 };
 
 template<typename T, size_t N>
-PseudorandomNumberGenerator FixedPointUtil<T, N>::_s_prng(block_from_dev_urandom());
+PseudorandomNumberGenerator FixedPointUtils<T, N>::_s_prng(block_from_dev_urandom());
 
 } //namespace aby3

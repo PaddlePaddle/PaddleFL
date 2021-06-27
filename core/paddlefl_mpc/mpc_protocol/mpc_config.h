@@ -60,20 +60,23 @@ public:
 
 private:
   std::unordered_map<std::string, std::string> _prop_map;
-};
-
-class Aby3Config : public MpcConfig {
+  
 public:
-  // predefined parameters for aby3 protocol configuration
   static const std::string ROLE;
+  static const std::string NET_SIZE;
   static const std::string LOCAL_ADDR;
   static const std::string NET_SERVER_ADDR;
   static const std::string NET_SERVER_PORT;
+  static const std::string ENDPOINTS;
+  static const std::string NETWORK_MODE;
 
   // default values
   static const std::string LOCAL_ADDR_DEFAULT;
   static const std::string NET_SERVER_ADDR_DEFAULT;
   static const int NET_SERVER_PORT_DEFAULT;
+  static const std::string ENDPOINTS_DEFAULT;
+  static const std::string NETWORK_MODE_DEFAULT;
 };
+
 } // mpc
 } // paddle

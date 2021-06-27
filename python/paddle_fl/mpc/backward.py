@@ -17,31 +17,42 @@ Backward operations
 
 from __future__ import print_function
 
-from paddle.fluid import framework as framework
-from paddle.fluid import core
 import collections
 import copy
 import six
 import logging
+import numpy as np
+import mpc_data_utils as mdu
+import paddle.fluid as fluid
+import paddle.fluid.backward as backward
+
 from paddle import compat as cpt
 from paddle.fluid import unique_name
 from paddle.fluid import log_helper
+from paddle.fluid import framework as framework
+from paddle.fluid import core
 
-import paddle.fluid
-import paddle.fluid.backward as backward
 from .framework import is_mpc_parameter
-import mpc_data_utils as mdu
+from .framework import MpcProtocols
 
 _logger = log_helper.get_logger(
     __name__, logging.INFO, fmt='%(asctime)s-%(levelname)s: %(message)s')
 
 
 def _create_loss_op_desc_(loss):
+    shape = [2, 1]
+    one_share = mdu.aby3_one_share
+
+    mpc_protocol_index = np.array(fluid.global_scope().find_var("mpc_protocol_index").get_tensor())
+    if MpcProtocols(mpc_protocol_index) is MpcProtocols.PRIVC:
+        shape = [1]
+        one_share = mdu.privc_one_share
+
     op_desc = backward._create_op_desc_(
         "fill_constant", {},
         {"Out": [backward._append_grad_suffix_(loss.name)]}, {
-            "shape": [2, 1],
-            "value": mdu.mpc_one_share,
+            "shape": shape,
+            "value": one_share,
             "dtype": loss.dtype,
             "force_cpu": False,
             core.op_proto_and_checker_maker.kOpRoleAttrName():

@@ -27,11 +27,11 @@ using AbstractNetwork = paddle::mpc::AbstractNetwork;
 using AbstractContext = paddle::mpc::AbstractContext;
 using block = common::block;
 
-static const size_t SCALING_N = 32;
+const size_t PRIVC_FIXED_POINT_SCALING_FACTOR = 32;
 
 // forward declare
 template <typename T, size_t N>
-class TripletGenerator;
+class HETriplet;
 
 class ObliviousTransfer;
 
@@ -44,9 +44,11 @@ public:
 
   PrivCContext &operator=(const PrivCContext &other) = delete;
 
-  std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> triplet_generator();
+  std::shared_ptr<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>> triplet_generator();
 
   std::shared_ptr<ObliviousTransfer>& ot();
+
+  void set_triplet_generator( std::shared_ptr<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>> tripletor);
 
 protected:
   common::PseudorandomNumberGenerator& get_prng(size_t idx) override {
@@ -54,7 +56,8 @@ protected:
   }
 
 private:
-  std::shared_ptr<TripletGenerator<int64_t, SCALING_N>> _tripletor;
+  // TODO: substitude uint64_t with unsigned T
+  std::shared_ptr<HETriplet<uint64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>> _tripletor;
   common::PseudorandomNumberGenerator _prng;
   std::shared_ptr<ObliviousTransfer> _ot;
 };

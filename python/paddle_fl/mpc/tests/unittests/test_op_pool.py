@@ -21,9 +21,11 @@ from multiprocessing import Manager
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
 import test_op_base
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+
+
+aby3 = get_datautils('aby3')
 
 
 class TestOpPool2d(test_op_base.TestOpBase):
@@ -44,7 +46,7 @@ class TestOpPool2d(test_op_base.TestOpBase):
         pool_out = pfl_mpc.layers.pool2d(input=x, pool_size=2, pool_stride=2)
 
         exe = fluid.Executor(place=fluid.CPUPlace())
-        exe.run(fluid.default_startup_program())
+        #exe.run(fluid.default_startup_program())
         results = exe.run(feed={'x': d_1}, fetch_list=[pool_out])
 
         self.assertEqual(results[0].shape, (2, 1, 1, 2, 3))
@@ -66,7 +68,7 @@ class TestOpPool2d(test_op_base.TestOpBase):
 
         data_1_shares = aby3.make_shares(data_1)
 
-        data_1_all3shares = np.array([aby3.get_aby3_shares(data_1_shares, i) for i in range(3)])
+        data_1_all3shares = np.array([aby3.get_shares(data_1_shares, i) for i in range(3)])
 
         return_results = Manager().list()
         ret = self.multi_party_run(target=self.pool2d,

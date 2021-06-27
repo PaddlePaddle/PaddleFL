@@ -21,12 +21,15 @@ import time
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 sys.path.append('..')
 import network
 import process_data
 
+
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
 
 def load_uci_update(role, ip, server, port, mpc_model_dir, mpc_model_filename, updated_model_dir):
     """
@@ -37,10 +40,10 @@ def load_uci_update(role, ip, server, port, mpc_model_dir, mpc_model_filename, u
     exe = fluid.Executor(place)
 
     # Step 1. initialize MPC environment and load MPC model into default_main_program to update.
-    pfl_mpc.init("aby3", role, ip, server, port)
-    aby3.load_mpc_model(exe=exe,
-                        mpc_model_dir=mpc_model_dir,
-                        mpc_model_filename=mpc_model_filename)
+    pfl_mpc.init(mpc_protocol_name, role, ip, server, port)
+    mpc_du.load_mpc_model(exe=exe,
+                          mpc_model_dir=mpc_model_dir,
+                          mpc_model_filename=mpc_model_filename)
 
     # Step 2. MPC update
     epoch_num = network.MPC_UPDATE_EPOCH
@@ -75,9 +78,9 @@ def load_uci_update(role, ip, server, port, mpc_model_dir, mpc_model_filename, u
           .format(epoch_num, batch_size, (end_time - start_time)))
 
     # Step 3. save updated MPC model as a trainable model.
-    aby3.save_trainable_model(exe=exe,
-                              model_dir=updated_model_dir,
-                              model_filename=updated_model_name)
+    mpc_du.save_trainable_model(exe=exe,
+                                model_dir=updated_model_dir,
+                                model_filename=updated_model_name)
     print('Successfully save mpc updated model into:{}'.format(updated_model_dir))
 
 

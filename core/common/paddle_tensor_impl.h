@@ -22,6 +22,8 @@
 #include "paddle/fluid/platform/hostdevice.h"
 #include "unsupported/Eigen/CXX11/Tensor"
 
+#include "./type_utils.h"
+
 namespace common {
 
 using u128 = unsigned __int128;
@@ -321,7 +323,8 @@ void PaddleTensor<T>::sub128(const TensorAdapter<T> *rhs,
 
     Type y(numel_);
     for (size_t i = 0; i < numel_; ++i) {
-        y(i) = rhs_128 ? *(reinterpret_cast<const u128*>(rhs->data()) + i) : *(rhs->data() + i);
+        y(i) = rhs_128 ? *(reinterpret_cast<const u128*>(rhs->data()) + i)
+            : static_cast<typename unsigned_type<T>::value_type>(*(rhs->data() + i));
     }
 
     Eigen::TensorMap<Type> z(reinterpret_cast<u128*>(ret->data()), numel_);
@@ -339,8 +342,8 @@ void PaddleTensor<T>::mul128_with_truncate(const TensorAdapter<T> *rhs,
                       rhs->numel() / (1 + rhs_128),
                       "Input numel should be equal.");
 
-    using ConstType = Eigen::Tensor<const u128, 1>;
-    using Type = Eigen::Tensor<u128, 1>;
+    using ConstType = Eigen::Tensor<const __int128, 1>;
+    using Type = Eigen::Tensor<__int128, 1>;
 
     size_t numel_ = ret->numel();
 
@@ -351,7 +354,8 @@ void PaddleTensor<T>::mul128_with_truncate(const TensorAdapter<T> *rhs,
 
     Type y(numel_);
     for (size_t i = 0; i < numel_; ++i) {
-        y(i) = rhs_128 ? *(reinterpret_cast<const u128*>(rhs->data()) + i) : *(rhs->data() + i);
+        y(i) = rhs_128 ? *(reinterpret_cast<const u128*>(rhs->data()) + i)
+            : static_cast<typename unsigned_type<T>::value_type>(*(rhs->data() + i));
     }
 
     Eigen::TensorMap<Eigen::Tensor<T, 1>> z(ret->data(), numel_);
@@ -362,7 +366,7 @@ void PaddleTensor<T>::mul128_with_truncate(const TensorAdapter<T> *rhs,
 
     // truncate
     for (size_t i = 0; i < numel_; ++i) {
-        u128 tmp = xy(i);
+        __int128 tmp = xy(i);
         xy_trunc(i) = (T)(tmp >> _scaling_factor);
     }
 

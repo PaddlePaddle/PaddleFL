@@ -19,10 +19,13 @@ import paddle
 import paddle.fluid as fluid
 import time
 import sys
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 sys.path.append('..')
 import network
+
+
+mpc_du = get_datautils('aby3')
 
 
 def original_train(model_dir, model_filename):
@@ -53,7 +56,7 @@ def original_train(model_dir, model_filename):
           .format(network.PADDLE_UPDATE_EPOCH, network.BATCH_SIZE, (end_time - start_time)))
 
     # Step 3. save model to update
-    aby3.save_trainable_model(exe=exe,
+    mpc_du.save_trainable_model(exe=exe,
                               program=fluid.default_main_program(),
                               model_dir=model_dir,
                               model_filename=model_filename)
@@ -71,7 +74,7 @@ def encrypt_paddle_model(paddle_model_dir, mpc_model_dir, model_filename):
                                                     dirname=paddle_model_dir,
                                                     model_filename=model_filename)
     # Step 2. Encrypt pre-trained model.
-    aby3.encrypt_model(program=main_prog,
+    mpc_du.encrypt_model(program=main_prog,
                        mpc_model_dir=mpc_model_dir,
                        model_filename=model_filename)
 

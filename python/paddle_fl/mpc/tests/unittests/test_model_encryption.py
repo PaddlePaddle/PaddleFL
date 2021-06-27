@@ -21,9 +21,11 @@ import unittest
 
 import numpy as np
 import paddle.fluid as fluid
-import paddle_fl.mpc.data_utils.aby3 as aby3
 from paddle.fluid.param_attr import ParamAttr
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
+
+aby3 = get_datautils('aby3')
 
 class TestDataUtilsEnDecryptModel(unittest.TestCase):
     def __init__(self, methodName='runTest'):

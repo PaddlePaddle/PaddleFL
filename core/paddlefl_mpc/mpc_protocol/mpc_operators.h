@@ -39,13 +39,61 @@ public:
 
     virtual void sum(const Tensor *op, Tensor *out) = 0;
 
-    virtual void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out) = 0;
+    /* This operator is used to perform multiplication.
+    *  lhs's dimension should be equal to rhs's dimension.
+    */ 
+    virtual void elementwise_mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) = 0;
 
+    virtual void elementwise_mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) = 0;
+
+    /* This function is used to perform matrix multiplication.
+     * The attribute `x_num_col_dims` and `y_num_col_dims` determines how $x$(lhs) and $y$(rhs) are flattened (Default: 1).
+     *
+     * If the input $x$ is a tensor with more than two dimensions, 
+     * $x$ will be flattened into a two-dimensional matrix first. 
+     * The flattening rule is: the first `num_col_dims` will be flattened to 
+     * form the first dimension of the final matrix (the height of the matrix), 
+     * and the rest `rank(x) - num_col_dims` dimensions are flattened to 
+     * form the second dimension of the final matrix (the width of the matrix). 
+     * As a result, height of the flattened matrix is equal to the product of $x$'s 
+     * first `x_num_col_dims` dimensions' sizes, 
+     * and width of the flattened matrix is equal to the product of $x$'s 
+     * last `rank(x) - num_col_dims` dimensions' size.
+     * 
+     * see PaddlePaddle doc (API: mul) for details.
+    */
+    virtual void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, 
+                            int x_num_col_dims = 1, int y_num_col_dims = 1) = 0;
+
+    virtual void mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *out, 
+                                 Tensor *dx, Tensor *dy, int x_num_col_dims, int y_num_col_dims) = 0;
+    
+    /* This operator is used to perform (batched) matrix multiplication 
+    *  over the last two dimensions of the input tensors $x$(lhs) and $y$(rhs).
+    *  [Input]: The input tensors' rank can be 2 or 3.
+    *  [trans_lhs] [trans_rhs]: Whether to transpose
+    *
+    *  Only following dims are supported:
+    *  Mat A is [BatchSize, H, W] and Mat B is [BatchSize, H, W].
+    *  Mat A is [BatchSize, H, W] and Mat B is [H, W].
+    *  Mat A is [H, W] and Mat B is [H, W].
+    *
+    *  If a transpose flag is specified, the last two dimensions of the
+    *  tensor are transposed. If the tensor is rank-1 of shape [D], then
+    *  for $x$ it is treated as [1, D] in nontransposed form and as [D, 1]
+    *  in transposed form, whereas for $y$ it is the opposite: It is treated
+    *  as [D, 1] in nontransposed form and as [1, D] in transposed form.
+    *
+    */
     virtual void matmul(const Tensor *lhs,
                         const Tensor *rhs,
                         Tensor *out,
                         bool trans_lhs = false,
                         bool trans_rhs = false) = 0;
+
+    virtual void mean(const Tensor *in, Tensor *out) = 0;
+
+    virtual void mean_grad(const Tensor *dout, Tensor *dx) = 0;
 
     virtual void scale(const Tensor *lhs, const double factor, Tensor *out) = 0;
 
@@ -54,14 +102,10 @@ public:
     virtual void relu_with_derivative(const Tensor *op, Tensor *out,
                                       Tensor *derivative) = 0;
 
-    virtual void sigmoid(const Tensor *op, Tensor *out) = 0;
-
-    virtual void sigmoid_enhanced(const Tensor *op, Tensor *out) = 0;
-
-    virtual void sigmoid_chebyshev(const Tensor *op, Tensor *out) = 0;
-
-    // high precision implement of sigmoid
-    virtual void sigmoid_high_precision(const Tensor *op, Tensor *out) {};
+    /* sigmoid function.
+     * mode: sigmoid(piece_wise_3), sigmoid_enhanced(piece_wise_5), sigmoid_chebyshev, sigmoid_high_precision(exp)
+     */ 
+    virtual void sigmoid(const Tensor *op, Tensor *out, const std::string mode = "sigmoid") = 0;
 
     virtual void softmax(const Tensor *op, Tensor *out, bool use_relu, bool use_long_div) = 0;
 
@@ -119,6 +163,8 @@ public:
     // convert TensorAdapter to shares and distribute to all parties
     // party: the party who has original data.
     virtual void online_share(size_t party, const Tensor *input, Tensor *out) = 0;
+
+    virtual void argmax(const Tensor *op, Tensor *out) = 0;
 };
 
 } // mpc

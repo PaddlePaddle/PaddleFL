@@ -18,8 +18,9 @@
 #include <algorithm>
 
 #include "paddle/fluid/platform/enforce.h"
-#include "../common/prng.h"
 #include "core/common/paddle_tensor.h"
+#include "../common/prng.h"
+#include "./ot.h"
 
 namespace privc {
 
@@ -54,7 +55,7 @@ inline void if_then_else_plain(bool is_block_val,
         if_then_else_plain(val, then_val, else_val, ret);
     } else {
         for (int i = 0; i < val->numel(); ++i) {
-            *(ret->data() + i) = *(val->data() + i) ? 
+            *(ret->data() + i) = *(val->data() + i) ?
                                  *(then_val->data() + i) :
                                  *(else_val->data() + i);
         }
@@ -70,7 +71,7 @@ inline void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock*
     auto block_shape = ret->shape();
     auto shape = block_shape;
     shape.erase(shape.begin());
-    // increment index j0, j1 
+    // increment index j0, j1
     auto j0 = tensor_factory()->template create<int64_t>(shape);
     auto j1 = tensor_factory()->template create<int64_t>(shape);
     ot()->garbled_and_ctr(j0.get());
@@ -164,7 +165,7 @@ inline void garbled_and(const TensorBlock* a, const TensorBlock* b, TensorBlock*
         auto we = tensor_factory()->template create<int64_t>(block_shape);
         t_first->copy(wg.get());
         t_second->copy(we.get());
-    
+
         auto wg_mask = tensor_factory()->template create<int64_t>(block_shape);
         wg->bitwise_xor(tg.get(), wg_mask.get());
         if_then_else_plain(pa.get(), wg_mask.get(), wg.get(), wg.get());
@@ -204,7 +205,7 @@ inline void garbled_share(const TensorAdapter<u8>* val, TensorBlock* ret) {
         auto garbled_delta = tensor_factory()->template create<int64_t>(shape);
         ot()->garbled_delta(garbled_delta.get());
         to_send->bitwise_xor(garbled_delta.get(), to_send.get());
-        
+
         net()->send(next_party(), *to_send);
 
     } else {
@@ -272,7 +273,7 @@ inline std::shared_ptr<TensorBlock> create_gc_share(const std::vector<size_t>& g
     return ret;
 }
 
-inline void garbled_or(const TensorBlock* lhs, 
+inline void garbled_or(const TensorBlock* lhs,
                 const TensorBlock* rhs, TensorBlock* ret) {
     PADDLE_ENFORCE_EQ(rhs->numel(), ret->numel(),
                         "input of rhs's numel no match with return.");
@@ -436,7 +437,7 @@ inline void add_full(TensorBlock *dest, TensorBlock *carry_out,
         (*dest)[i + pos_dest]->
             bitwise_xor((*op1)[i + pos_op1].get(), (*dest)[i + pos_dest].get());
     }
-        
+
 }
 
 inline void sub_full(TensorBlock *dest, TensorBlock *borrow_out,
@@ -823,7 +824,7 @@ inline void if_then_else_bc(TensorBlock* cond,
                       ret->numel(),
                       "input of false val's numel no match with return.");
 
-    // convert gc input to bc 
+    // convert gc input to bc
     auto lsb_cond = tensor_factory()->create<u8>(ret->shape());
     auto lsb_t_int = tensor_factory()->template create<int64_t>(ret->shape());
     auto lsb_f_int = tensor_factory()->template create<int64_t>(ret->shape());
@@ -844,7 +845,7 @@ void FixedPointTensor<T, N>::gc_div(const TensorBlock* lhs, const TensorBlock* r
                     "input of lhs's numel no match with return.");
     PADDLE_ENFORCE_EQ(rhs->numel(), ret->numel(),
                     "input of rhs's numel no match with return.");
-    
+
     auto shape = lhs->shape();
     size_t size = shape[0];
     auto i1 = create_gc_share(shape);
@@ -957,7 +958,7 @@ void FixedPointTensor<T, N>::logistic(const TensorBlock* lhs, TensorBlock* ret) 
 inline void get_row_element(int row, const TensorBlock* share, TensorBlock* ret) {
     auto shape = share->shape();
     auto gc_element_size = sizeof(int64_t) * _g_block_size_expand * 8;
-    
+
     auto num_row = shape[2];
     auto num_col = shape[3];
     PADDLE_ENFORCE_GT(num_row, row, "input row large than total row.");
@@ -971,7 +972,7 @@ inline void get_element_from_vector(int col,
                 const TensorBlock* share_v, TensorBlock* ret) {
     auto shape = share_v->shape();
     auto gc_element_size = sizeof(int64_t) * _g_block_size_expand * 8;
-    
+
     auto num_col = shape[0];
     PADDLE_ENFORCE_GT(num_col, col, "input col large than total col.");
     PADDLE_ENFORCE_EQ(ret->numel(),
@@ -984,7 +985,7 @@ inline void get_element_from_vector(int col,
 inline block* get_mutable_bit_element(int row, int col,
                 TensorBlock* bit_tensor) {
     auto shape = bit_tensor->shape();
-    
+
     auto num_col = shape[2];
     PADDLE_ENFORCE_GT(num_col, col, "input col large than total col.");
 
@@ -1002,7 +1003,7 @@ void FixedPointTensor<T, N>::argmax_one_hot(const TensorBlock* op,
     val_shape.erase(val_shape.begin());
     auto one_bit_shape = get_block_shape({1});
 
-    auto shape_row{val_shape[1]};
+    std::vector<size_t> shape_row({val_shape[1]});
 
     //TensorBlock max_one_hot(get_block_shape(val_shape));
     auto max_one_hot = create_gc_share(get_block_shape(val_shape));
@@ -1112,7 +1113,7 @@ void FixedPointTensor<T, N>::to_ac_num(const TensorAdapter<int64_t>* input,
 
             auto s0 = tensor_factory()->template create<int64_t>(shape);
             block_to_int64(s_first.get(), s0.get());
-            
+
             auto bit_mask = tensor_factory()->template create<int64_t>(shape);
             std::for_each(bit_mask->data(), bit_mask->data() + bit_mask->numel(),
                             [&idx](int64_t& a) { a = ((int64_t)1 << idx); });
@@ -1259,7 +1260,7 @@ void FixedPointTensor<T, N>::argmax(FixedPointTensor<T, N>* ret) const {
                    ret->mutable_share()->data(),
                    [] (T a) {
                        // int to fixedpoint
-                       return (a << N); 
+                       return (a << N);
                     });
 }
 
@@ -1288,7 +1289,7 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
 
     to_gc_num(rhs->share(), 0, r_x.get());
     to_gc_num(rhs->share(), 1, r_y.get());
- 
+
     gc_add(r_x.get(), r_y.get(), r_gc.get());
 
     // gc logistic
@@ -1307,10 +1308,9 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
 // reduce last dim
 template <typename T, size_t N>
 void FixedPointTensor<T, N>::reduce(FixedPointTensor<T, N>* ret) const {
-    std::vector<size_t> shape_reduce = ret->shape();
     auto shape = this->shape();
     size_t numel = ret->numel();
-    for (int i = 0; i < this->numel(); ++i) {
+    for (int i = 0; i < numel; ++i) {
         T* ret_ptr = ret->mutable_share()->data() + i;
         *ret_ptr = 0;
         std::for_each(share()->data() + i * shape[shape.size() - 1],
@@ -1330,7 +1330,7 @@ void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
         this->exp(&x);
     }
 
-    auto tmp1 = tensor_factory()->template create<int64_t>({shape()[1]});
+    auto tmp1 = tensor_factory()->template create<int64_t>({shape()[0]});
     FixedPointTensor<T, N> sum(tmp1.get());
     x.reduce(&sum);
 

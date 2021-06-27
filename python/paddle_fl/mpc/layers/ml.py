@@ -18,6 +18,7 @@ import os
 import numpy
 from functools import reduce
 import mpc_data_utils as mdu
+import paddle.fluid as fluid
 from paddle.fluid.data_feeder import check_type, check_dtype
 import paddle.fluid.layers.utils as utils
 from paddle.fluid.initializer import Constant
@@ -25,7 +26,7 @@ from paddle.fluid.layers.tensor import fill_constant
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.framework import Variable
-from ..framework import MpcVariable
+from ..framework import MpcVariable, MpcProtocols
 from ..framework import check_mpc_variable_and_dtype
 from ..mpc_layer_helper import MpcLayerHelper
 
@@ -132,6 +133,9 @@ def fc(input,
             check_type(input_x, 'input[' + str(i) + ']', MpcVariable, 'fc')
     dtype = helper.input_dtype()
     check_dtype(dtype, 'input', ['int64'], 'fc')
+
+    mpc_protocol_index = numpy.array(fluid.global_scope().find_var("mpc_protocol_index").get_tensor())
+
     mul_results = []
     for input_var, param_attr in helper.iter_inputs_and_params():
         input_shape = input_var.shape
@@ -139,7 +143,10 @@ def fc(input,
             num_flatten_dims = len(input_shape) - 1
             param_num_flatten_dims = num_flatten_dims
         else:
-            param_num_flatten_dims = num_flatten_dims + 1  # The first dimension '2' of input is share number.
+            if MpcProtocols(mpc_protocol_index) is MpcProtocols.ABY3:
+                param_num_flatten_dims = num_flatten_dims + 1  # The first dimension '2' of input is share number.
+            else: # privc
+                param_num_flatten_dims = num_flatten_dims
         param_shape = [
             reduce(lambda a, b: a * b, input_shape[param_num_flatten_dims:], 1)
         ] + [size]
@@ -164,6 +171,7 @@ def fc(input,
             inputs={"X": mul_results},
             outputs={"Out": pre_bias},
             attrs={"use_mkldnn": False})
+
     # add bias
     pre_activation = helper.append_mpc_bias_op(
         pre_bias, dim_start=num_flatten_dims)

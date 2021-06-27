@@ -17,7 +17,11 @@ Decrypt MPC inference model into paddle model and make prediction.
 import numpy as np
 import paddle
 import paddle.fluid as fluid
-from paddle_fl.mpc.data_utils import aby3
+
+import paddle_fl.mpc.data_utils.data_utils import get_datautils
+
+
+mpc_du = get_datautils('aby3')
 
 mpc_model_dir = '../model_encryption/predict/tmp/mpc_models_to_predict'
 mpc_model_filename = 'model_to_predict'
@@ -54,7 +58,7 @@ def infer():
 
 if __name__ == '__main__':
     # decrypt mpc model
-    aby3.decrypt_model(
+    mpc_du.decrypt_model(
         mpc_model_dir=mpc_model_dir,
         plain_model_path=decrypted_paddle_model_dir,
         mpc_model_filename=mpc_model_filename,

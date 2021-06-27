@@ -18,8 +18,10 @@ namespace paddle {
 namespace mpc {
 
 thread_local std::once_flag MpcInstance::_s_init_flag;
+thread_local std::once_flag MpcInstance::_s_name_init_flag;
+thread_local bool MpcInstance::_s_name_initialized = false;
 thread_local std::shared_ptr<MpcInstance> MpcInstance::_s_mpc_instance(nullptr);
 thread_local std::shared_ptr<MpcProtocol> MpcInstance::_s_mpc_protocol(nullptr);
-
+thread_local std::string MpcInstance::_protocol_name = "";
 } // namespace framework
 } // namespace paddle

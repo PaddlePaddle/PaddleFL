@@ -18,10 +18,11 @@ import numpy as np
 import paddle
 import six
 import os
-from paddle_fl.mpc.data_utils import aby3
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
+mpc_du = get_datautils('aby3')
 sample_reader = paddle.dataset.uci_housing.train()
 
 
@@ -35,17 +36,18 @@ def generate_encrypted_data():
         feature reader
         """
         for instance in sample_reader():
-            yield aby3.make_shares(instance[0])
+            yield mpc_du.make_shares(instance[0])
 
     def encrypted_housing_labels():
         """
         label reader
         """
         for instance in sample_reader():
-            yield aby3.make_shares(instance[1])
+            yield mpc_du.make_shares(instance[1])
 
-    aby3.save_aby3_shares(encrypted_housing_features, "/tmp/house_feature")
-    aby3.save_aby3_shares(encrypted_housing_labels, "/tmp/house_label")
+    mpc_du.save_shares(encrypted_housing_features, "/tmp/house_feature")
+    mpc_du.save_shares(encrypted_housing_labels, "/tmp/house_label")
+
 
 def generate_encrypted_data_online(role, server, port):
     """
@@ -97,9 +99,7 @@ def generate_encrypted_data_online(role, server, port):
     # ** return generator **
 
     # ***write encrypted data into file***
-    #save_aby3_share(encrypted_housing_features, role,  "/tmp/house_feature")
-    #save_aby3_share(encrypted_housing_labels, role, "/tmp/house_label")
-    # ***write encrypted data into file***
+
 
 def load_decrypt_data(filepath, shape, decrypted_file):
     """
@@ -110,16 +110,17 @@ def load_decrypt_data(filepath, shape, decrypted_file):
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(
-            aby3.load_aby3_shares(
+            mpc_du.load_shares(
                 filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
                                               part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         with open(decrypted_file, 'a+') as f:
             for i in p:
                 f.write(str(i) + '\n')
+
 
 
 def decrypt_online(shares, shape):
@@ -134,4 +135,3 @@ def decrypt_online(shares, shape):
         exe.run(fluid.default_startup_program())
         out_ = exe.run(feed={'input': np.array(shares).reshape(shape)}, fetch_list=[out])
         return out_
-

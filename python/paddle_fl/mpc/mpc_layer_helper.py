@@ -19,8 +19,9 @@ LayerHelper in PaddlePaddle.
 # system module
 import copy
 import six
-
+import numpy
 # paddle module
+from paddle import fluid
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid import core
 from paddle.fluid import unique_name
@@ -28,7 +29,7 @@ from paddle.fluid.param_attr import ParamAttr, WeightNormParamAttr
 from paddle.fluid.initializer import ConstantInitializer
 
 # mpc_paddle module
-from .framework import MpcVariable, MpcParameter, create_mpc_parameter, create_mpc_var
+from .framework import MpcVariable, MpcParameter, create_mpc_parameter, create_mpc_var, MpcProtocols
 from .initializer import XavierInitializer
 
 class MpcLayerHelper(LayerHelper):
@@ -172,8 +173,15 @@ class MpcLayerHelper(LayerHelper):
         :param dim_end:
         :return:
         """
+
+        mpc_protocol_index = numpy.array(fluid.global_scope().find_var("mpc_protocol_index").get_tensor())
+
+        dim_start_ = dim_start
+        if MpcProtocols(mpc_protocol_index) is MpcProtocols.ABY3:
+            dim_start_ = dim_start + 1
+
         size = list(input_var.shape[
-            dim_start + 1:dim_end])  # dims[0]: share_num; dims[1]: batch_size
+            dim_start_:dim_end])  # dims[0]: share_num; dims[1]: batch_size
         bias_attr = self.bias_attr
         if not bias_attr:
             return input_var

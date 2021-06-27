@@ -17,7 +17,6 @@ Verification for mean normalize demo.
 import prepare
 import process_data
 import numpy as np
-import paddle_fl.mpc.data_utils.aby3 as aby3
 
 # 0 for f_range, 1 for f_mean
 # use decrypted global f_range and f_mean to rescaling local feature data

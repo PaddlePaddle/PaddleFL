@@ -19,15 +19,17 @@ import numpy as np
 
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 import prepare
 import process_data
+
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
 
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 role, port = int(role), int(port)
 
-share_num = aby3.ABY3_SHARE_DIM
+share_num = 2
 
 party_num = len(prepare.sample_nums)
 
@@ -42,7 +44,7 @@ def get_shares(path):
     """
     data = []
     for i in range(party_num):
-        reader = aby3.load_aby3_shares(
+        reader = mpc_du.load_shares(
             path + '.' + str(i), id=role, shape=(feat_num, ))
         data.append([x for x in reader()])
     data = np.array(data).reshape([party_num, share_num, feat_num])
@@ -53,7 +55,7 @@ def get_sample_num(path):
     """
     get encrypted sample nums
     """
-    reader = aby3.load_aby3_shares(path, id=role, shape=(party_num, ))
+    reader = mpc_du.load_shares(path, id=role, shape=(party_num, ))
     for n in reader():
         return n
 
@@ -63,7 +65,7 @@ f_min = get_shares(data_path + 'feature_min')
 f_mean = get_shares(data_path + 'feature_mean')
 sample_num = get_sample_num(data_path + 'sample_num')
 
-pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port))
 
 shape = [party_num, feat_num]
 

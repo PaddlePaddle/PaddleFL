@@ -27,8 +27,10 @@ namespace mpc {
 
 class MpcInstance {
 private:
-  MpcInstance(const std::string &protocol_name, const MpcConfig &config)
-      : _protocol_name(protocol_name), _mpc_config(config) {}
+  MpcInstance(const MpcConfig &config)
+      : _mpc_config(config) {
+    PADDLE_ENFORCE(_s_name_initialized, "Mpc protocol_name is not initialized!.");
+  }
 
   // for test purpose
   void prepare_mpc_protocol_with_store(
@@ -46,36 +48,32 @@ private:
     _s_mpc_protocol->init(_mpc_config);
   }
 
-  static void init_mpc(const std::string &protocol_name,
-                       const MpcConfig &mpc_config) {
-    _s_mpc_instance.reset(new MpcInstance(protocol_name, mpc_config));
+  static void init_mpc(const MpcConfig &mpc_config) {
+    _s_mpc_instance.reset(new MpcInstance(mpc_config));
     _s_mpc_instance->prepare_mpc_protocol();
   }
 
   // for test purpose
   static void
-  init_mpc_with_store(const std::string &protocol_name,
-                      const MpcConfig &mpc_config,
+  init_mpc_with_store(const MpcConfig &mpc_config,
                       std::shared_ptr<gloo::rendezvous::Store> store) {
-    _s_mpc_instance.reset(new MpcInstance(protocol_name, mpc_config));
+    _s_mpc_instance.reset(new MpcInstance(mpc_config));
     _s_mpc_instance->prepare_mpc_protocol_with_store(store);
   }
 
 public:
   static std::shared_ptr<MpcInstance>
-  init_instance(const std::string &protocol_name, const MpcConfig &mpc_config) {
-    std::call_once(_s_init_flag, &MpcInstance::init_mpc, protocol_name,
-                   mpc_config);
+  init_instance(const MpcConfig &mpc_config) {
+    std::call_once(_s_init_flag, &MpcInstance::init_mpc, mpc_config);
     return _s_mpc_instance;
   }
 
   // for test purpose
   static std::shared_ptr<MpcInstance>
-  init_instance_with_store(const std::string &protocol_name,
-                           const MpcConfig &mpc_config,
+  init_instance_with_store(const MpcConfig &mpc_config,
                            std::shared_ptr<gloo::rendezvous::Store> store) {
     std::call_once(_s_init_flag, &MpcInstance::init_mpc_with_store,
-                   protocol_name, mpc_config, store);
+                   mpc_config, store);
     return _s_mpc_instance;
   }
 
@@ -90,9 +88,24 @@ public:
     return _s_mpc_protocol;
   }
 
+  static std::string get_protocol_name() {
+    PADDLE_ENFORCE(_s_name_initialized, "Mpc protocol_name is not initialized!.");
+    return _protocol_name;
+  }
+
+  static void init_protocol_name(const std::string protocol_name) {
+    std::call_once(_s_name_init_flag, [&](){
+      _protocol_name = protocol_name;
+      _s_name_initialized = true;
+    });
+  }
+
 private:
+  // "thread_local" for test purpose
   static thread_local std::once_flag _s_init_flag;
-  const std::string _protocol_name;
+  static thread_local std::once_flag _s_name_init_flag;
+  static thread_local bool _s_name_initialized;
+  static thread_local std::string _protocol_name;
   MpcConfig _mpc_config;
   static thread_local std::shared_ptr<MpcInstance> _s_mpc_instance;
   static thread_local std::shared_ptr<MpcProtocol> _s_mpc_protocol;

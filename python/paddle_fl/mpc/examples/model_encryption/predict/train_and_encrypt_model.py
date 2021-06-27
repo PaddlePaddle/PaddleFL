@@ -19,11 +19,13 @@ import paddle
 import paddle.fluid as fluid
 import sys
 import time
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 sys.path.append('..')
 import network
 
+
+mpc_du = get_datautils('aby3')
 
 def train_infer_model(model_dir, model_filename):
     """
@@ -72,7 +74,7 @@ def encrypt_paddle_model(paddle_model_dir, mpc_model_dir, model_filename):
                                                     dirname=paddle_model_dir,
                                                     model_filename=model_filename)
     # Step 2. Encrypt inference model.
-    aby3.encrypt_model(program=main_prog,
+    mpc_du.encrypt_model(program=main_prog,
                        mpc_model_dir=mpc_model_dir,
                        model_filename=model_filename)
 

@@ -15,16 +15,20 @@
 mpc instance initialized..
 """
 
+import numpy
+import paddle.fluid as fluid
 from .mpc_layer_helper import MpcLayerHelper
+from .framework import MpcProtocols
 
 __all__ = ['init', ]
 
-
 def init(protocol_name,
          role,
-         local_addr,
-         net_server_addr,
-         net_server_port,
+         local_addr=None,
+         net_server_addr=None,
+         net_server_port=None,
+         endpoints=None,
+         network_mode="gloo",
          name=None):
     """
     init operator.
@@ -34,7 +38,12 @@ def init(protocol_name,
     local_addr (string):
     net_server_addr (string):
     net_server_port (int):
+    endpoints (string):
     """
+    mpc_protocol_index = MpcProtocols[protocol_name.upper()].value
+    fluid.global_scope().var("mpc_protocol_index").get_tensor().set(
+        numpy.array((mpc_protocol_index)), fluid.CPUPlace())
+
     helper = MpcLayerHelper("mpc_init", **locals())
     helper.append_op(
         type="mpc_init",
@@ -43,5 +52,7 @@ def init(protocol_name,
             "role": role,
             "local_addr": local_addr,
             "net_server_addr": net_server_addr,
-            "net_server_port": net_server_port
+            "net_server_port": net_server_port,
+            "endpoints": endpoints,
+            "network_mode": network_mode
         })

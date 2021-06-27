@@ -33,15 +33,15 @@ This figure shows model encryption and training with Paddle-MPC.
 1). **Load PaddlePaddle Model**: Users init mpc context with mpc_init OP, then load or define PaddlePaddle network.
 
    ```python
-   pfl_mpc.init("aby3", role, ip, server, port)
+   pfl_mpc.init(mpc_protocol_name, role, ip, server, port)
    [_, _, _, loss] = network.model_network()
    exe.run(fluid.default_startup_program())
    ```
 
-2). **Transpile Model**: Users use api `aby3.transpile` to encrypt curent PaddlePaddle model to encrypted model.
+2). **Transpile Model**: Users use api `mpc_du.transpile` to encrypt curent PaddlePaddle model to encrypted model.
 
    ```python
-   aby3.transpile()
+   mpc_du.transpile()
    ```
 
 3). **Train Model**: Users train encrypted model with encrypted data.
@@ -52,10 +52,10 @@ This figure shows model encryption and training with Paddle-MPC.
            mpc_loss = exe.run(feed=mpc_sample, fetch_list=[loss.name])
    ```
 
-4). **Save Model**：Users save encrypted model using `aby3.save_trainable_model`.
+4). **Save Model**：Users save encrypted model using `mpc_du.save_trainable_model`.
 
    ```python
-   aby3.save_trainable_model(exe=exe,
+   mpc_du.save_trainable_model(exe=exe,
                              model_dir=model_save_dir,
                              model_filename=model_filename)
    ```
@@ -70,7 +70,7 @@ This figure shows how to update pre-trained model with Paddle-MPC.
 
 1). **Pre-train Model**: PaddlePaddle model is trained with plaintext data.
 
-2). **Encrypt Model**: User encrypts pre-trained model with api `aby3.encrypt_model` and distributes three model shares to three parties.
+2). **Encrypt Model**: User encrypts pre-trained model with api `mpc_du.encrypt_model` and distributes three model shares to three parties.
 
    ```python
    # Step 1. Load pre-trained model.
@@ -78,18 +78,18 @@ This figure shows how to update pre-trained model with Paddle-MPC.
                                                    dirname=paddle_model_dir,
                                                    model_filename=model_filename)
    # Step 2. Encrypt pre-trained model.
-   aby3.encrypt_model(program=main_prog,
+   mpc_du.encrypt_model(program=main_prog,
                       mpc_model_dir=mpc_model_dir,
                       model_filename=model_filename)
    ```
 
-3). **Update Model**：Users init mpc context with mpc_init OP, then load encrypted model with `aby3.load_mpc_model`. Users update the encrypted model with encrypted data.
+3). **Update Model**：Users init mpc context with mpc_init OP, then load encrypted model with `mpc_du.load_mpc_model`. Users update the encrypted model with encrypted data.
 
    ```python
    # Step 1. initialize MPC environment and load MPC model into
    # default_main_program to update.
-   pfl_mpc.init("aby3", role, ip, server, port)
-   aby3.load_mpc_model(exe=exe,
+   pfl_mpc.init(mpc_protocol_name, role, ip, server, port)
+   mpc_du.load_mpc_model(exe=exe,
                        mpc_model_dir=mpc_model_dir,
                        mpc_model_filename=mpc_model_filename)
    
@@ -109,15 +109,15 @@ This figure shows how to predict encryted data with encrypted model.
 
 1). **Train Model**：User trains PaddlePaddle model with plaintext data.
 
-2). **Encrypt Model**: User encrypts model with api `aby3.encrypt_model` and distributes model shares to three users. The api is same with `Update Model`.
+2). **Encrypt Model**: User encrypts model with api `mpc_du.encrypt_model` and distributes model shares to three users. The api is same with `Update Model`.
 
-3). **Predict/Infer**: Users initialize mpc context with `mpc_init OP`, then load encrypted model with api `aby3.load_mpc_model`. Users predict encryped data with encryted model.
+3). **Predict/Infer**: Users initialize mpc context with `mpc_init OP`, then load encrypted model with api `mpc_du.load_mpc_model`. Users predict encryped data with encryted model.
 
    ```python
    # Step 1. initialize MPC environment and load MPC model to predict
-   pfl_mpc.init("aby3", role, ip, server, port)
+   pfl_mpc.init(mpc_protocol_name, role, ip, server, port)
    infer_prog, feed_names, fetch_targets = 
-   						aby3.load_mpc_model(exe=exe,
+   						mpc_du.load_mpc_model(exe=exe,
                                    mpc_model_dir=mpc_model_dir,                                                    															  mpc_model_filename=mpc_model_filename, inference=True)
    
    # Step 2. MPC predict

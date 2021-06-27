@@ -69,11 +69,20 @@ public:
 
         int x_mat_width = 1;
         int y_mat_height = 1;
-        for (size_t i = x_num_col_dims + 1; i < x_dims.size(); i++) {
-            x_mat_width *= x_dims[i];
-        }
-        for (size_t i = 1; i <= y_num_col_dims; i++) {
-            y_mat_height *= y_dims[i];
+        std::string protocol_name = mpc::MpcInstance::get_protocol_name();
+        if (protocol_name == "aby3") {
+            x_num_col_dims = x_num_col_dims + 1;
+            for (size_t i = x_num_col_dims; i < x_dims.size(); i++) {
+                x_mat_width *= x_dims[i];
+            }
+            for (size_t i = 1; i <= y_num_col_dims; i++) {
+                y_mat_height *= y_dims[i];
+            }
+        } else {
+            auto x_mat_dims = framework::flatten_to_2d(x_dims, x_num_col_dims);
+            auto y_mat_dims = framework::flatten_to_2d(y_dims, y_num_col_dims);
+            x_mat_width = x_mat_dims[1];
+            y_mat_height = y_mat_dims[0];
         }
 
         PADDLE_ENFORCE_EQ(
@@ -87,13 +96,17 @@ public:
 
         std::vector<int64_t> output_dims;
         output_dims.reserve(
-            static_cast<size_t>(1 + x_num_col_dims + y_dims.size() - y_num_col_dims));
+            static_cast<size_t>(x_num_col_dims + y_dims.size() - y_num_col_dims));
 
-	for (int i = 0; i <= x_num_col_dims; ++i) { // i=0, batch_size (share id)
+	for (int i = 0; i < x_num_col_dims; ++i) { // i=0, batch_size (share id)
             output_dims.push_back(x_dims[i]);
         }
 
-        for (int i = y_num_col_dims + 1; i < y_dims.size(); ++i) {
+        if (protocol_name == "aby3") {
+            y_num_col_dims = y_num_col_dims + 1;
+        }
+
+        for (int i = y_num_col_dims; i < y_dims.size(); ++i) {
             output_dims.push_back(y_dims[i]);
         }
 

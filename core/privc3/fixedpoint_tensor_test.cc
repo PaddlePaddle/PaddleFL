@@ -21,7 +21,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/scope.h"
 
 #include "aby3_context.h"
-#include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/network/mesh_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "fixedpoint_tensor.h"
 

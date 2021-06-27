@@ -15,13 +15,14 @@
 MPC('int64') Initializer
 """
 import numpy as np
-
 import mpc_data_utils as mdu
+import paddle.fluid as fluid
 from paddle.fluid.initializer import Initializer
 import paddle.fluid.framework as framework
 from paddle.fluid.core import VarDesc
 from paddle.fluid import unique_name
 from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle_fl.mpc.framework import MpcProtocols
 
 
 class NumpyArrayInitializer(Initializer):
@@ -130,6 +131,134 @@ class XavierInitializer(Initializer):
                 param_attr=pfl_mpc.initializer.Xavier(uniform=False))
     """
 
+
+    class XavierInitImpl(Initializer):
+
+        def get_mpc_one_share(self):
+            """
+            get ONE share of mpc protocol
+            """
+            pass
+
+        def get_plain_var_shape(self, mpc_var):
+            """
+            get the shape of the plain form of mpc var
+            """ 
+            pass
+
+        def append_cast_op(self, input_var, output_var, block): 
+            """
+            expand input_var for some mpc protocols, and cast input_var into output_var
+            """
+            pass
+
+
+    class Aby3XavierInitImpl(XavierInitImpl):
+        """
+        XavierInitialier implementation for aby3 protocol
+        """
+        def _compute_fans(self, var):
+            """Compute the fan_in and the fan_out for layers
+               Note: var.shape[0] is share_num.
+            Args:
+                var: variable for which fan_in and fan_out have to be computed
+            Returns:
+                tuple of two integers (fan_in, fan_out)
+            """
+            shape = var.shape
+            if not shape or len(shape) == 0:
+                raise ValueError(
+                    "Shape should be larger than 0 in paddlefl's initializer.")
+            elif len(shape) == 1:
+                fan_in = fan_out = 1
+            elif len(shape) == 2:
+                fan_in = fan_out = shape[1]
+            elif len(shape) == 3:
+                # This is the case for simple matrix multiply
+                fan_in = shape[1]
+                fan_out = shape[2]
+            else:
+                # Assume this to be a convolutional kernel
+                # In PaddlePaddle, the shape of the kernel is like:
+                # [num_filters, num_filter_channels, ...] where the remaining
+                # dimensions are the filter_size
+                receptive_field_size = np.prod(shape[3:])
+                fan_in = shape[2] * receptive_field_size
+                fan_out = shape[1] * receptive_field_size
+
+            return (fan_in, fan_out)
+
+        def get_mpc_one_share(self):
+            """
+            get ONE share of aby3 protocol
+            """
+            return mdu.aby3_one_share
+
+        def get_plain_var_shape(self, mpc_var):
+            """
+            get the shape of the plain form of mpc var
+            """ 
+            shape_ = list(mpc_var.shape)
+            shape_[0] = 1
+            return shape_
+
+        def append_cast_op(self, input_var, output_var, block):
+            """
+            expand input_var from  (1, ...) to  (2, ...)
+            and cast expand_input_var into output_var
+            """
+            # extend encrytped var
+            expand_input_var = block.create_var(
+                name=unique_name.generate(".".join(
+                    ['gaussian_random_expand', output_var.name, 'tmp'])),
+                shape=input_var.shape,
+                dtype=input_var.dtype,
+                type=VarDesc.VarType.LOD_TENSOR,
+                persistable=False)
+
+            block.append_op(
+                type="concat",
+                inputs={"X": [input_var, input_var]},
+                outputs={"Out": [expand_input_var]},
+                attrs={"axis": 0})
+
+            # cast expand_input_var into output_var
+            block.append_op(
+                type="cast",
+                inputs={"X": expand_input_var},
+                outputs={"Out": output_var},
+                attrs={"in_dtype": expand_input_var.dtype,
+                       "out_dtype": output_var.dtype})
+            
+
+    class PrivcXavierInitImpl(XavierInitImpl):
+        """
+        XavierInitialier implementation for privc protocol
+        """
+        def get_mpc_one_share(self):
+            """
+            get ONE share of privc protocol
+            """
+            return mdu.privc_one_share
+
+        def get_plain_var_shape(self, mpc_var):
+            """
+            get the shape of the plain form of mpc var
+            """ 
+            return mpc_var.shape
+
+        def append_cast_op(self, input_var, output_var, block): 
+            """
+            cast input_var into output_var
+            """
+            block.append_op(
+                type="cast",
+                inputs={"X": input_var},
+                outputs={"Out": output_var},
+                attrs={"in_dtype": input_var.dtype,
+                       "out_dtype": output_var.dtype})
+
+
     def __init__(self, uniform=True, fan_in=None, fan_out=None, seed=0):
         assert uniform is not None
         assert seed is not None
@@ -138,6 +267,14 @@ class XavierInitializer(Initializer):
         self._fan_in = fan_in
         self._fan_out = fan_out
         self._seed = seed
+
+        mpc_protocol_index = np.array(fluid.global_scope().find_var("mpc_protocol_index").get_tensor())
+        mpc_protocol = MpcProtocols(mpc_protocol_index)
+
+        if mpc_protocol is MpcProtocols.ABY3:
+            self.initializer = self.Aby3XavierInitImpl()
+        if mpc_protocol is MpcProtocols.PRIVC:
+            self.initializer = self.PrivcXavierInitImpl()
 
     def _compute_fans(self, var):
         """Compute the fan_in and the fan_out for layers
@@ -151,28 +288,7 @@ class XavierInitializer(Initializer):
         Returns:
             tuple of two integers (fan_in, fan_out)
         """
-        shape = var.shape
-        if not shape or len(shape) == 0:
-            raise ValueError(
-                "Shape should be larger than 0 in paddlefl's initializer.")
-        elif len(shape) == 1:
-            fan_in = fan_out = 1
-        elif len(shape) == 2:
-            fan_in = fan_out = shape[1]
-        elif len(shape) == 3:
-            # This is the case for simple matrix multiply
-            fan_in = shape[1]
-            fan_out = shape[2]
-        else:
-            # Assume this to be a convolutional kernel
-            # In PaddlePaddle, the shape of the kernel is like:
-            # [num_filters, num_filter_channels, ...] where the remaining
-            # dimensions are the filter_size
-            receptive_field_size = np.prod(shape[3:])
-            fan_in = shape[2] * receptive_field_size
-            fan_out = shape[1] * receptive_field_size
-
-        return (fan_in, fan_out)
+        return self.initializer._compute_fans(var)
 
     def __call__(self, var, block):
         """Add xavier initialization ops for a variable
@@ -199,24 +315,17 @@ class XavierInitializer(Initializer):
         if self._seed == 0:
             self._seed = block.program.random_seed
 
-        # create tmp var:
-        # out_var for random number, shape = (1, ...)
-        # out_expand_var for encrypted random number, shape = (2, ...), is same with var's shape
         out_dtype = VarDesc.VarType.FP32
         shape_ = list(var.shape)
-        shape_[0] = 1
+
+        mpc_one_share = self.initializer.get_mpc_one_share()
+        shape_ = self.initializer.get_plain_var_shape(var)
+
+        # create tmp var:
         out_var = block.create_var(
             name=unique_name.generate(".".join(
                 ['gaussian_random', var.name, 'tmp'])),
             shape=shape_,
-            dtype=out_dtype,
-            type=VarDesc.VarType.LOD_TENSOR,
-            persistable=False)
-
-        out_expand_var = block.create_var(
-            name=unique_name.generate(".".join(
-                ['gaussian_random_expand', var.name, 'tmp'])),
-            shape=out_var.shape,
             dtype=out_dtype,
             type=VarDesc.VarType.LOD_TENSOR,
             persistable=False)
@@ -254,22 +363,10 @@ class XavierInitializer(Initializer):
             type="scale",
             inputs={"X": out_var},
             outputs={"Out": out_var},
-            attrs={"scale": float(mdu.mpc_one_share)})
+            attrs={"scale": float(mpc_one_share)})
 
-        # extend one share to two share
-        block.append_op(
-            type="concat",
-            inputs={"X": [out_var, out_var]},
-            outputs={"Out": [out_expand_var]},
-            attrs={"axis": 0})
-
-        # cast float into int64
-        block.append_op(
-            type="cast",
-            inputs={"X": out_expand_var},
-            outputs={"Out": var},
-            attrs={"in_dtype": out_expand_var.dtype,
-                   "out_dtype": var.dtype})
+        # cast var (extend var for some mpc protocols).
+        self.initializer.append_cast_op(out_var, var, block)
 
         if not framework.in_dygraph_mode():
             var.op = op

@@ -131,7 +131,7 @@ void ComputeMeanVariance(const Tensor* input, int S, int N, int C, int sample_si
     T* saved_mean_e_expand_data = saved_mean_e_expand.mutable_data<T>(input->dims(), ctx.GetPlace());
     Expand<T>(saved_mean_e, &saved_mean_e_expand, S, N, C, sample_size);
     mpc_operators->sub(input, &saved_mean_e_expand, &saved_mean_e_expand);
-    mpc_operators->mul(&saved_mean_e_expand, &saved_mean_e_expand, &saved_mean_e_expand);
+    mpc_operators->elementwise_mul(&saved_mean_e_expand, &saved_mean_e_expand, &saved_mean_e_expand);
     ComputeSum<DeviceContext, T>(&saved_mean_e_expand, C, saved_variance_e, ctx);
     mpc_operators->scale(saved_variance_e, 1.0 / (N * sample_size), saved_variance_e); // scale
 
@@ -286,8 +286,8 @@ public:
         new_bias.mutable_data<T>(scale_expand.dims(), ctx.GetPlace());
         new_bias_tmp.mutable_data<T>(scale_expand.dims(), ctx.GetPlace());
 
-        mpc_operators->mul(&inv_std, &scale_expand, &new_scale);
-        mpc_operators->mul(&mean_arr, &new_scale, &new_bias_tmp);
+        mpc_operators->elementwise_mul(&inv_std, &scale_expand, &new_scale);
+        mpc_operators->elementwise_mul(&mean_arr, &new_scale, &new_bias_tmp);
         mpc_operators->sub(&bias_expand, &new_bias_tmp, &new_bias);
 
         switch (data_layout) {
@@ -303,7 +303,7 @@ public:
                 new_bias_expand.mutable_data<T>(x->dims(), ctx.GetPlace());
                 Expand<T>(&new_bias, &new_bias_expand, S, N, C, sample_size);
 
-                mpc_operators->mul(x, &new_scale_expand, &x_new_scale);
+                mpc_operators->elementwise_mul(x, &new_scale_expand, &x_new_scale);
                 mpc_operators->add(&x_new_scale, &new_bias_expand, y);
                 break;
             }
@@ -428,7 +428,7 @@ public:
                 Tensor x_mul_dy;
                 x_mul_dy.mutable_data<T>(x->dims(), ctx.GetPlace());
                 const DDim d_y_dim = d_y->dims();
-                mpc_operators->mul(x, d_y, &x_mul_dy); // X * dy
+                mpc_operators->elementwise_mul(x, d_y, &x_mul_dy); // X * dy
 
                 Tensor dy_mul_x_sub_mean_mul_invstd_sum;
                 dy_mul_x_sub_mean_mul_invstd_sum.mutable_data<T>({S, C}, ctx.GetPlace());
@@ -436,14 +436,14 @@ public:
 
                 Tensor dy_sum_mul_mean;
                 dy_sum_mul_mean.mutable_data<T>({S, C}, ctx.GetPlace());
-                mpc_operators->mul(&dy_sum, saved_mean, &dy_sum_mul_mean); // mean * dy_sum
+                mpc_operators->elementwise_mul(&dy_sum, saved_mean, &dy_sum_mul_mean); // mean * dy_sum
 
                 Tensor tmp;
                 tmp.mutable_data<T>({S, C}, ctx.GetPlace());
                 // [np.sum(X * dy) - mean * dy_sum]
                 mpc_operators->sub(&dy_mul_x_sub_mean_mul_invstd_sum, &dy_sum_mul_mean, &tmp);
                 // [np.sum(X * dy) - mean * dy_sum] * inv_std
-                mpc_operators->mul(&tmp, saved_inv_variance, &dy_mul_x_sub_mean_mul_invstd_sum);
+                mpc_operators->elementwise_mul(&tmp, saved_inv_variance, &dy_mul_x_sub_mean_mul_invstd_sum);
 
 
                 if (d_scale && d_bias) {
@@ -458,7 +458,7 @@ public:
                 Tensor scale_inv_var_nhw;
                 T* scale_inv_var_nhw_data = scale_inv_var_nhw.mutable_data<T>({S, C}, ctx.GetPlace());
                 // scale * inv_var
-                mpc_operators->mul(scale, saved_inv_variance, &scale_inv_var_nhw);
+                mpc_operators->elementwise_mul(scale, saved_inv_variance, &scale_inv_var_nhw);
                 // (1. / N) * scale * inv_var
                 mpc_operators->scale(&scale_inv_var_nhw, 1.0 / scale_coefff, &scale_inv_var_nhw);
                 Tensor scale_inv_var_nhw_expand;
@@ -489,7 +489,7 @@ public:
                     // (X - mean)
                     mpc_operators->sub(x, &mean_expand, &x_minus_mean);
                     //  inv_var * inv_var * np.sum(d_y * (X - mean), axis=0))
-                    mpc_operators->mul(&dy_mul_x_sub_mean_mul_invstd_sum, saved_inv_variance, &tmp);
+                    mpc_operators->elementwise_mul(&dy_mul_x_sub_mean_mul_invstd_sum, saved_inv_variance, &tmp);
 
                     Tensor tmp_expand;
                     tmp_expand.mutable_data<T>(d_y_dim, ctx.GetPlace());
@@ -498,11 +498,11 @@ public:
                     Tensor tmp_expand2;
                     tmp_expand2.mutable_data<T>(d_y_dim, ctx.GetPlace());
                     // (X - mean) * inv_var * inv_var * np.sum(d_y * (X - mean), axis=0)
-                    mpc_operators->mul(&tmp_expand, &x_minus_mean, &tmp_expand2);
+                    mpc_operators->elementwise_mul(&tmp_expand, &x_minus_mean, &tmp_expand2);
                     mpc_operators->sub(&dy_scale_minus_dy, &tmp_expand2, &dy_scale);
-                    mpc_operators->mul(&scale_inv_var_nhw_expand, &dy_scale, d_x);
+                    mpc_operators->elementwise_mul(&scale_inv_var_nhw_expand, &dy_scale, d_x);
                 } else {
-                    mpc_operators->mul(&scale_inv_var_nhw_expand, d_y, d_x);
+                    mpc_operators->elementwise_mul(&scale_inv_var_nhw_expand, d_y, d_x);
                 }
                 break;
             }

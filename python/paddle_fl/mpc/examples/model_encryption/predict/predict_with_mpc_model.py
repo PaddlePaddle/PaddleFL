@@ -20,12 +20,15 @@ import time
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 sys.path.append('..')
 import process_data
 import network
 
+
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
 
 def load_mpc_model_and_predict(role, ip, server, port, mpc_model_dir, mpc_model_filename):
     """
@@ -36,8 +39,8 @@ def load_mpc_model_and_predict(role, ip, server, port, mpc_model_dir, mpc_model_
     exe = fluid.Executor(place)
 
     # Step 1. initialize MPC environment and load MPC model to predict
-    pfl_mpc.init("aby3", role, ip, server, port)
-    infer_prog, feed_names, fetch_targets = aby3.load_mpc_model(exe=exe,
+    pfl_mpc.init(mpc_protocol_name, role, ip, server, port)
+    infer_prog, feed_names, fetch_targets = mpc_du.load_mpc_model(exe=exe,
                                                                 mpc_model_dir=mpc_model_dir,
                                                                 mpc_model_filename=mpc_model_filename,
                                                                 inference=True)

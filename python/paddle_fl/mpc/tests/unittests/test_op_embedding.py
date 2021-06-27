@@ -21,12 +21,13 @@ from multiprocessing import Manager
 import numpy as np
 
 from op_test import OpTest
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
 import paddle.fluid.core as core
-
 import paddle.fluid as fluid
 from paddle.fluid import Program, program_guard
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+
+
+aby3 = get_datautils('aby3')
 
 class TestLookupTableOp(OpTest):
     def to_one_hot(self, x, depth):
@@ -41,24 +42,20 @@ class TestLookupTableOp(OpTest):
         self.dtype = "int64"
         table = np.random.random((17, 31)).astype("float")
         ids = np.random.randint(0, 17, 4).astype("int64")
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64')
         ids_one_hot = self.to_one_hot(ids, table.shape[0])
-        mpc_table = share(table)
-        mpc_ids_one_hot = share(ids_one_hot)
+        mpc_table = self.lazy_share(table)
+        mpc_ids_one_hot = self.lazy_share(ids_one_hot)
         self.inputs = {'W': mpc_table, 'Ids': mpc_ids_one_hot}
-        self.outputs = {'Out': table[ids]}
+        self.outputs = {'Out': self.lazy_share(table[ids])}
 
     def test_check_output(self):
         place = core.CPUPlace()
         self.check_output_with_place(place, atol=1e-3)
 
+    
     def test_check_grad(self):
-        # set output type to 'int64'
-        # TODO: if not set outputs type to 'int64', exception will throw
-        self.outputs = {'Out': np.array([1]).astype('int64')}
         place = core.CPUPlace()
         self.check_grad_with_place(place, ['W'], 'Out', no_grad_set=set('Ids'), max_relative_error=5)
-
 
 
 if __name__ == "__main__":

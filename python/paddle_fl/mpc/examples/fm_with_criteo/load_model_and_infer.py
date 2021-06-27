@@ -25,17 +25,19 @@ import errno
 import paddle
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 import args
 import mpc_network
 import process_data
 import evaluate_metrics as evaluate
 
+
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
 
 def load_model_and_infer(args):
     """
@@ -43,7 +45,7 @@ def load_model_and_infer(args):
     """
     # Init MPC
     role = int(args.role)
-    pfl_mpc.init("aby3", role, "localhost", args.server, int(args.port))
+    pfl_mpc.init(mpc_protocol_name, role, "localhost", args.server, int(args.port))
 
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -72,22 +74,22 @@ def load_model_and_infer(args):
     if not os.path.exists(mpc_test_data_dir):
         raise ValueError("{}is not found. Please prepare encrypted data.".
                          format(mpc_test_data_dir))
-    test_feature_idx_reader = aby3.load_aby3_shares(
+    test_feature_idx_reader = mpc_du.load_shares(
         mpc_test_data_dir + "criteo_feature_idx",
         id=role,
         shape=(FIELD_NUM, FEATURE_NUM))
-    test_feature_value_reader = aby3.load_aby3_shares(
+    test_feature_value_reader = mpc_du.load_shares(
         mpc_test_data_dir + "criteo_feature_value",
         id=role,
         shape=(FIELD_NUM, ))
-    test_label_reader = aby3.load_aby3_shares(
+    test_label_reader = mpc_du.load_shares(
         mpc_test_data_dir + "criteo_label", id=role, shape=(1, ))
 
-    test_batch_feature_idx = aby3.batch(
+    test_batch_feature_idx = mpc_du.batch(
         test_feature_idx_reader, BATCH_SIZE, drop_last=True)
-    test_batch_feature_value = aby3.batch(
+    test_batch_feature_value = mpc_du.batch(
         test_feature_value_reader, BATCH_SIZE, drop_last=True)
-    test_batch_label = aby3.batch(
+    test_batch_label = mpc_du.batch(
         test_label_reader, BATCH_SIZE, drop_last=True)
 
     test_loader = fluid.io.DataLoader.from_generator(
@@ -112,7 +114,7 @@ def infer(test_loader, role, exe, BATCH_SIZE, mpc_model_dir,
     """
     # Load mpc model
     logger.info('Load model from {}'.format(mpc_model_dir))
-    infer_program, feed_targets, fetch_targets = aby3.load_mpc_model(
+    infer_program, feed_targets, fetch_targets = mpc_du.load_mpc_model(
         exe=exe,
         mpc_model_dir=mpc_model_dir,
         mpc_model_filename=mpc_model_filename,

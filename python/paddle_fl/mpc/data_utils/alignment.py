@@ -53,7 +53,7 @@ def align(input_set, party_id, endpoints, is_receiver=True):
             ip_addr = sender.split(":")[1]
             port = int(sender.split(":")[2])
             result = mdu.recv_psi(ip_addr, port, result)
-            result = list(result)
+            result = set(result)
         # Only the receiver can obtain the result.
         # Send result to other parties.
         _send_align_result(result, senders)

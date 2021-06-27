@@ -119,7 +119,7 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->add(mom1_out, &temp, mom1_out);
 
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(grad, (1 - beta2), &temp);
-      mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul(grad, &temp, &temp);
+      mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->elementwise_mul(grad, &temp, &temp);
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(mom2, beta2, mom2_out);
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->add(mom2_out, &temp, mom2_out);
 
@@ -138,7 +138,7 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
       // temp = 1 / sqrt(epsilon + mom2_out)
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->inverse_square_root(&temp, &temp);
       // temp = mom1_out / sqrt(epsilon + mom2_out)
-      mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->mul(mom1_out, &temp, &temp);
+      mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->elementwise_mul(mom1_out, &temp, &temp);
       // temp = lr * mom1_out / sqrt(epsilon + mom2_out)
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(&temp, lr_, &temp);
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->sub(param, &temp, param_out);

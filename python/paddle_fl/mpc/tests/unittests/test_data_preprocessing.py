@@ -18,14 +18,15 @@ This module test data preprocessing.
 """
 import unittest
 from multiprocessing import Manager
-
+import test_op_base
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 import mpc_data_utils as mdu
-import paddle_fl.mpc.data_utils.aby3 as aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-import test_op_base
+
+aby3 = get_datautils('aby3')
 
 
 def mean_norm_naive(f_mat):
@@ -99,7 +100,7 @@ class TestOpMeanNormalize(test_op_base.TestOpBase):
 
         self.input_size = [len(sample_nums), f_nums]
 
-        share = lambda x: np.array([x * mdu.mpc_one_share] * 2).astype('int64').reshape(
+        share = lambda x: np.array([x * aby3.MPC_ONE_SHARE] * 2).astype('int64').reshape(
                 [2] + list(x.shape))
 
         self.f_range_list = Manager().list()

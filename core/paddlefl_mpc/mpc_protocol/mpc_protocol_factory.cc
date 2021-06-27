@@ -14,6 +14,7 @@
 
 #include "mpc_protocol_factory.h"
 #include "aby3_protocol.h"
+#include "privc_protocol.h"
 
 namespace paddle {
 namespace mpc {
@@ -21,6 +22,7 @@ namespace mpc {
 void MpcProtocolFactory::register_protocol() {
   if (!_is_initialized) {
     _creator_map.insert({"aby3", std::make_shared<Aby3Protocol>});
+    _creator_map.insert({"privc", std::make_shared<PrivCProtocol>});
   }
   _is_initialized = true;
 }

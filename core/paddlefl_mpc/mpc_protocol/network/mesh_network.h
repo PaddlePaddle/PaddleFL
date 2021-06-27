@@ -17,16 +17,18 @@
 
 #include "gloo/rendezvous/context.h"
 #include "gloo/rendezvous/hash_store.h"
+#include "gloo/rendezvous/redis_store.h"
 
-#include "abstract_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
 
 namespace paddle {
 namespace mpc {
 
-// A full-connected network based on underlying GLOO toolkit, with the network
-// size of 3
+// A full-connected network based on underlying GLOO toolkit.
 class MeshNetwork : public paddle::mpc::AbstractNetwork {
 public:
+
   // a ctor called for the explicit netowrk size and store as parameters
   // prefix: the prefix of keys in the store to differentiate different runs
   // example:
@@ -35,7 +37,6 @@ public:
   //     paddle::mpc::MeshNetwork net(0, "127.0.0.1", 3, "test_prefix", store);
   //     net.init();
   //     net.send(1, data, sizeof(data))
-  //
   MeshNetwork(const size_t party_id, const std::string &local_addr,
               const size_t net_size, const std::string &prefix,
               std::shared_ptr<gloo::rendezvous::Store> store)
@@ -62,7 +63,7 @@ private:
   const std::string _local_addr;
   const std::string _store_prefix;
 
-  std::shared_ptr<gloo::rendezvous::Store> _store;
+  const std::shared_ptr<gloo::rendezvous::Store> _store;
   std::shared_ptr<gloo::rendezvous::Context> _rendezvous_ctx;
 
   bool _is_initialized;

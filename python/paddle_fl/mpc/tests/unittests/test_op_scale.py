@@ -22,23 +22,23 @@ import numpy as np
 
 import test_op_base
 from op_test import OpTest
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
 import paddle.fluid as fluid
 import paddle.fluid.core as core
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
+
+aby3 = get_datautils('aby3')
 
 class TestScaleOp(OpTest):
     def setUp(self):
         self.op_type = "mpc_scale"
         self.dtype = np.int64
         self.init_dtype_type()
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64')
         input_p = np.random.random((10, 10))
-        self.inputs = {'X': share(input_p).astype(self.dtype)}
+        self.inputs = {'X': self.lazy_share(input_p).astype(self.dtype)}
         self.attrs = {'scale': -2.3}
         self.outputs = {
-            'Out': input_p * self.attrs['scale']
+            'Out': self.lazy_share(input_p * self.attrs['scale'])
         }
 
     def init_dtype_type(self):
@@ -59,14 +59,13 @@ class TestScaleOpScaleVariable(OpTest):
         self.dtype = np.int64
         self.init_dtype_type()
         self.scale = -2.3
-        share = lambda x: np.array([x * 65536/3] * 2).astype('int64')
         input_p = np.random.random((10, 10))
         self.inputs = {
-            'X': share(input_p),
+            'X': self.lazy_share(input_p),
             'ScaleTensor': np.array([self.scale]).astype('float')
         }
         self.attrs = {}
-        self.outputs = {'Out': input_p * self.scale}
+        self.outputs = {'Out': self.lazy_share(input_p * self.scale)}
 
     def init_dtype_type(self):
         pass

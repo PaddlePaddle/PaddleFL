@@ -108,10 +108,10 @@ class MPCSGDOptimizer(Optimizer):
         else:
             assert (isinstance(callbacks, list))
         program = loss.block.program
-        assert len(loss.shape) == 2 and loss.shape[0] == 2 and loss.shape[1] == 1, \
-                "The loss.shape should be (2L,), but the current loss.shape is {}. " \
-                "Maybe that you should call fluid.layers.mean to process the current loss.".format(
-                    loss.shape)
+        #assert len(loss.shape) == 2 and loss.shape[0] == 2 and loss.shape[1] == 1, \
+        #        "The loss.shape should be (2L,), but the current loss.shape is {}. " \
+        #        "Maybe that you should call fluid.layers.mean to process the current loss.".format(
+        #            loss.shape)
         with program_guard(program, startup_program):
             params_grads = append_backward(loss, parameter_list, no_grad_set,
                                            callbacks)

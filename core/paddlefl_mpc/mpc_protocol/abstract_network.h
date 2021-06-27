@@ -17,6 +17,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
+
 namespace paddle {
 namespace mpc {
 
@@ -105,6 +107,9 @@ public:
   virtual size_t party_id() const = 0;
 
   virtual size_t party_num() const = 0;
+
+  virtual void init() = 0;
+
 };
 
 } // namespace mpc

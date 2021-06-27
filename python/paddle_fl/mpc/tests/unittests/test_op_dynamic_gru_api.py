@@ -17,13 +17,14 @@ This module test dyanmic_gru op.
 """
 import unittest
 from multiprocessing import Manager
-
+import test_op_base
 import numpy as np
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-import test_op_base
+
+aby3 = get_datautils('aby3')
 
 
 class TestInput(test_op_base.TestOpBase):
@@ -78,11 +79,11 @@ class TestInput(test_op_base.TestOpBase):
     def test_dyanmic_gru_op(self):
         data = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [-1.0, -2.0, -3.0]]).astype('float32')
         data_share = aby3.make_shares(data)
-        data_all3shares = np.array([aby3.get_aby3_shares(data_share, i) for i in range(3)])
+        data_all3shares = np.array([aby3.get_shares(data_share, i) for i in range(3)])
 
         weight = np.array([[0.0, 0.0, 0.0]]).astype('float32')
         weight_share = aby3.make_shares(weight)
-        weight_all3shares = np.array([aby3.get_aby3_shares(weight_share, i) for i in range(3)])
+        weight_all3shares = np.array([aby3.get_shares(weight_share, i) for i in range(3)])
 
         return_results = Manager().list()
         return_results_cheb = Manager().list()

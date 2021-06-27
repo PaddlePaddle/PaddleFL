@@ -22,10 +22,10 @@ namespace paddle {
 namespace operators {
 
 using mpc::MpcConfig;
-using mpc::Aby3Config;
 
 class MpcInitOp : public framework::OperatorBase {
 public:
+
     MpcInitOp(const std::string& type,
               const framework::VariableNameMap& inputs,
               const framework::VariableNameMap& outputs,
@@ -33,18 +33,21 @@ public:
 
     void RunImpl(const framework::Scope &scope,
                  const platform::Place &dev_place) const override {
-        auto protocol_name = Attr<std::string>("protocol_name");
         auto role = Attr<int>("role");
         auto local_addr = Attr<std::string>("local_addr");
         auto net_server_addr = Attr<std::string>("net_server_addr");
         auto net_server_port = Attr<int>("net_server_port");
+        auto endpoints = Attr<std::string>("endpoints");
+        auto network_mode = Attr<std::string>("network_mode");
 
         MpcConfig _mpc_config;
-        _mpc_config.set_int(Aby3Config::ROLE, role);
-        _mpc_config.set(Aby3Config::LOCAL_ADDR, local_addr);
-        _mpc_config.set(Aby3Config::NET_SERVER_ADDR, net_server_addr);
-        _mpc_config.set_int(Aby3Config::NET_SERVER_PORT, net_server_port);
-        mpc::MpcInstance::init_instance(protocol_name, _mpc_config);
+        _mpc_config.set_int(MpcConfig::ROLE, role);
+        _mpc_config.set(MpcConfig::LOCAL_ADDR, local_addr);
+        _mpc_config.set(MpcConfig::NET_SERVER_ADDR, net_server_addr);
+        _mpc_config.set_int(MpcConfig::NET_SERVER_PORT, net_server_port);
+        _mpc_config.set(MpcConfig::ENDPOINTS, endpoints);
+        _mpc_config.set(MpcConfig::NETWORK_MODE, network_mode);
+        mpc::MpcInstance::init_instance(_mpc_config);
     }
 };
 
@@ -53,7 +56,7 @@ public:
     void Make() override {
 
         AddComment(R"DOC(
-Where2 Operator.
+Mpc Init Operator.
 )DOC");
         AddAttr<std::string>("protocol_name",
                                       "(string , default aby3)"
@@ -69,12 +72,26 @@ Where2 Operator.
                                       "net server addr")
         .SetDefault({"localhost"});
         AddAttr<int>("net_server_port", "net server port, default to 6539.").SetDefault(6539);
+        AddAttr<std::string>("endpoints",
+                                      "(string, default endpoints)"
+                                      "endpoints")
+        .SetDefault({"endpoints"});
+        AddAttr<std::string>("network_mode",
+                                      "(string, default gloo)"
+                                      "network_mode")
+        .SetDefault({"gloo"});
     }
 };
 
 class MpcInitOpShapeInference : public framework::InferShapeBase {
  public:
-  void operator()(framework::InferShapeContext* ctx) const override {}
+  void operator()(framework::InferShapeContext* ctx) const override {
+    // init protocol_name.
+    // Other ops can infer output's shape according to protocol_name, 
+    // e.g., mpc_mean_op, mpc_mul_op.
+    auto protocol_name = ctx->Attrs().Get<std::string>("protocol_name");
+    mpc::MpcInstance::init_protocol_name(protocol_name);
+  }
 };
 
 }  // namespace operators

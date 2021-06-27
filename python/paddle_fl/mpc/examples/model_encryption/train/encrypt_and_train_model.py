@@ -21,12 +21,15 @@ import time
 
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 sys.path.append('..')
 import network
 import process_data
 
+
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
 
 def encrypt_model_and_train(role, ip, server, port, model_save_dir, model_filename):
     """
@@ -37,12 +40,12 @@ def encrypt_model_and_train(role, ip, server, port, model_save_dir, model_filena
     exe = fluid.Executor(place)
 
     # Step 1. Initialize MPC environment and load paddle model network and initialize parameter.
-    pfl_mpc.init("aby3", role, ip, server, port)
+    pfl_mpc.init(mpc_protocol_name, role, ip, server, port)
     [_, _, _, loss] = network.uci_network()
     exe.run(fluid.default_startup_program())
 
     # Step 2. TRANSPILE: encrypt default_main_program into MPC program
-    aby3.transpile()
+    mpc_du.transpile()
 
     # Step 3. MPC-TRAINING: model training based on MPC program.
     mpc_data_dir = "../mpc_data/"
@@ -76,7 +79,7 @@ def encrypt_model_and_train(role, ip, server, port, model_save_dir, model_filena
           .format(epoch_num, batch_size, (end_time - start_time)))
 
     # Step 4. SAVE trained MPC model as a trainable model.
-    aby3.save_trainable_model(exe=exe,
+    mpc_du.save_trainable_model(exe=exe,
                               model_dir=model_save_dir,
                               model_filename=model_filename)
     print('Successfully save mpc trained model into:{}'.format(model_save_dir))

@@ -20,15 +20,16 @@ import logging
 import numpy as np
 import six
 import paddle
-from paddle_fl.mpc.data_utils import aby3
-
 import dataset_generator
 import args
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
+
+mpc_du = get_datautils('aby3')
 
 
 def generate_encrypted_data(args, mpc_data_dir, reader, label_filepath=None):
@@ -41,12 +42,12 @@ def generate_encrypted_data(args, mpc_data_dir, reader, label_filepath=None):
             global count
             feature_idx_ = np.array(instance[0])
             feature_idx = np.eye(args.sparse_feature_number + 1)[feature_idx_.reshape(-1)]
-            yield aby3.make_shares(feature_idx)
+            yield mpc_du.make_shares(feature_idx)
 
     def encrypt_feature_value():
         for instance in reader():
             #print(np.array(instance[1]).shape)
-            yield aby3.make_shares(np.array(instance[1]))
+            yield mpc_du.make_shares(np.array(instance[1]))
 
     def encrypt_label():
         for instance in reader():
@@ -54,11 +55,11 @@ def generate_encrypted_data(args, mpc_data_dir, reader, label_filepath=None):
             if label_filepath != None:
                 with open(label_filepath, 'a+') as f:
                     f.write(str(instance[2][0]) + '\n')
-            yield aby3.make_shares(np.array(instance[2]))
+            yield mpc_du.make_shares(np.array(instance[2]))
 
-    aby3.save_aby3_shares(encrypt_label, mpc_data_dir + "criteo_label")
-    aby3.save_aby3_shares(encrypt_feature_value, mpc_data_dir + "criteo_feature_value")
-    aby3.save_aby3_shares(encrypt_feature_idx, mpc_data_dir + "criteo_feature_idx")
+    mpc_du.save_shares(encrypt_label, mpc_data_dir + "criteo_label")
+    mpc_du.save_shares(encrypt_feature_value, mpc_data_dir + "criteo_feature_value")
+    mpc_du.save_shares(encrypt_feature_idx, mpc_data_dir + "criteo_feature_idx")
 
 
 def load_decrypt_data(filepath, shape):
@@ -67,11 +68,11 @@ def load_decrypt_data(filepath, shape):
     """
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         logger.info(p)
 
 
@@ -88,11 +89,11 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
         os.remove(decrypted_filepath)
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
-    aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
+    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
-    for instance in aby3_share_reader():
-        p = aby3.reconstruct(np.array(instance))
+    for instance in mpc_share_reader():
+        p = mpc_du.reconstruct(np.array(instance))
         with open(decrypted_filepath, 'a+') as f:
             for i in p:
                 f.write(str(i) + '\n')

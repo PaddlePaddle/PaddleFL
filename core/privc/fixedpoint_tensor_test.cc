@@ -21,16 +21,15 @@ limitations under the License. */
 #include "paddle/fluid/framework/scope.h"
 
 #include "./privc_context.h"
-#include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/network/mesh_network.h"
 #include "core/paddlefl_mpc/mpc_protocol/context_holder.h"
 #include "fixedpoint_tensor.h"
-#include "core/privc/triplet_generator.h"
 #include "core/common/paddle_tensor.h"
 
 namespace privc {
 
 using g_ctx_holder = paddle::mpc::ContextHolder;
-using Fix64N32 = FixedPointTensor<int64_t, SCALING_N>;
+using Fix64N32 = FixedPointTensor<int64_t, PRIVC_FIXED_POINT_SCALING_FACTOR>;
 using AbstractContext = paddle::mpc::AbstractContext;
 
 class FixedTensorTest : public ::testing::Test {
@@ -92,8 +91,8 @@ TEST_F(FixedTensorTest, share) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
 
     TensorAdapter<int64_t>* output_share[2] = {ret[0].get(), ret[1].get()};
-    sl->data()[0] = (int64_t)1 << SCALING_N;
-    sl->scaling_factor() = SCALING_N;
+    sl->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl->scaling_factor() = PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     _t[0] = std::thread(
         [&] () {
@@ -115,15 +114,15 @@ TEST_F(FixedTensorTest, share) {
 
     auto p = gen(shape);
     output_share[0]->add(output_share[1], p.get());
-    EXPECT_EQ(1, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(1, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, reveal) {
     std::vector<size_t> shape = { 1 };
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     // lhs = 3 = 1 + 2
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p0 = gen(shape);
     auto p1 = gen(shape);
@@ -151,7 +150,7 @@ TEST_F(FixedTensorTest, reveal) {
         t.join();
     }
     EXPECT_EQ(p0->data()[0], p1->data()[0]);
-    EXPECT_EQ(3, p0->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(3, p0->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, addplain) {
@@ -161,11 +160,11 @@ TEST_F(FixedTensorTest, addplain) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 3 = 1 + 2
     // rhs = 3
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
-    sr->data()[0] = (int64_t)3 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr->data()[0] = (int64_t)3 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
-    sr->scaling_factor() = SCALING_N;
+    sr->scaling_factor() = PRIVC_FIXED_POINT_SCALING_FACTOR;
     auto p = gen(shape);
 
     Fix64N32 fl0(sl[0].get());
@@ -194,7 +193,7 @@ TEST_F(FixedTensorTest, addplain) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(6, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(6, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, addfixed) {
@@ -204,10 +203,10 @@ TEST_F(FixedTensorTest, addfixed) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 3 = 1 + 2
     // rhs = 3 = 1 + 2
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
-    sr[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sr[1]->data()[0] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -239,7 +238,7 @@ TEST_F(FixedTensorTest, addfixed) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(6, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(6, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, subplain) {
@@ -249,11 +248,11 @@ TEST_F(FixedTensorTest, subplain) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 3 = 1 + 2
     // rhs = 2
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
-    sr->data()[0] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
-    sr->scaling_factor() = SCALING_N;
+    sr->scaling_factor() = PRIVC_FIXED_POINT_SCALING_FACTOR;
     auto p = gen(shape);
 
     Fix64N32 fl0(sl[0].get());
@@ -282,7 +281,7 @@ TEST_F(FixedTensorTest, subplain) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(1, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(1, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, subfixed) {
@@ -292,10 +291,10 @@ TEST_F(FixedTensorTest, subfixed) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 3 = 1 + 2
     // rhs = 2 = 1 + 1
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
-    sr[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sr[1]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -327,7 +326,7 @@ TEST_F(FixedTensorTest, subfixed) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(1, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(1, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, negative) {
@@ -335,8 +334,8 @@ TEST_F(FixedTensorTest, negative) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 3 = 1 + 2
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -366,7 +365,7 @@ TEST_F(FixedTensorTest, negative) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(-3, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(-3, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, exp) {
@@ -374,10 +373,10 @@ TEST_F(FixedTensorTest, exp) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = (3,-2)
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)-1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -407,8 +406,8 @@ TEST_F(FixedTensorTest, exp) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_NEAR(std::exp(3.0), p->data()[0] / std::pow(2, SCALING_N), 1);
-    EXPECT_NEAR(std::exp(-2.0), p->data()[1] / std::pow(2, SCALING_N), 0.1);
+    EXPECT_NEAR(std::exp(3.0), p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 1);
+    EXPECT_NEAR(std::exp(-2.0), p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.1);
 }
 
 TEST_F(FixedTensorTest, mulfixed) {
@@ -419,11 +418,11 @@ TEST_F(FixedTensorTest, mulfixed) {
     // lhs = 2, -2.23
     // rhs = 2, 2
 
-    sl[0]->data()[0] = (int64_t)(-1.23 * pow(2, SCALING_N));
-    sl[1]->data()[0] = -(int64_t)1 << SCALING_N;
- 
-    sr[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sr[1]->data()[0] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)(-1.23 * pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    sl[1]->data()[0] = -(int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+
+    sr[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -456,7 +455,7 @@ TEST_F(FixedTensorTest, mulfixed) {
         t.join();
     }
 
-    EXPECT_NEAR(-4.46, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(-4.46, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
 }
 
 TEST_F(FixedTensorTest, mulfixed_upper_bound) {
@@ -466,10 +465,10 @@ TEST_F(FixedTensorTest, mulfixed_upper_bound) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 2^16
     // rhs = 2^16
-    sl[0]->data()[0] = (int64_t)1 << (SCALING_N + 15);
-    sl[1]->data()[0] = (int64_t)1 << (SCALING_N + 15);
-    sr[0]->data()[0] = (int64_t)1 << (SCALING_N + 15);
-    sr[1]->data()[0] = (int64_t)1 << (SCALING_N + 15);
+    sl[0]->data()[0] = (int64_t)1 << (PRIVC_FIXED_POINT_SCALING_FACTOR + 15);
+    sl[1]->data()[0] = (int64_t)1 << (PRIVC_FIXED_POINT_SCALING_FACTOR + 15);
+    sr[0]->data()[0] = (int64_t)1 << (PRIVC_FIXED_POINT_SCALING_FACTOR + 15);
+    sr[1]->data()[0] = (int64_t)1 << (PRIVC_FIXED_POINT_SCALING_FACTOR + 15);
 
     auto p = gen(shape);
 
@@ -501,7 +500,7 @@ TEST_F(FixedTensorTest, mulfixed_upper_bound) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_NEAR(0, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(0, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
 }
 
 TEST_F(FixedTensorTest, mulplain) {
@@ -511,9 +510,9 @@ TEST_F(FixedTensorTest, mulplain) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 2 = 1 + 1
     // rhs = 2 = 1 + 1
-    sl[0]->data()[0] = (int64_t)(-1.23 * pow(2, SCALING_N));
-    sl[1]->data()[0] = -(int64_t)1 << SCALING_N;
-    sr->data()[0] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)(-1.23 * pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    sl[1]->data()[0] = -(int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
 
     auto p = gen(shape);
@@ -545,7 +544,7 @@ TEST_F(FixedTensorTest, mulplain) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_NEAR(-4.46, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(-4.46, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
 }
 
 TEST_F(FixedTensorTest, sum) {
@@ -554,10 +553,10 @@ TEST_F(FixedTensorTest, sum) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape_ret), gen(shape_ret) };
     // lhs = (3, 3)
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)2 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)2 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape_ret);
 
@@ -587,7 +586,7 @@ TEST_F(FixedTensorTest, sum) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(6, p->data()[0] / std::pow(2, SCALING_N));
+    EXPECT_EQ(6, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, divplain) {
@@ -597,9 +596,9 @@ TEST_F(FixedTensorTest, divplain) {
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = 2 = 1 + 1
     // rhs = 4
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)1 << SCALING_N;
-    sr->data()[0] = (int64_t)4 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr->data()[0] = (int64_t)4 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
 
     auto p = gen(shape);
@@ -631,7 +630,7 @@ TEST_F(FixedTensorTest, divplain) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_NEAR(0.5, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(0.5, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
 }
 
 TEST_F(FixedTensorTest, mat_mulfixed) {
@@ -640,23 +639,23 @@ TEST_F(FixedTensorTest, mat_mulfixed) {
     std::shared_ptr<TensorAdapter<int64_t>> sr[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = [2, 3, 4, 5]
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)2 << SCALING_N;
-    sl[0]->data()[2] = (int64_t)3 << SCALING_N;
-    sl[0]->data()[3] = (int64_t)4 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[2] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[3] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[2] = (int64_t)3 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[3] = (int64_t)4 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[2] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[3] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
     // rhs = [0, -1, -2, -3]
-    sr[0]->data()[0] = (int64_t)-1 << SCALING_N;
-    sr[0]->data()[1] = (int64_t)-2 << SCALING_N;
-    sr[0]->data()[2] = (int64_t)-3 << SCALING_N;
-    sr[0]->data()[3] = (int64_t)-4 << SCALING_N;
-    sr[1]->data()[0] = (int64_t)1 << SCALING_N;
-    sr[1]->data()[1] = (int64_t)1 << SCALING_N;
-    sr[1]->data()[2] = (int64_t)1 << SCALING_N;
-    sr[1]->data()[3] = (int64_t)1 << SCALING_N;
+    sr[0]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[0]->data()[1] = (int64_t)-2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[0]->data()[2] = (int64_t)-3 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[0]->data()[3] = (int64_t)-4 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[2] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sr[1]->data()[3] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -688,10 +687,10 @@ TEST_F(FixedTensorTest, mat_mulfixed) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_NEAR(-6, p->data()[0] / std::pow(2, SCALING_N), 0.00001);
-    EXPECT_NEAR(-11, p->data()[1] / std::pow(2, SCALING_N), 0.00001);
-    EXPECT_NEAR(-10, p->data()[2] / std::pow(2, SCALING_N), 0.00001);
-    EXPECT_NEAR(-19, p->data()[3] / std::pow(2, SCALING_N), 0.00001);
+    EXPECT_NEAR(-6, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
+    EXPECT_NEAR(-11, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
+    EXPECT_NEAR(-10, p->data()[2] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
+    EXPECT_NEAR(-19, p->data()[3] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.00001);
 }
 
 TEST_F(FixedTensorTest, relu) {
@@ -699,10 +698,10 @@ TEST_F(FixedTensorTest, relu) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = [-2, 2]
-    sl[0]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -732,8 +731,8 @@ TEST_F(FixedTensorTest, relu) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(0, p->data()[0] / std::pow(2, SCALING_N));
-    EXPECT_EQ(2, p->data()[1] / std::pow(2, SCALING_N));
+    EXPECT_EQ(0, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(2, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 
@@ -742,12 +741,12 @@ TEST_F(FixedTensorTest, sigmoid) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = [-1, 0, 1]
-    sl[0]->data()[0] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[2] = (int64_t)2 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)-2 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[2] = (int64_t)-1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[2] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)-2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[2] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -777,9 +776,9 @@ TEST_F(FixedTensorTest, sigmoid) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(0, p->data()[0] / std::pow(2, SCALING_N));
-    EXPECT_EQ(0.5, p->data()[1] / std::pow(2, SCALING_N));
-    EXPECT_EQ(1, p->data()[2] / std::pow(2, SCALING_N));
+    EXPECT_EQ(0, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(0.5, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(1, p->data()[2] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, argmax) {
@@ -787,14 +786,14 @@ TEST_F(FixedTensorTest, argmax) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = [[-2, 2], [1, 0]]
-    sl[0]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[2] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[3] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[2] = (int64_t)2 << SCALING_N;
-    sl[1]->data()[3] = (int64_t)-1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[2] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[3] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[2] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[3] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -824,10 +823,10 @@ TEST_F(FixedTensorTest, argmax) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(0, p->data()[0] / std::pow(2, SCALING_N));
-    EXPECT_EQ(1, p->data()[1] / std::pow(2, SCALING_N));
-    EXPECT_EQ(1, p->data()[2] / std::pow(2, SCALING_N));
-    EXPECT_EQ(0, p->data()[3] / std::pow(2, SCALING_N));
+    EXPECT_EQ(0, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(1, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(1, p->data()[2] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(0, p->data()[3] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, argmax_size_one) {
@@ -835,10 +834,10 @@ TEST_F(FixedTensorTest, argmax_size_one) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = [[-2], [2]]
-    sl[0]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -868,8 +867,8 @@ TEST_F(FixedTensorTest, argmax_size_one) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(1, p->data()[0] / std::pow(2, SCALING_N));
-    EXPECT_EQ(1, p->data()[1] / std::pow(2, SCALING_N));
+    EXPECT_EQ(1, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(1, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 
 }
 
@@ -879,14 +878,14 @@ TEST_F(FixedTensorTest, reduce) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(ret_shape), gen(ret_shape) };
     // lhs = [[-2, 2], [1, 0]]
-    sl[0]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[2] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[3] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[2] = (int64_t)2 << SCALING_N;
-    sl[1]->data()[3] = (int64_t)-1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[2] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[3] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[2] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[3] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
     auto p = gen(ret_shape);
 
     Fix64N32 fl0(sl[0].get());
@@ -915,8 +914,8 @@ TEST_F(FixedTensorTest, reduce) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_EQ(0, p->data()[0] / std::pow(2, SCALING_N));
-    EXPECT_EQ(1, p->data()[1] / std::pow(2, SCALING_N));
+    EXPECT_EQ(0, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
+    EXPECT_EQ(1, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR));
 }
 
 TEST_F(FixedTensorTest, softmax) {
@@ -924,14 +923,14 @@ TEST_F(FixedTensorTest, softmax) {
     std::shared_ptr<TensorAdapter<int64_t>> sl[2] = { gen(shape), gen(shape) };
     std::shared_ptr<TensorAdapter<int64_t>> ret[2] = { gen(shape), gen(shape) };
     // lhs = [[-2, 2], [1, 0]]
-    sl[0]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[0]->data()[2] = (int64_t)-1 << SCALING_N;
-    sl[0]->data()[3] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[0] = (int64_t)-1 << SCALING_N;
-    sl[1]->data()[1] = (int64_t)1 << SCALING_N;
-    sl[1]->data()[2] = (int64_t)2 << SCALING_N;
-    sl[1]->data()[3] = (int64_t)-1 << SCALING_N;
+    sl[0]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[2] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[0]->data()[3] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[0] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[1] = (int64_t)1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[2] = (int64_t)2 << PRIVC_FIXED_POINT_SCALING_FACTOR;
+    sl[1]->data()[3] = (int64_t)-1 << PRIVC_FIXED_POINT_SCALING_FACTOR;
 
     auto p = gen(shape);
 
@@ -961,10 +960,10 @@ TEST_F(FixedTensorTest, softmax) {
     for (auto &t: _t) {
         t.join();
     }
-    EXPECT_NEAR(0.01798, p->data()[0] / std::pow(2, SCALING_N), 0.01);
-    EXPECT_NEAR(0.9820, p->data()[1] / std::pow(2, SCALING_N), 0.01);
-    EXPECT_NEAR(0.7311, p->data()[2] / std::pow(2, SCALING_N), 0.01);
-    EXPECT_NEAR(0.2689, p->data()[3] / std::pow(2, SCALING_N), 0.01);
+    EXPECT_NEAR(0.01798, p->data()[0] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.01);
+    EXPECT_NEAR(0.9820, p->data()[1] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.01);
+    EXPECT_NEAR(0.7311, p->data()[2] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.01);
+    EXPECT_NEAR(0.2689, p->data()[3] / std::pow(2, PRIVC_FIXED_POINT_SCALING_FACTOR), 0.01);
 }
 
 paddle::platform::CPUDeviceContext privc::FixedTensorTest::_cpu_ctx;

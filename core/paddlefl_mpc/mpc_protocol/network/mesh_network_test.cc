@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "core/paddlefl_mpc/mpc_protocol/mesh_network.h"
+#include "core/paddlefl_mpc/mpc_protocol/network/mesh_network.h"
 
 #include <thread>
 

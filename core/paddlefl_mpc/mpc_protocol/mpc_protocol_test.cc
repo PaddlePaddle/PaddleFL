@@ -15,6 +15,7 @@
 #include <thread>
 
 #include "aby3_protocol.h"
+#include "privc_protocol.h"
 #include "mpc_config.h"
 #include "mpc_protocol_factory.h"
 #include "gtest/gtest.h"
@@ -26,6 +27,7 @@ namespace mpc {
 
 TEST(MpcProtocolTest, FindProtocol) {
   const std::string aby3_name("aby3");
+  const std::string privc_name("privc");
 
   // empty name
   auto illegal = MpcProtocolFactory::build("");
@@ -41,6 +43,16 @@ TEST(MpcProtocolTest, FindProtocol) {
   ASSERT_NE(aby3_upper, nullptr);
   EXPECT_EQ(aby3_upper->name(), aby3_name);
 
+  // find privc with lower case name
+  auto privc_lower = MpcProtocolFactory::build("privc");
+  ASSERT_NE(privc_lower, nullptr);
+  EXPECT_EQ(privc_lower->name(), privc_name);
+
+  // find privc with mixed lower and upper case name
+  auto privc_upper = MpcProtocolFactory::build("PrivC");
+  ASSERT_NE(privc_upper, nullptr);
+  EXPECT_EQ(privc_upper->name(), privc_name);
+
   // find unknown protocol
   auto unknown = MpcProtocolFactory::build("foo");
   EXPECT_EQ(unknown, nullptr);
@@ -49,6 +61,7 @@ TEST(MpcProtocolTest, FindProtocol) {
 TEST(MpcProtocolTest, ProtocolInit) {
   using paddle::platform::EnforceNotMet;
 
+  //aby3
   auto mpc = MpcProtocolFactory::build("aby3");
   ASSERT_NE(mpc, nullptr);
 
@@ -71,7 +84,7 @@ TEST(MpcProtocolTest, ProtocolInit) {
       auto proto = std::make_shared<Aby3Protocol>();
       ASSERT_NE(proto, nullptr);
       MpcConfig aby3_config;
-      aby3_config.set_int(Aby3Config::ROLE, idx);
+      aby3_config.set_int(MpcConfig::ROLE, idx);
       proto->init_with_store(aby3_config, gloo_store);
 
       ASSERT_NE(proto->network(), nullptr);
@@ -87,6 +100,41 @@ TEST(MpcProtocolTest, ProtocolInit) {
   }
 
   for (auto thread : threads) {
+    thread->join();
+  }
+
+  // privc
+  mpc = MpcProtocolFactory::build("privc");
+  ASSERT_NE(mpc, nullptr);
+
+  auto privc = std::dynamic_pointer_cast<PrivCProtocol>(mpc);
+
+  // null store
+  EXPECT_THROW(privc->init_with_store(config, nullptr), EnforceNotMet);
+
+  gloo_store = std::make_shared<gloo::rendezvous::HashStore>();
+  std::shared_ptr<std::thread> privc_threads[2];
+  for (int idx = 0; idx < 2; ++idx) {
+    privc_threads[idx] = std::make_shared<std::thread>([gloo_store, idx]() {
+      auto proto = std::make_shared<PrivCProtocol>();
+      ASSERT_NE(proto, nullptr);
+      MpcConfig privc_config;
+      privc_config.set_int(MpcConfig::ROLE, idx);
+      proto->init_with_store(privc_config, gloo_store);
+
+      ASSERT_NE(proto->network(), nullptr);
+      EXPECT_EQ(proto->network()->party_id(), idx);
+      EXPECT_EQ(proto->network()->party_num(), 2);
+
+      ASSERT_NE(proto->mpc_context(), nullptr);
+      EXPECT_EQ(proto->mpc_context()->next_party(), (idx + 1) % 2);
+      EXPECT_EQ(proto->mpc_context()->pre_party(), (idx + 1) % 2);
+
+      EXPECT_NE(proto->mpc_operators(), nullptr);
+    });
+  }
+
+  for (auto thread : privc_threads) {
     thread->join();
   }
 }

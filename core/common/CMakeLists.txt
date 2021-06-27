@@ -12,7 +12,7 @@ add_dependencies(common_o crypto)
 
 add_library(common STATIC $<TARGET_OBJECTS:common_o>)
 
-set(common_deps_libs crypto)
+set(common_deps_libs crypto dnnl iomp5)
 
 if (USE_OPENMP)
     list(APPEND common_deps_libs OpenMP::OpenMP_CXX OpenMP::OpenMP_C)

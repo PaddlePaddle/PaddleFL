@@ -16,8 +16,10 @@ Prepare data for mean normalize demo.
 """
 import numpy as np
 import process_data
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
+
+mpc_du = get_datautils('aby3')
 data_path = process_data.data_path
 
 feat_width = 100
@@ -34,7 +36,7 @@ def gen_random_data():
 
         process_data.generate_encrypted_data(i, f_mat)
 
-    aby3.save_aby3_shares(process_data.encrypted_data(np.array(sample_nums)),
+    mpc_du.save_shares(process_data.encrypted_data(np.array(sample_nums)),
             data_path + 'sample_num')
 
 if __name__ == "__main__":

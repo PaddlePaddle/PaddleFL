@@ -17,6 +17,7 @@ limitations under the License. */
 #pragma once
 
 #include <utility>
+#include <map>
 
 #include "context_holder.h"
 #include "mpc_operators.h"
@@ -26,6 +27,7 @@ limitations under the License. */
 #include "core/privc3/fixedpoint_tensor.h"
 #include "core/privc3/boolean_tensor.h"
 #include "core/common/paddle_tensor.h"
+#include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/matrix_op.h"
 #include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/elementwise_op.h"
 #include "core/paddlefl_mpc/mpc_protocol/aby3_operators_impl/common.h"
 
@@ -41,8 +43,13 @@ using BoolTensor = aby3::BooleanTensor<int64_t>;
 using PaddleTensor = common::PaddleTensor<int64_t>;
 namespace aby3_op = paddle::operators::aby3;
 
+
 class Aby3OperatorsImpl : public MpcOperators {
 public:
+
+    Aby3OperatorsImpl() {
+        init_sigmoid_func_map();
+    }
 
     void add(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) override {
         aby3_op::add(lhs, rhs, out, axis);
@@ -78,17 +85,20 @@ public:
         op_->sum(out_);
     }
 
-    void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out) override {
+    void elementwise_mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) override {
+        aby3_op::elementwise_mul(lhs, rhs, out, axis);
+    }
 
-        auto lhs_tuple = from_tensor(lhs);
-        auto rhs_tuple = from_tensor(rhs);
-        auto out_tuple = from_tensor(out);
+    void elementwise_mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) override {
+        aby3_op::elementwise_mul_grad(lhs, rhs, dout, dx, dy, axis);
+    }
 
-        auto lhs_ = std::get<0>(lhs_tuple).get();
-        auto rhs_ = std::get<0>(rhs_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
+    void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, int x_num_col_dims, int y_num_col_dims) override {
+        aby3_op::mul(lhs, rhs, out, x_num_col_dims, y_num_col_dims);
+    }
 
-        lhs_->mul(rhs_, out_);
+    void mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int x_num_col_dims, int y_num_col_dims) override {
+        aby3_op::mul_grad(lhs, rhs, dout, dx, dy, x_num_col_dims, y_num_col_dims);
     }
 
     void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
@@ -103,6 +113,27 @@ public:
         auto out_ = std::get<0>(out_tuple).get();
 
         lhs_->mat_mul(rhs_, out_, trans_lhs, trans_rhs);
+    }
+
+    void mean(const Tensor *in, Tensor *out) override {
+        double scale_factor = 1.0 / (in->numel() / aby3_op::SHARE_NUM);
+        sum(in, out);
+        scale(out, scale_factor, out);
+    }
+
+    void mean_grad(const Tensor *dout, Tensor *dx) override {
+        auto dout_data = dout->data<int64_t>();
+        auto dx_data = dx->data<int64_t>();
+        int dx_size = dx->numel() / aby3_op::SHARE_NUM;
+        for (size_t i = 0; i < dx_size; ++i) {
+            dx_data[i] = dout_data[0];
+        }
+        for (size_t i = dx_size; i < dx->numel(); ++i) {
+            dx_data[i] = dout_data[1];
+        }
+
+        double scale_factor = 1.0 / dx_size;
+        scale(dx, scale_factor, dx);
     }
 
     void scale(const Tensor *lhs, const double factor, Tensor *out) override {
@@ -140,44 +171,21 @@ public:
         op_->relu_with_derivative(out_, der_);
     }
 
-    void sigmoid(const Tensor *op, Tensor *out) override {
+    void sigmoid(const Tensor *op, Tensor *out, const std::string mode = "sigmoid") override {
+
         auto op_tuple = from_tensor(op);
         auto out_tuple = from_tensor(out);
 
         auto op_ = std::get<0>(op_tuple).get();
         auto out_ = std::get<0>(out_tuple).get();
 
-        op_->sigmoid(out_);
-    }
-
-    void sigmoid_enhanced(const Tensor *op, Tensor *out) override {
-        auto op_tuple = from_tensor(op);
-        auto out_tuple = from_tensor(out);
-
-        auto op_ = std::get<0>(op_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
-
-        op_->sigmoid_enhanced(out_);
-    }
-
-    void sigmoid_chebyshev(const Tensor *op, Tensor *out) override {
-        auto op_tuple = from_tensor(op);
-        auto out_tuple = from_tensor(out);
-
-        auto op_ = std::get<0>(op_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
-
-        op_->sigmoid_chebyshev(out_);
-    }
-
-    void sigmoid_high_precision(const Tensor *op, Tensor *out) override {
-        auto op_tuple = from_tensor(op);
-        auto out_tuple = from_tensor(out);
-
-        auto op_ = std::get<0>(op_tuple).get();
-        auto out_ = std::get<0>(out_tuple).get();
-
-        op_->sigmoid_high_precision(out_);
+        auto iter = sigmoid_func_map.find(mode);
+        if(iter != sigmoid_func_map.end()) {
+            (op_->*iter->second)(out_);
+        } else {
+            PADDLE_THROW(platform::errors::Unimplemented(
+                "mode %s is not implemented.", mode));
+        }
     }
 
     void softmax(const Tensor *op, Tensor *out, bool use_relu, bool use_long_div) override {
@@ -414,9 +422,14 @@ public:
         std::transform(out_->data(), out_->data() + out_->numel(), out_ptr,
                        [](int64_t in) {
                            return in / pow(2, ABY3_SCALING_FACTOR); });
-    };
+    }
 
-    void online_share(size_t party, 
+    void argmax(const Tensor *op, Tensor *out) override {
+        PADDLE_THROW(platform::errors::Unimplemented(
+            "argmax is not implemented."));
+    }
+
+    void online_share(size_t party,
                       const Tensor *input,
                       Tensor *out) {
         PaddleTensor input_(ContextHolder::device_ctx(), *input);
@@ -429,6 +442,20 @@ public:
     }
 
 private:
+    typedef void(FixedTensor:: * sigmoid_func)(FixedTensor *fixed_tensor);
+    std::map<std::string, sigmoid_func> sigmoid_func_map;
+
+    void init_sigmoid_func_map() {
+        sigmoid_func_map.insert(std::pair<std::string, sigmoid_func>("sigmoid", 
+            (sigmoid_func)(&FixedTensor::sigmoid)));
+        sigmoid_func_map.insert(std::pair<std::string, sigmoid_func>("sigmoid_enhanced", 
+            (sigmoid_func)(&FixedTensor::sigmoid_enhanced)));
+        sigmoid_func_map.insert(std::pair<std::string, sigmoid_func>("sigmoid_chebyshev", 
+            (sigmoid_func)(&FixedTensor::sigmoid_chebyshev)));
+        sigmoid_func_map.insert(std::pair<std::string, sigmoid_func>("sigmoid_high_precision", 
+            (sigmoid_func)(&FixedTensor::sigmoid_high_precision)));
+    }
+
     template <typename T>
     std::tuple<
         std::shared_ptr<T>,

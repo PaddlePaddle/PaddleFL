@@ -187,29 +187,6 @@ struct AddFunctor {
     inline HOSTDEVICE T operator()(T x, T y) { return x + y; }
 };
 
-struct GetMidDims {
-    inline HOSTDEVICE void operator()(const framework::DDim &x_dims,
-                         const framework::DDim &y_dims, const int axis,
-                         int *pre, int *n, int *post)  {
-        *pre = 1;
-        *n = 1;
-        *post = 1;
-        for (int i = 1; i < axis + 1; ++i) {
-            (*pre) *= x_dims[i];
-        }
-
-        for (int i = 1; i < y_dims.size(); ++i) {
-            PADDLE_ENFORCE_EQ(x_dims[i + axis], y_dims[i],
-                              "Broadcast dimension mismatch.");
-            (*n) *= y_dims[i];
-        }
-
-        for (int i = axis + y_dims.size(); i < x_dims.size(); ++i) {
-            (*post) *= x_dims[i];
-        }
-    }
-};
-
 }  // namespace math
 }  // namespace operators
 }  // namespace paddle

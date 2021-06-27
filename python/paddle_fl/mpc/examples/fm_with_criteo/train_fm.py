@@ -25,8 +25,7 @@ import errno
 import paddle
 import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
-import paddle_fl.mpc.data_utils.aby3 as aby3
-
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 import args
 import mpc_network
 import process_data
@@ -36,6 +35,8 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
+mpc_protocol_name = 'aby3'
+mpc_du = get_datautils(mpc_protocol_name)
 
 def train(args):
     """
@@ -43,7 +44,7 @@ def train(args):
     """
     # Init MPC
     role = int(args.role)
-    pfl_mpc.init("aby3", role, "localhost", args.server, int(args.port))
+    pfl_mpc.init(mpc_protocol_name, role, "localhost", args.server, int(args.port))
 
     # Input and Network
     BATCH_SIZE = args.batch_size
@@ -79,22 +80,22 @@ def train(args):
     if not os.path.exists(mpc_train_data_dir):
         raise ValueError("{} is not found. Please prepare encrypted data.".
                          format(mpc_train_data_dir))
-    feature_idx_reader = aby3.load_aby3_shares(
+    feature_idx_reader = mpc_du.load_shares(
         mpc_train_data_dir + "criteo_feature_idx",
         id=role,
         shape=(FIELD_NUM, FEATURE_NUM))
-    feature_value_reader = aby3.load_aby3_shares(
+    feature_value_reader = mpc_du.load_shares(
         mpc_train_data_dir + "criteo_feature_value",
         id=role,
         shape=(FIELD_NUM, ))
-    label_reader = aby3.load_aby3_shares(
+    label_reader = mpc_du.load_shares(
         mpc_train_data_dir + "criteo_label", id=role, shape=(1, ))
 
-    batch_feature_idx = aby3.batch(
+    batch_feature_idx = mpc_du.batch(
         feature_idx_reader, BATCH_SIZE, drop_last=True)
-    batch_feature_value = aby3.batch(
+    batch_feature_value = mpc_du.batch(
         feature_value_reader, BATCH_SIZE, drop_last=True)
-    batch_label = aby3.batch(label_reader, BATCH_SIZE, drop_last=True)
+    batch_label = mpc_du.batch(label_reader, BATCH_SIZE, drop_last=True)
 
     loader = fluid.io.DataLoader.from_generator(
         feed_list=[feat_idx, feat_value, label], capacity=BATCH_SIZE)

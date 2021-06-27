@@ -106,7 +106,7 @@ static inline block to_block(const T& val) {
 }
 
 template <typename T>
-static inline block to_block(const TensorAdapter<T>* val, TensorBlock* ret) {
+static inline void to_block(const TensorAdapter<T>* val, TensorBlock* ret) {
     block* ret_ptr = reinterpret_cast<block*>(ret->data());
     for (int i = 0; i < val->numel(); ++i) {
         *(ret_ptr + i) = to_block(*(val->data() + i));
