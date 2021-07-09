@@ -343,6 +343,13 @@ public:
     }
 };
 
+template <typename T>
+struct CopyData<platform::CPUDeviceContext, T> {
+    void operator()(T* dst, const T* src, size_t numel) {
+        std::memcpy(dst, src, sizeof(T) * numel);
+    }
+};
+
 }  // namespace operators
 }  // namespace paddle
 
