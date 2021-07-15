@@ -42,7 +42,7 @@ option(USE_OPENMP "Compile with OpenMP" ON)
 
 option(USE_ABY3_TRUNC1 "Compile with ABY3 truncate 1 algorithm" OFF)
 
-option(BUILD_PADDLE_FROM_SOURCE "build paddle from source, must turn on after 1.1.2" ON)
+option(BUILD_PADDLE_FROM_SOURCE "build paddle from source, must turn on after 1.1.2" OFF)
 
 ########################### the project build part ###############################
 
