@@ -26,9 +26,9 @@ endif()
 
 add_library(mpc_protocol_o OBJECT ${PROTO_SRCS} ${grpc_grpc_srcs} ${grpc_proto_srcs})
 if (WITH_GRPC)
-    add_dependencies(mpc_protocol_o gloo hiredis grpc++ fluid_framework)
+    add_dependencies(mpc_protocol_o gloo hiredis gmp grpc++ fluid_framework)
 else()
-    add_dependencies(mpc_protocol_o gloo hiredis fluid_framework)
+    add_dependencies(mpc_protocol_o gloo hiredis gmp fluid_framework)
 endif()
 
 add_library(mpc_protocol STATIC $<TARGET_OBJECTS:mpc_protocol_o>)
