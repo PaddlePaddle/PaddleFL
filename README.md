@@ -63,7 +63,7 @@ A full training or inference process in PFM consists of mainly three phases: dat
 
 - **Private data alignment**: PFM enables data owners (IPs) to find out records with identical keys (like UUID) without revealing private data to each other. This is especially useful in the vertical learning cases where segmented features with same keys need to be identified and aligned from all owners in a private manner before training.
 
-- **Encryption and distribution**: In PFM, data and models from IPs will be encrypted using Secret-Sharing[9], and then be sent to CPs, via directly transmission or distributed storage like HDFS. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
+- **Encryption and distribution**: PFM provides both online and offline data encryption and distribution solutions. If users choose the offline data sharing scheme, data and models from IPs will be encrypted using Secret-Sharing[9], and then be sent to CPs, via directly transmission or distributed storage like HDFS. If users adopt the online solution, IPs encrypt and distribute data and models online at the beginning of the training phase. Each CP can only obtain one share of each piece of data, and thus is unable to recover the original value in the Semi-honest model.
 
 #### B. Training/Inference
 
