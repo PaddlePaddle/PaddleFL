@@ -82,12 +82,20 @@ endif()
 
 add_library(fluid_framework ALIAS paddle_framework)
 
+if (WITH_GRPC)
+    set(PROTO_SRCS "./core/paddlefl_mpc/mpc_protocol/network/mesh_network_grpc.cc")
+    set(GRPC_DEPS grpc++_unsecure grpc_unsecure gpr zlib protobuf)
+    grpc_library(transport_o SRCS ${PROTO_SRCS} PROTO ./core/paddlefl_mpc/mpc_protocol/network/protos/transport.proto DEPS ${GRPC_DEPS})
+    set(GRPC_PRTOTO_DEPS transport_o)
+endif()
+
 # generate dynamic .so lib
 add_library(paddle_enc SHARED
     $<TARGET_OBJECTS:common_o>
     $<TARGET_OBJECTS:mpc_tensor_o>
     $<TARGET_OBJECTS:mpc_protocol_o>
     $<TARGET_OBJECTS:mpc_ops_o>
+    $<TARGET_OBJECTS:transport_o>
     $<TARGET_OBJECTS:privc_o>)
 
 target_link_libraries(paddle_enc "-Wl,--whole-archive ${ZLIB_LIBRARIES} -Wl,--no-whole-archive" zlib)
@@ -101,6 +109,7 @@ if (WITH_GRPC)
     target_link_libraries(paddle_enc grpc++_unsecure)
     target_link_libraries(paddle_enc grpc_unsecure)
     target_link_libraries(paddle_enc gpr)
+    target_link_libraries(paddle_enc transport_o)
 endif()
 target_link_libraries(paddle_enc hiredis)
 target_link_libraries(paddle_enc crypto)

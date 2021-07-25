@@ -19,7 +19,7 @@
 
 #include "core/paddlefl_mpc/mpc_protocol/network/mesh_network.h"
 
-#ifdef WTIH_GRPC
+#ifdef WITH_GRPC
 #include "core/paddlefl_mpc/mpc_protocol/network/mesh_network_grpc.h"
 #endif
 
@@ -45,7 +45,7 @@ void MpcNetworkFactory::register_creator() {
 
         _creator_map.insert({"gloo", gloo_net_creator});
 
-#ifdef WTIH_GRPC
+#ifdef WITH_GRPC
         auto grpc_net_creator = [](const MpcConfig &config) {
             auto party_id = config.get_int(MpcConfig::ROLE);
             auto net_size = config.get_int(MpcConfig::NET_SIZE);
