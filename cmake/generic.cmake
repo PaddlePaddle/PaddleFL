@@ -766,13 +766,13 @@ function(grpc_library TARGET_NAME)
   #FIXME(putcn): the follwoing line is supposed to generate *.pb.h and cc, but
   # somehow it didn't. line 602 to 604 is to patching this. Leaving this here
   # for now to enable dist CI.
-  paddle_protobuf_generate_cpp(grpc_proto_srcs grpc_proto_hdrs "${ABS_PROTO}")
+  set(grpc_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_WE}.pb.cc")
+  set(grpc_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_WE}.pb.h")
   set(grpc_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_WE}.grpc.pb.cc")
   set(grpc_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_WE}.grpc.pb.h")
-  cc_library("${TARGET_NAME}_proto" SRCS "${grpc_proto_srcs}")
 
   add_custom_command(
-          OUTPUT "${grpc_grpc_srcs}" "${grpc_grpc_hdrs}"
+          OUTPUT "${grpc_proto_srcs}" "${grpc_proto_hdrs}" "${grpc_grpc_srcs}" "${grpc_grpc_hdrs}"
           COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
           ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}" -I "${PROTO_PATH}"
           --plugin=protoc-gen-grpc="${GRPC_CPP_PLUGIN}" "${ABS_PROTO}"
@@ -780,6 +780,8 @@ function(grpc_library TARGET_NAME)
           ARGS --cpp_out "${CMAKE_CURRENT_BINARY_DIR}" -I "${PROTO_PATH}"
           "${ABS_PROTO}"
           DEPENDS "${ABS_PROTO}" ${PROTOBUF_PROTOC_EXECUTABLE} extern_grpc)
+
+  cc_library("${TARGET_NAME}_proto" SRCS "${grpc_proto_srcs}")
 
   # FIXME(typhoonzero): grpc generated code do not generate virtual-dtor, mark it
   # as compiler warnings instead of error. Should try remove the warnings also.

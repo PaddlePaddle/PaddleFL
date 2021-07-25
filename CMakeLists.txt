@@ -35,6 +35,9 @@ option(WITH_TESTING "Compile with unit testing" ON)
 option(WITH_PSI "Compile with psi lib" ON)
 
 option(WITH_GRPC "Compile with grpc lib" ON)
+if (WITH_GRPC)
+    add_definitions(-DWITH_GRPC)
+endif()
 
 option(USE_AES_NI "Compile with AES NI" ON)
 
@@ -82,12 +85,19 @@ endif()
 
 add_library(fluid_framework ALIAS paddle_framework)
 
+if (WITH_GRPC)
+    set(PROTO_SRCS "./core/paddlefl_mpc/mpc_protocol/network/mesh_network_grpc.cc")
+    set(GRPC_DEPS grpc++_unsecure grpc_unsecure gpr zlib protobuf)
+    grpc_library(transport_o SRCS ${PROTO_SRCS} PROTO ./core/paddlefl_mpc/mpc_protocol/network/protos/transport.proto DEPS ${GRPC_DEPS})
+endif()
+
 # generate dynamic .so lib
 add_library(paddle_enc SHARED
     $<TARGET_OBJECTS:common_o>
     $<TARGET_OBJECTS:mpc_tensor_o>
     $<TARGET_OBJECTS:mpc_protocol_o>
     $<TARGET_OBJECTS:mpc_ops_o>
+    $<TARGET_OBJECTS:transport_o>
     $<TARGET_OBJECTS:privc_o>)
 
 target_link_libraries(paddle_enc "-Wl,--whole-archive ${ZLIB_LIBRARIES} -Wl,--no-whole-archive" zlib)
@@ -96,11 +106,11 @@ target_link_libraries(paddle_enc gmpxx)
 target_link_libraries(paddle_enc seal)
 target_link_libraries(paddle_enc gloo)
 if (WITH_GRPC)
-    add_definitions(-DWITH_GRPC)
     target_link_libraries(paddle_enc grpc++)
     target_link_libraries(paddle_enc grpc++_unsecure)
     target_link_libraries(paddle_enc grpc_unsecure)
     target_link_libraries(paddle_enc gpr)
+    target_link_libraries(paddle_enc transport_o)
 endif()
 target_link_libraries(paddle_enc hiredis)
 target_link_libraries(paddle_enc crypto)
