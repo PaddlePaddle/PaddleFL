@@ -35,6 +35,9 @@ option(WITH_TESTING "Compile with unit testing" ON)
 option(WITH_PSI "Compile with psi lib" ON)
 
 option(WITH_GRPC "Compile with grpc lib" ON)
+if (WITH_GRPC)
+    add_definitions(-DWITH_GRPC)
+endif()
 
 option(USE_AES_NI "Compile with AES NI" ON)
 
@@ -86,7 +89,6 @@ if (WITH_GRPC)
     set(PROTO_SRCS "./core/paddlefl_mpc/mpc_protocol/network/mesh_network_grpc.cc")
     set(GRPC_DEPS grpc++_unsecure grpc_unsecure gpr zlib protobuf)
     grpc_library(transport_o SRCS ${PROTO_SRCS} PROTO ./core/paddlefl_mpc/mpc_protocol/network/protos/transport.proto DEPS ${GRPC_DEPS})
-    set(GRPC_PRTOTO_DEPS transport_o)
 endif()
 
 # generate dynamic .so lib
@@ -104,7 +106,6 @@ target_link_libraries(paddle_enc gmpxx)
 target_link_libraries(paddle_enc seal)
 target_link_libraries(paddle_enc gloo)
 if (WITH_GRPC)
-    add_definitions(-DWITH_GRPC)
     target_link_libraries(paddle_enc grpc++)
     target_link_libraries(paddle_enc grpc++_unsecure)
     target_link_libraries(paddle_enc grpc_unsecure)
