@@ -1,0 +1,7 @@
+protobuf>=3.1.0
+paddlepaddle>=2.0.0
+numpy
+six
+redis
+grpc
+grpc-tools
