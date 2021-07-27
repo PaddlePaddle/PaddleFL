@@ -26,12 +26,16 @@ class RedisTable(table_base.TableBase):
     redis client warpper with load balance
     """
     def __init__(self, ip_ports=None, bns_name=None):
+        if ip_ports is not None and bns_name is not None:
+            raise ValueError("can only accept one in ip_ports and bns_name")
+
         if ip_ports is not None:
             self.ip_ports_ = ip_ports
         elif bns_name is not None:
             self.ip_ports_ = parse_bns_by_name(bns_name=bns_name)
         else:
             raise TypeError("redis_table initializer need ip_port list")
+
         self.clients_ = self._build_connection_pool(self.ip_ports_)
         self.counter_ = 0
 
