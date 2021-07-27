@@ -1,21 +1,33 @@
-import sys
-import numpy as np
-import time
-import copy
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
-import json
-import pickle
 import subprocess
+
+import time
+import json
+import numpy as np
+
 import paddle
 import paddle.fluid as fluid
-from paddle.fluid.executor import global_scope
-
-from google.protobuf import text_format
+from paddle.fluid.framework import Parameter, Program
 
 from .proto import common_pb2_grpc, common_pb2
 from . import reformer
 
-def parse_proto_to_lod_tensor(proto, place=fluid.CPUPlace()):
+
+def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
     vars_map = {}
     for pb_var in proto.vars:
         dtype = pb_var.dtype
@@ -30,6 +42,7 @@ def parse_proto_to_lod_tensor(proto, place=fluid.CPUPlace()):
         tensor = fluid.create_lod_tensor(np_data, recursive_seq_lens, place)
         vars_map[name] = tensor
     return vars_map
+
 
 def pack_lod_tensor_to_proto(vars_map):
     proto = common_pb2.Features()
@@ -50,20 +63,25 @@ def pack_lod_tensor_to_proto(vars_map):
         proto.vars.append(pb_var)
     proto.state.succ = True
     return proto
- 
+
+
 def save_whole_program(main_prog, startup_prog, program_path):
     if not os.path.exists(program_path):
         os.makedirs(program_path)
     main_program_str = main_prog.desc.serialize_to_string()
     startup_program_str = startup_prog.desc.serialize_to_string()
     params = main_prog.global_block().all_parameters()
+
     with open(program_path + '/para_info', 'w') as fout:
         for item in params:
             fout.write("%s:%s\n" % (item.name, item.trainable))
+
     with open(program_path + '/startup_program', "wb") as fout:
         fout.write(startup_program_str)
+
     with open(program_path + '/main_program', "wb") as fout:
         fout.write(main_program_str)
+
     stop_vars = []
     for check_stop in main_prog.list_vars():
         if check_stop.stop_gradient == True:
@@ -72,12 +90,13 @@ def save_whole_program(main_prog, startup_prog, program_path):
         for stop_item in stop_vars:
             fout.write("%s\n" % stop_item)
 
+
 def load_whole_program(program_input):
     with open(program_input + '/startup_program', "rb") as fin:
-        new_startup = fluid.framework.Program().parse_from_string(fin.read())
+        new_startup = Program().parse_from_string(fin.read())
 
     with open(program_input + '/main_program', "rb") as fin:
-        new_main = fluid.framework.Program().parse_from_string(fin.read())
+        new_main = Program().parse_from_string(fin.read())
 
     para_list = []
     with open(program_input + '/para_info', 'r') as fin:
@@ -98,20 +117,21 @@ def load_whole_program(program_input):
 
     for item in para_list:
         main_para = new_main.global_block().var(item['name'])
-        main_para.__class__ = fluid.framework.Parameter
+        main_para.__class__ = Parameter
         main_para.regularizer = None
         main_para.optimize_attr = {'learning_rate': 1.0}
         main_para.trainable = item['trainable']
         main_para.is_distributed = False
 
         startup_para = new_startup.global_block().var(item['name'])
-        startup_para.__class__ = fluid.framework.Parameter
+        startup_para.__class__ = Parameter
         startup_para.regularizer = None
         startup_para.optimize_attr = {'learning_rate': 1.0}
         startup_para.trainable = item['trainable']
         startup_para.is_distributed = False
 
     return new_startup, new_main
+
 
 def split_program_by_name_and_save(
         startup_program,
@@ -120,19 +140,20 @@ def split_program_by_name_and_save(
         feeded_var_names,
         target_var_names):
     split_program_by_key_prefix_and_save(
-            startup_program,
-            main_program,
-            "Host|",
-            save_path,
-            feeded_var_names,
-            target_var_names)
+        startup_program,
+        main_program,
+        "Host|",
+        save_path,
+        feeded_var_names,
+        target_var_names)
+
 
 def split_program_by_key_prefix_and_save(
-        startup_program, 
-        main_program, 
-        key_prefix, 
-        save_path, 
-        feeded_var_names, 
+        startup_program,
+        main_program,
+        key_prefix,
+        save_path,
+        feeded_var_names,
         target_var_names):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -196,26 +217,27 @@ def split_program_by_key_prefix_and_save(
         with open(os.path.join(program_save_path, "model_info"), "w") as fout:
             fout.write(json.dumps(model_infos[i]))
 
+
 def load_splited_program(save_path):
     startup_program, main_program = None, None
     with open(os.path.join(save_path, "startup_program"), "rb") as fin:
-        startup_program = fluid.framework.Program().parse_from_string(fin.read())
+        startup_program = Program().parse_from_string(fin.read())
     with open(os.path.join(save_path, 'main_program'), "rb") as fin:
-        main_program = fluid.framework.Program().parse_from_string(fin.read())
+        main_program = Program().parse_from_string(fin.read())
     with open(os.path.join(save_path, "model_info"), "r") as fin:
         model_info = json.loads(fin.read())
 
     # params
     for item in model_info["params"]:
         main_para = main_program.global_block().var(item['name'])
-        main_para.__class__ = fluid.framework.Parameter
+        main_para.__class__ = Parameter
         main_para.regularizer = None
         main_para.optimize_attr = {'learning_rate': 1.0}
         main_para.trainable = item['trainable']
         main_para.is_distributed = False
 
         startup_para = startup_program.global_block().var(item['name'])
-        startup_para.__class__ = fluid.framework.Parameter
+        startup_para.__class__ = Parameter
         startup_para.regularizer = None
         startup_para.optimize_attr = {'learning_rate': 1.0}
         startup_para.trainable = item['trainable']
@@ -226,15 +248,18 @@ def load_splited_program(save_path):
         stop_var.stop_gradient = True
     return startup_program, main_program, model_info
 
+
 def intersection_vars(p1_program, p2_program):
     p1_whole_vars = [var.name for var in p1_program.list_vars()]
     p2_whole_vars = [var.name for var in p2_program.list_vars()]
     return set(p1_whole_vars) & set(p2_whole_vars)
 
+
 def make_vars_persistable(program, var_names):
     for name in var_names:
         var = find_var(program, name)
         var.persistable = True
+
 
 def find_var(program, var_name):
     whole_vars = program.list_vars()
@@ -243,10 +268,11 @@ def find_var(program, var_name):
             return var
     return None
 
+
 def parse_bns_by_name(bns_name='', default_ip_port=''):
-    '''
+    """
     return proxy ip list
-    '''
+    """
     final_ip_port = default_ip_port
     (s, o) = subprocess.getstatusoutput(
         'get_instance_by_service -ip %s' % bns_name)
