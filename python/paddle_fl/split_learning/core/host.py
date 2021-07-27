@@ -26,7 +26,7 @@ import paddle.fluid as fluid
 from . import util
 from .proto import common_pb2_grpc, common_pb2
 from . import reformer
-    
+
 _LOGGER = logging.getLogger(__name__)
 
 

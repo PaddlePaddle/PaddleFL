@@ -19,4 +19,4 @@ protoc.main((
     '-I.',
     '--python_out=.',
     '--grpc_python_out=.',
-    'split_nn/proto/common.proto', ))
+    'split_learning/core/proto/common.proto', ))
