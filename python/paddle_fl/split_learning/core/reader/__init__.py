@@ -12,5 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .reader_base import ReaderBase
-from .default_reader import DefaultReader
+from .reader_base import ReaderBase, TmpReader
