@@ -46,8 +46,10 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         self.feed_data = None
 
         if self.run_type == "INFER":
-            self.target_vars = [util.find_var(self.p1_program, name)
-                                for name in self.p1_common_vars["out"]]
+            self.target_vars = [
+                    util.find_var(
+                        self.p1_program, "save_infer_model/scale_{}.tmp_0".format(idx))
+                    for idx in range(len(self.p1_common_vars["out"]))]
 
     def execute_forward_host_part(self, request, context):
         if request.token != self.token:
@@ -317,7 +319,6 @@ class HostProgramLoader(object):
             p1_model_info = json.load(f)
 
         self.p1_common_vars = p1_model_info["common"]
-        self.p1_common_vars["out"] = [var.name for var in fetch_targets]
         self.token = p1_model_info["token"]
         self.p3_program = None
         self.p3_common_vars = None

@@ -281,12 +281,6 @@ class CustomerExecutor(object):
             remote_path,
             feeded_var_names,
             target_var_names):
-        # rename common_in to XXX.tmp_0 for inference
-        block = self.main_program.global_block()
-        for name in self.common_vars["in"]:
-            block._rename_var(name, "{}.tmp_0".format(name))
-        self.common_vars["in"] = ["{}.tmp_0".format(name)
-                                  for name in self.common_vars["in"]]
 
         host_feeded_var_names, token = CustomerProgramSaver.save_inference_model(
             local_path, self.exe, self.main_program, self.common_vars,
@@ -333,8 +327,9 @@ class CustomerProgramSaver(object):
 
     @staticmethod
     def save_inference_model(
-            local_path, exe, main_program, updated_common_vars,
+            local_path, exe, main_program, common_vars,
             feeded_var_names, target_var_names):
+
         customer_feeded_var_names = []
         host_feeded_var_names = []
         for name in feeded_var_names:
@@ -342,7 +337,7 @@ class CustomerProgramSaver(object):
                 customer_feeded_var_names.append(name)
             else:
                 host_feeded_var_names.append(name)
-        customer_feeded_var_names += updated_common_vars["in"]
+        customer_feeded_var_names += common_vars["in"]
         customer_target_vars = []
         for name in target_var_names:
             var = util.find_var(main_program, name)
@@ -361,7 +356,7 @@ class CustomerProgramSaver(object):
         # save inference info
         token = str(time.time())
         model_info = {
-            "common": updated_common_vars,
+            "common": common_vars,
             "token": token,
         }
         with open(os.path.join(local_path, "model_info"), "w") as f:
