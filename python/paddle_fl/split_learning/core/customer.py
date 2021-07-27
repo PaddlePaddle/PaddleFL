@@ -201,6 +201,7 @@ class CustomerExecutor(object):
             self._inner_cancel_current_step(err_msg)
             self.cancel_host_current_step("[Customer] {}".format(err_msg))
             return None
+
         common_vars = fetch_vars[:len(self.common_vars["out"])]
         ret_vars = fetch_vars[len(self.common_vars["out"]):]
 

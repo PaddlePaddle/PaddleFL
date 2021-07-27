@@ -140,20 +140,20 @@ def split_program_by_name_and_save(
         feeded_var_names,
         target_var_names):
     split_program_by_key_prefix_and_save(
-            startup_program,
-            main_program,
-            "Host|",
-            save_path,
-            feeded_var_names,
-            target_var_names)
+        startup_program,
+        main_program,
+        "Host|",
+        save_path,
+        feeded_var_names,
+        target_var_names)
 
 
 def split_program_by_key_prefix_and_save(
-        startup_program, 
-        main_program, 
-        key_prefix, 
-        save_path, 
-        feeded_var_names, 
+        startup_program,
+        main_program,
+        key_prefix,
+        save_path,
+        feeded_var_names,
         target_var_names):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -270,9 +270,9 @@ def find_var(program, var_name):
 
 
 def parse_bns_by_name(bns_name='', default_ip_port=''):
-    '''
+    """
     return proxy ip list
-    '''
+    """
     final_ip_port = default_ip_port
     (s, o) = subprocess.getstatusoutput(
         'get_instance_by_service -ip %s' % bns_name)
