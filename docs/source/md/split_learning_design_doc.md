@@ -20,7 +20,9 @@ Our solution consists of three parts:
 <img src='../../../images/PFS-design.png' align="middle"/>
 
 ### Client SDK
-Client SDK encrypt Unique User Identify(UUID), push to server, get hidden vector *h2* with noisy(for protect server's data privacy), then concat *h2* with self *h1* as *h3*, to infer result *y*. For execute backward network, calculate server's variable gradient, to update server's paramter, Client SDK will push *Δh2* back to server.
+Client SDK encrypt Unique User Identify(UUID), push to server, get hidden vector *h2* calculated by server's profile with noisy(for protect server's data privacy), then concat *h2* with *h1* calculated by client's profile as *h3*, to infer result *y*.
+
+For execute backward network, calculate server's variable gradient, to update server's paramter, Client SDK will push *Δh2* back to server.
 
 Client SDK now support following features:
 1. Multi language: based on GRPC.
