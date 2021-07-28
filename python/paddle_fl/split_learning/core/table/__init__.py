@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .redis_table import RedisTable
+from .local_table import LocalTable
