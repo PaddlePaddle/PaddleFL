@@ -18,3 +18,17 @@ class ReaderBase(object):
 
     def parse(self, db_value):
         raise NotImplementedError("Failed to parse db_value")
+
+class TmpReader(ReaderBase):
+    def __init__(self, place):
+        super(FakeReader, self).__init__()
+        self.place = place
+    def parse(self, db_value):
+        data_dict = {}
+        data = {}
+        data_dict["Host|input"] = np.random.randint(2, size=( 1, 1)).astype('int64')
+        shapes = [[len(c) for c in data_dict["Host|input"]]]
+        data["Host|input"] =  fluid.create_lod_tensor(data_dict["Host|input"].reshape(-1,1), shapes, self.place)
+        data_dict["Customer|label"] = [1] #np.array([1]).astype('int64')
+        data["Customer|label"] = data_dict["Customer|label"]
+        return data
