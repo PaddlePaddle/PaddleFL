@@ -20,8 +20,8 @@ paddle.enable_static()
 class OpWarpper(object):
     def __init__(self, op):
         self.op = op
-        self.input_names = set([op.input(name)[0] for name in op.input_names])
-        self.output_names = set([op.output(name)[0] for name in op.output_names])
+        self.input_names = OpWarpper.get_input_var_names(self.op)
+        self.output_names = OpWarpper.get_output_var_names(self.op)
         self.owner = None
         for name in self.input_names:
             ''' var name: <host name>|<slot name> '''
@@ -34,6 +34,20 @@ class OpWarpper(object):
                         "Failed to split: owner_name({}) can only ".format(name) +\
                         "be defined as 'Host' or 'Customer' at present.")
     
+    @staticmethod
+    def get_input_var_names(op):
+        names = []
+        for name in op.input_names:
+            names.extend(op.input(name))
+        return set(names)
+
+    @staticmethod
+    def get_output_var_names(op):
+        names = []
+        for name in op.output_names:
+            names.extend(op.output(name))
+        return set(names)
+
     def is_predecessor(self, op):
         for name in op.input_names:
             if name in self.output_names:
@@ -277,8 +291,8 @@ class Reformer(object):
     @staticmethod
     def _clone_sub_program_by_given_ops(program_warp, ops):
         def add_var_depended_by_op(dst_program, op):
-            input_names = set([op.input(name)[0] for name in op.input_names])
-            output_names = set([op.output(name)[0] for name in op.output_names])
+            input_names =  OpWarpper.get_input_var_names(op)
+            output_names =  OpWarpper.get_output_var_names(op)
             required = input_names | output_names
             block = dst_program.global_block()
             for name in required:
@@ -314,8 +328,8 @@ class Reformer(object):
             block = dst_program.global_block()
             used_var_names = set()
             for op in block.ops:
-                input_names = set([op.input(name)[0] for name in op.input_names])
-                output_names = set([op.output(name)[0] for name in op.output_names])
+                input_names =  OpWarpper.get_input_var_names(op)
+                output_names =  OpWarpper.get_output_var_names(op)
                 used_var_names.update(input_names)
                 used_var_names.update(output_names)
             for var_name in program_warp.vars:
