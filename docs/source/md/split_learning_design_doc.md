@@ -2,13 +2,13 @@
 
 ## Background
 
-SplitNN will split entire network to multi part, each participant(at least 2) only calculate their own part. Compare with MPC, SplitNN only encrypt hidden vector which need to communicate with client, save lot of time(but also reduce security).
+SplitNN enables different data holders (usually with different profile) to train model cooperatively, without revealing their own data. In each training epoch, participants train and update their own part of network locally, and communicate when necessary. In the whole process, intermediate variate are encrypted before transmission. SplitNN only encrypt hidden vector which need to communicate with client, save lot of time.
 
 We choose SplitNN because following reasons:
 
-1. SplitNN has higher efficiency: X% improvement over MPC.
-2. Due to SplitNN has higher efficiency, within the same time we can train more dataset.
-3. Splitnn support more model: MPC need to implement MPC OP, and MPC GPU OP is hard to implement.
+1. SplitNN has higher efficiency: within the same time we can train more dataset.
+2. SplitNN support more model: all paddlepaddle models are theoretically supported.
+3. SplitNN support multi training framework: intermediate variate communicated by grpc protocol and training process is decoupled.
 
 ## Design
 
