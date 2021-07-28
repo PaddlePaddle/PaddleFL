@@ -19,7 +19,7 @@ import ujson as json
 
 _LOGGER = logging.getLogger(__name__)
 
-class LocalTable(table_base.TableBase)
+class LocalTable(table_base.TableBase):
 
     def __init__(self, file_name):
         self.table = {}

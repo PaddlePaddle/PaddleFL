@@ -1,12 +1,18 @@
 import paddle.fluid as fluid
 import logging
 
+from .layer_base import LayerBase
+
 _LOGGER = logging.getLogger(__name__)
 
 
 class HostLayerHandler(object):
 
     def __init__(self, layer, optimizer):
+        if not isinstance(layer, LayerBase):
+            raise TypeError(
+                    "Failed: layer({}) must be subclass of LayerBase."
+                    .format(type(layer)))
         self.layer = layer
         self.optimizer = optimizer
         
