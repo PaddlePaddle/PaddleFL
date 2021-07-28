@@ -2,9 +2,9 @@
 
 ## Background
 
-SplitNN will split entire network to multi part, each participant(at least 2) only calculate their own part. Compare with MPC, SplitNN only encrypt hidden vector which need to communicate with client, save lot of time(but also reduce security)
+SplitNN will split entire network to multi part, each participant(at least 2) only calculate their own part. Compare with MPC, SplitNN only encrypt hidden vector which need to communicate with client, save lot of time(but also reduce security).
 
-We choose SplitNN because follow reasons:
+We choose SplitNN because following reasons:
 
 1. SplitNN has higher efficiency: X% improvement over MPC.
 2. Due to SplitNN has higher efficiency, within the same time we can train more dataset.
@@ -20,7 +20,7 @@ Our solution consists of three parts:
 <img src='../../../images/PFS-design.png' align="middle"/>
 
 ### Client SDK
-Client SDK encrypt Unique User Identify(UUID), push to server, get hidden vector *h2* with noisy(for protect server privacy), then concat *h2* with self *h1* as *h3*, to infer result *y*. For execute backward network, calculate server's variable gradient, to update server's paramter, Client SDK will push *Δh2* back to server.
+Client SDK encrypt Unique User Identify(UUID), push to server, get hidden vector *h2* with noisy(for protect server's data privacy), then concat *h2* with self *h1* as *h3*, to infer result *y*. For execute backward network, calculate server's variable gradient, to update server's paramter, Client SDK will push *Δh2* back to server.
 
 Client SDK now support following features:
 1. Multi language: based on GRPC.
