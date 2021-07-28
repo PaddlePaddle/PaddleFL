@@ -43,6 +43,18 @@ def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
         vars_map[name] = tensor
     return vars_map
 
+def parse_proto_to_tensor(proto, place=paddle.fluid.CPUPlace()):
+    vars_map = {}
+    for pb_var in proto.tensors:
+        dtype = pb_var.dtype
+        name = pb_var.name
+        data = getattr(pb_var, "data_{}".format(dtype))
+        shape = pb_var.shape
+        np_data = np.array(data).astype(dtype)
+        np_data = np_data.reshape(shape)
+        tensor = paddle.to_tensor(np_data, dtype, place)
+        vars_map[name] = tensor
+    return vars_map
 
 def pack_lod_tensor_to_proto(vars_map):
     proto = common_pb2.Features()
@@ -64,6 +76,20 @@ def pack_lod_tensor_to_proto(vars_map):
     proto.state.succ = True
     return proto
 
+def pack_tensor_to_proto(vars_map):
+    proto = common_pb2.Features()
+    for name, tensor in vars_map.items():
+        np_data = np.array(tensor)
+        pb_var = common_pb2.Tensor()
+        pb_var.name = name
+        pb_var.shape.extend(list(np_data.shape))
+        np_data = np_data.reshape(-1)
+        pb_var.dtype = np_data.dtype.name
+        data_handler = getattr(pb_var, "data_{}".format(np_data.dtype))
+        data_handler.extend(np_data.tolist())
+        proto.tensors.append(pb_var)
+    proto.state.succ = True
+    return proto
 
 def save_whole_program(main_prog, startup_prog, program_path):
     if not os.path.exists(program_path):

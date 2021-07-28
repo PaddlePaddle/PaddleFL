@@ -17,6 +17,17 @@ message Variable {
   }
 }
 
+// for Paddle2.1 with dygraph mode
+message Tensor {
+  required string name = 1;
+  repeated float data_float32 = 2;
+  repeated double data_float64 = 3;
+  repeated int32 data_int32 = 4;
+  repeated int64 data_int64 = 5;
+  repeated int32 shape = 6;
+  required string dtype = 7;
+}
+
 message UserInfo {
   required string token = 1;
   required string uid = 2;
@@ -25,8 +36,9 @@ message UserInfo {
 message Features {
   required string token = 1;
   repeated Variable vars = 2;
-  optional State state = 3;
-};
+  repeated Tensor tensors = 3;
+  optional State state = 4;
+}
 
 message SaveInfo {
   required string token = 1;
