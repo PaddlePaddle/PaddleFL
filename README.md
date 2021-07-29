@@ -30,7 +30,7 @@ In Data Parallel, the whole process of model training is divided into two stages
 
 #### A. Compile Time
 
-- **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[2]
+- **FL-Strategy**: a user can define federated learning strategies with FL-Strategy such as Fed-Avg[2].
 
 - **User-Defined-Program**: PaddlePaddle's program that defines the machine learning model structure and training strategies such as multi-task learning.
 
