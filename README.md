@@ -14,6 +14,11 @@ Data is becoming more and more expensive nowadays, and sharing of raw data is ve
 
 <img src='images/FL-framework.png' width = "1000" height = "320" align="middle"/>
 
+## Recent Feature Release Roadmap
+
+- 2021.08: Two party federated learning in vertical scenario
+- 2021.Q4: GPU version of MPC, Split Learning Based vertical federated learning
+
 ## Framework Design of PaddleFL
 
 There are mainly two components in PaddleFL: **Data Parallel** and **Federated Learning with MPC (PFM)**.
