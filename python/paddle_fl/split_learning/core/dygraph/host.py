@@ -1,4 +1,7 @@
-import paddle.fluid as fluid
+import paddle
+import numpy as np
+import os
+import json
 from concurrent import futures
 import contextlib
 import socket
@@ -57,6 +60,10 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             self._inner_cancel_current_step(err_msg)
             return self.__generate_err_features("[Host] {}".format(err_msg))
 
+        for name in self.common_vars["out"]:
+            _LOGGER.debug("Send params {}: {}".format(
+                name, fetch_vars[name]))
+
         try:
             resp = self._pack_vars_to_client(
                     fetch_vars, self.common_vars["out"])
@@ -79,6 +86,9 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             self._inner_cancel_current_step(err_msg)
             return self.__generate_nil_response("[Host] {}".format(err_msg))
 
+        for name, tensor in common_map.items():
+            _LOGGER.debug("Get grad {}: {}".format(name, tensor))
+
         try:
             # backward and minimize
             fetch_vars = self.layer_handler.call_for_backward(common_map)
@@ -87,6 +97,21 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             self._inner_cancel_current_step(err_msg)
             return self.__generate_nil_response("[Host] {}".format(err_msg))
 
+        return self.__generate_nil_response()
+
+    def save_persistables(self, request, context):
+        if request.token != self.token:
+            err_msg = "Failed: token({}) is not valid.".format(req_token)
+            _LOGGER.error(err_msg, exc_info=True)
+            return self.__generate_nil_response("[Host] {}".format(err_msg))
+
+        try:
+            HostProgramSaver.save_persistables(
+                    request.path, self.layer_handler, request.save_token)
+        except Exception as e:
+            err_msg = "Failed to save vars: {}".format(e)
+            _LOGGER.error(err_msg, exc_info=True)
+            return self.__generate_nil_response("[Host] {}".format(err_msg))
         return self.__generate_nil_response()
 
     def cancel_current_step(self, request, context):
@@ -145,6 +170,9 @@ class HostExecutor(object):
     def load_layer_handler(self, layer, optimizer, common_vars):
         self.program_loader.load_layer_handler(layer, optimizer, common_vars)
 
+    def load_persistables(self, path):
+        self.program_loader.load_persistables(path)
+
     def _is_port_available(self, port):
         with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
             sock.settimeout(2)
@@ -179,3 +207,36 @@ class HostProgramLoader(object):
         self.layer_handler = HostLayerHandler(layer, optimizer)
         self.common_vars = common_vars
         self.token = "init_from_full_network"
+
+    def load_persistables(self, path):
+        layer_state_dict = paddle.load(
+                os.path.join(path, "layer.pdparams"))
+        opt_state_dict = paddle.load(
+                os.path.join(path, "optimizer.pdopt"))
+        self.layer_handler.layer.set_state_dict(layer_state_dict)
+        self.layer_handler.optimizer.set_state_dict(opt_state_dict)
+
+        # load token info
+        with open(os.path.join(path, "model_info")) as f:
+            model_info = json.load(f)
+        self.token = model_info["token"]
+
+
+class HostProgramSaver(object):
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def save_persistables(
+            dirpath, layer_handler, save_token):
+        layer = layer_handler.layer
+        optimizer = layer_handler.optimizer
+        paddle.save(layer.state_dict(), os.path.join(dirpath, "layer.pdparams"))
+        paddle.save(optimizer.state_dict(), os.path.join(dirpath, "optimizer.pdopt"))
+
+        model_info = {
+            "token": save_token,
+        }
+        with open(os.path.join(dirpath, "model_info"), "w") as f:
+            f.write(json.dumps(model_info))

@@ -1,4 +1,7 @@
-import paddle.fluid as fluid
+import paddle
+import json
+import time
+import os
 import numpy as np
 import grpc
 import yaml
@@ -22,6 +25,19 @@ class CustomerExecutor(object):
         self.layer_handler = CustomerLayerHandler(layer, optimizer)
         self.common_vars = common_vars
         self.token = "init_from_full_network"
+
+    def load_persistables(self, path):
+        layer_state_dict = paddle.load(
+                os.path.join(path, "layer.pdparams"))
+        opt_state_dict = paddle.load(
+                os.path.join(path, "optimizer.pdopt"))
+        self.layer_handler.layer.set_state_dict(layer_state_dict)
+        self.layer_handler.optimizer.set_state_dict(opt_state_dict)
+
+        # load token info
+        with open(os.path.join(path, "model_info")) as f:
+            model_info = json.load(f)
+        self.token = model_info["token"]
 
     def _connect(self, endpoints):
         options = [('grpc.max_receive_message_length', 512 * 1024 * 1024),
@@ -105,7 +121,7 @@ class CustomerExecutor(object):
 
         for name in self.common_vars["in"]:
             _LOGGER.debug("Get params {}: {}".format(
-                name, np.array(vars_from_host[name])))
+                name, vars_from_host[name]))
 
         try:
             feed = self._generate_feed_for_customer_part(feed, vars_from_host)
@@ -129,6 +145,10 @@ class CustomerExecutor(object):
             grad_vars = {
                     "{}@GRAD".format(name): tensor.grad.numpy()
                     for name, tensor in vars_from_host.items()}
+            
+            for name, tensor in vars_from_host.items():
+                _LOGGER.debug("Send grad {}: {}".format(name, tensor.grad))
+
             req = self._pack_vars_to_host(
                     grad_vars, self.common_vars["out"])
             req.token = self.token
@@ -155,3 +175,42 @@ class CustomerExecutor(object):
             self.cancel_host_current_step("[Customer] {}".format(err_msg))
             return None
         return fetch_vars
+
+    def save_persistables(self, local_path, remote_path):
+        token = CustomerProgramSaver.save_persistables(
+                local_path, self.layer_handler)
+
+        resp = self.stub.save_persistables(
+                common_pb2.SaveInfo(
+                    path=remote_path,
+                    token=self.token,
+                    save_token=token))
+        
+        if not resp.state.succ:
+            err_msg = "Failed to save vars in host side: {}".format(
+                    resp.state.error_message)
+            raise RuntimeError(err_msg)
+        return True
+
+
+class CustomerProgramSaver(object):
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def save_persistables(
+            dirpath, layer_handler):
+        layer = layer_handler.layer
+        optimizer = layer_handler.optimizer
+        paddle.save(layer.state_dict(), os.path.join(dirpath, "layer.pdparams"))
+        paddle.save(optimizer.state_dict(), os.path.join(dirpath, "optimizer.pdopt"))
+
+        # token
+        token = str(time.time())
+        model_info = {
+            "token": token,
+        }
+        with open(os.path.join(dirpath, "model_info"), "w") as f:
+            f.write(json.dumps(model_info))
+        return token
