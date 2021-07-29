@@ -1,71 +1,83 @@
-import paddle.fluid as fluid
+import paddle
 import numpy as np
+from paddle.fluid.dygraph.base import to_variable
 import grpc
 import yaml
 
 import data_iter
 
-class MLP(fluid.dygraph.Layer):
+class MLP(paddle.nn.Layer):
+
     def __init__(self):
         super(MLP, self).__init__()
+        self.input_len = 12
         self.embed_dim = 11
-        self.embed = fluid.dygraph.Embedding(
-                size=[100, self.embed_dim],
-                param_attr=fluid.ParamAttr(
-                        initializer=fluid.initializer.ConstantInitializer(value=0.1)))
-        self.pool = fluid.dygraph.Pool2D(
-                pool_type='max',
-                global_pooling=True)
-        self.fc1 = fluid.dygraph.nn.Linear(
-                input_dim=12, 
-                output_dim=10,
-                param_attr=fluid.ParamAttr(
-                        initializer=fluid.initializer.ConstantInitializer(value=0.1)))
-        self.fc2 = fluid.dygraph.nn.Linear(
-                input_dim=10,
-                output_dim=2,
-                act='softmax',
-                param_attr=fluid.ParamAttr(
-                        initializer=fluid.initializer.ConstantInitializer(value=0.1)))
+        self.embed1 = paddle.nn.Embedding(
+                num_embeddings=100,
+                embedding_dim=self.embed_dim,
+                weight_attr=paddle.ParamAttr(
+                        initializer=paddle.nn.initializer.Constant(value=0.1)))
+        self.embed2 = paddle.nn.Embedding(
+                num_embeddings=100,
+                embedding_dim=self.embed_dim,
+                weight_attr=paddle.ParamAttr(
+                        initializer=paddle.nn.initializer.Constant(value=0.1)))
+        self.pool = paddle.nn.MaxPool2D(
+                kernel_size=[1, self.embed_dim])
+        self.fc1 = paddle.nn.Linear(
+                in_features=12, 
+                out_features=10,
+                weight_attr=paddle.ParamAttr(
+                        initializer=paddle.nn.initializer.Constant(value=0.1)))
+        self.fc2 = paddle.nn.Linear(
+                in_features=20,
+                out_features=2,
+                weight_attr=paddle.ParamAttr(
+                        initializer=paddle.nn.initializer.Constant(value=0.1)))
+        self.softmax = paddle.nn.Softmax()
 
     def forward(self, inputs):
-        self.embed_var = self.embed(inputs["x"])
-        self.embed_var = fluid.layers.reshape(
-                self.embed_var, 
-                [-1, 12, 1, self.embed_dim])
-        self.pool_var = self.pool(self.embed_var)
-        self.pool_var = fluid.layers.reshape(
-                self.pool_var, 
-                [-1, 12])
-        self.fc1_var = self.fc1(self.pool_var)
-        print(self.fc1_var.numpy())
-        self.fc2_var = self.fc2(self.fc1_var)
-        return self.fc2_var
+        self.embed_x1 = self.embed1(inputs["x1"])
+        self.embed_x1 = paddle.reshape(
+                self.embed_x1, [-1, 1, self.input_len, self.embed_dim])
+        self.pool_x1 = self.pool(self.embed_x1)
+        self.pool_x1 = paddle.reshape(
+                self.pool_x1, [-1, self.input_len])
+        self.fc1_x1 = self.fc1(self.pool_x1)
+
+        self.embed_x2 = self.embed2(inputs["x2"])
+        self.embed_x2 = paddle.reshape(
+                self.embed_x2, [-1, 1, self.input_len, self.embed_dim])
+        self.pool_x2 = self.pool(self.embed_x2)
+        self.pool_x2 = paddle.reshape(
+                self.pool_x2, [-1, self.input_len])
+        self.fc1_x2 = self.fc1(self.pool_x2)
+
+        self.concat_var = paddle.concat(
+                x=[self.fc1_x1, self.fc1_x2], axis=-1)
+
+        self.fc2_var = self.fc2(self.concat_var)
+        self.predict = self.softmax(self.fc2_var)
+        return self.predict
 
 
 if __name__ == "__main__":
-    place = fluid.CPUPlace()
-    fluid.enable_imperative(place)
-    model = MLP()
+    layer = MLP()
 
-    optimizer = fluid.optimizer.SGDOptimizer(
-            learning_rate=0.01, parameter_list=model.parameters())
+    optimizer = paddle.optimizer.SGD(
+            learning_rate=0.01, parameters=layer.parameters())
 
-    for epoch in range(5):
-        print("======= epoch{} =======".format(epoch))
-        for i, item in enumerate(data_iter.iter()):
-            slot, label = item
-            slot_var = fluid.dygraph.to_variable(slot)
-            label_var = fluid.dygraph.to_variable(label)
+    for i, item in enumerate(data_iter.iter()):
+        x1, x2, label = item
+        x1_var = to_variable(x1)
+        x2_var = to_variable(x2)
+        label_var = to_variable(label)
 
-            predict = model({"x": slot_var})
-            print(predict)
-            cost = fluid.layers.cross_entropy(predict, label_var)
-            cost = fluid.layers.reduce_mean(cost)
+        predict = layer({"x1": x1_var, "x2": x2_var})
+        print(predict)
+        cost = paddle.nn.functional.cross_entropy(predict, label_var)
+        cost = paddle.mean(cost)
 
-            cost.backward()
-            optimizer.minimize(cost)
-            model.clear_gradients()
-            break
-
-    #fluid.save_dygraph(model.state_dict(), 'whole_model')    
+        cost.backward()
+        optimizer.step()
+        layer.clear_gradients()

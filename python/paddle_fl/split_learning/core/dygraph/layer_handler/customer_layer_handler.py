@@ -1,4 +1,3 @@
-import paddle.fluid as fluid
 import logging
 
 from .layer_base import LayerBase
@@ -15,14 +14,13 @@ class CustomerLayerHandler(object):
                     .format(type(layer)))
         self.layer = layer
         self.optimizer = optimizer
-        self.loss = None # not thread safe, for backward
     
     def call_for_forward(self, inputs):
-        self.loss = self.layer(inputs)
-        self.loss.backward()
+        loss = self.layer(inputs)
+        loss.backward()
 
     def call_for_backward(self):
-        self.optimizer.minimize(self.loss)
+        self.optimizer.step()
         self.layer.clear_gradients()
 
     def get_fetch_vars(self):
@@ -31,4 +29,3 @@ class CustomerLayerHandler(object):
 
     def cancel(self):
         self.layer.clear_gradients()
-        self.loss = None
