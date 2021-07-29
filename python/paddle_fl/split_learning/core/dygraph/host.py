@@ -89,6 +89,14 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
 
         return self.__generate_nil_response()
 
+    def cancel_current_step(self, request, context):
+        if request.token != self.token:
+            err_msg = "Failed: token({}) is not valid.".format(req_token)
+            _LOGGER.error(err_msg, exc_info=True)
+            return self.__generate_nil_response("[Host] {}".format(err_msg))
+        self._inner_cancel_current_step(request.state.error_message)
+        return self.__generate_nil_response()
+
     def _parse_vars_from_client(self, request, required_common_vars):
         vars_map = util.parse_proto_to_tensor(request)
         # check common in

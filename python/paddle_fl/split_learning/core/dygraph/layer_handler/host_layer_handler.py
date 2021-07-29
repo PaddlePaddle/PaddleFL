@@ -1,4 +1,3 @@
-import paddle.fluid as fluid
 import logging
 
 from .layer_base import LayerBase
@@ -30,7 +29,7 @@ class HostLayerHandler(object):
             temp_var += var * var_grad
         
         temp_var.backward()
-        self.optimizer.minimize(temp_var)
+        self.optimizer.step()
         self.layer.clear_gradients()
 
     def cancel(self):

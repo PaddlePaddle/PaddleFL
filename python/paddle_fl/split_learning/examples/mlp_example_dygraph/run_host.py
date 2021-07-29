@@ -1,4 +1,6 @@
 import paddle.fluid as fluid
+from paddle.fluid.dygraph.base import to_variable
+import paddle
 import numpy as np
 import yaml
 import logging
@@ -16,41 +18,49 @@ _LOGGER = logging.getLogger(__name__)
 
 class MLPLayer(LayerBase):
     """
-    MLP: x -> emb -> pool -> fc1 -> fc2 -> label
-
-    host part: x -> emb -> pool -> fc1
-    customer part: fc1 -> fc2 -> label
+    whole: 
+    x1 -> emb -> pool -> fc1 \
+                               concat -> fc2 -> softmax
+    x2 -> emb -> pool -> fc1 /
+    
+    host part: 
+    x1 -> emb -> pool -> fc1
+    
+    customer part:  
+                      x1_fc1 \
+                               concat -> fc2 -> softmax
+    x2 -> emb -> pool -> fc1 /
     """
     def __init__(self):
         super(MLPLayer, self).__init__()
+        self.input_len = 12
         self.embed_dim = 11
-        self.embed = fluid.dygraph.Embedding(
-                size=[100, self.embed_dim],
-                param_attr=fluid.ParamAttr(
-                        initializer=fluid.initializer.ConstantInitializer(value=0.1)))
-        self.pool = fluid.dygraph.Pool2D(
-                pool_type='max',
-                global_pooling=True)
-        self.fc1 = fluid.dygraph.nn.Linear(
-                input_dim=12, 
-                output_dim=10,
-                param_attr=fluid.ParamAttr(
-                        initializer=fluid.initializer.ConstantInitializer(value=0.1)))
+        self.embed1 = paddle.nn.Embedding(
+                num_embeddings=100,
+                embedding_dim=self.embed_dim,
+                weight_attr=paddle.ParamAttr(
+                        initializer=paddle.nn.initializer.Constant(value=0.1)))
+        self.pool = paddle.nn.MaxPool2D(
+                kernel_size=[1, self.embed_dim])
+        self.fc1 = paddle.nn.Linear(
+                in_features=12, 
+                out_features=10,
+                weight_attr=paddle.ParamAttr(
+                        initializer=paddle.nn.initializer.Constant(value=0.1)))
 
     def forward(self, inputs):
-        self.embed_var = self.embed(inputs["x"])
-        self.embed_var = fluid.layers.reshape(
-                self.embed_var, 
-                [-1, 12, 1, self.embed_dim])
-        self.pool_var = self.pool(self.embed_var)
-        self.pool_var = fluid.layers.reshape(
-                self.pool_var, 
-                [-1, 12])
-        self.fc1_var = self.fc1(self.pool_var)
+        self.embed_x1 = self.embed1(inputs["x1"])
+        self.embed_x1 = paddle.reshape(
+                self.embed_x1, [-1, 1, self.input_len, self.embed_dim])
+        self.pool_x1 = self.pool(self.embed_x1)
+        self.pool_x1 = paddle.reshape(
+                self.pool_x1, [-1, self.input_len])
+        self.fc1_x1 = self.fc1(self.pool_x1)
+        return None
 
     def get_fetch_vars(self):
         fetch_vars = {
-            "fc1": self.fc1_var
+            "fc1": self.fc1_x1
         }
         return fetch_vars
 
@@ -61,8 +71,8 @@ class LookupTable(TableBase):
         import data_iter
         self.table = []
         for item in data_iter.iter():
-            slot, _ = item
-            self.table.append(slot)
+            x1, _,  _ = item
+            self.table.append(x1)
     
     def _get_value(self, idx):
         return self.table[int(idx)]
@@ -74,18 +84,16 @@ class Reader(ReaderBase):
         pass
     
     def parse(self, db_value):
-        x = fluid.dygraph.to_variable(db_value)
-        return {"x": x}
-
+        x = to_variable(db_value)
+        return {"x1": x}
 
 
 if __name__ == "__main__":
-    place = fluid.CPUPlace()
-    fluid.enable_imperative(place)
+    paddle.disable_static()
     layer = MLPLayer()
-    optimizer = fluid.optimizer.SGDOptimizer(
+    optimizer = paddle.optimizer.SGD(
             learning_rate=0.01,
-            parameter_list=layer.parameters())
+            parameters=layer.parameters())
     common_vars = {
         "in": ["fc1@GRAD"],
         "out": ["fc1"],
