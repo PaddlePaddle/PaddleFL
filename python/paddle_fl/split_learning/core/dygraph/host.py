@@ -48,7 +48,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         try:
             if self.run_type == "TRAIN":
                 # forward only
-                fetch_vars = self.layer_handler.call_for_forward(feed_data)
+                fetch_vars = self.layer_handler.call_for_forward(**feed_data)
             elif self.run_type == "INFER":
                 # TODO
                 pass
@@ -59,10 +59,6 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             err_msg = "Failed to run forward program: {}".format(e)
             self._inner_cancel_current_step(err_msg)
             return self.__generate_err_features("[Host] {}".format(err_msg))
-
-        for name in self.common_vars["out"]:
-            _LOGGER.debug("Send params {}: {}".format(
-                name, fetch_vars[name]))
 
         try:
             resp = self._pack_vars_to_client(
@@ -91,7 +87,8 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
 
         try:
             # backward and minimize
-            fetch_vars = self.layer_handler.call_for_backward(common_map)
+            fetch_vars = self.layer_handler.call_for_backward(
+                    common_map, self.common_vars["out"])
         except Exception as e:
             err_msg = "Failed to run backward program: {}".format(e)
             self._inner_cancel_current_step(err_msg)
@@ -132,7 +129,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         return vars_map
 
     def _pack_vars_to_client(self, fetch_vars, required_common_vars):
-        vars_map = {name: fetch_vars[name] for name in required_common_vars}
+        vars_map = {name: fetch_vars[idx] for idx, name in enumerate(required_common_vars)}
         req = util.pack_tensor_to_proto(vars_map)
         req.token = self.token
         return req

@@ -71,9 +71,9 @@ class CustomerExecutor(object):
                         succ=False,
                         error_message=err_msg)))
 
-    def run(self, usr_key, feed):
+    def run(self, usr_key, feed, label):
         if self.run_type == "TRAIN":
-            return self._run_for_train(usr_key, feed)
+            return self._run_for_train(usr_key, feed, label)
         elif self.run_type == "INFER":
             # TODO
             pass
@@ -100,7 +100,7 @@ class CustomerExecutor(object):
         if not resp.state.succ:
             raise RuntimeError(resp.state.error_message)
     
-    def _run_for_train(self, usr_key, feed):
+    def _run_for_train(self, usr_key, feed, label):
         try:
             resp = self._execute_forward_host_part(usr_key)
         except Exception as e:
@@ -133,8 +133,7 @@ class CustomerExecutor(object):
         
         try:
             # forward and calc grad
-            self.layer_handler.call_for_forward(feed)
-            fetch_vars = self.layer_handler.get_fetch_vars()
+            fetch_vars = self.layer_handler.call_for_forward(label, **feed)
         except Exception as e:
             err_msg = "Failed to run middle program: {}".format(e)
             self._inner_cancel_current_step(err_msg)

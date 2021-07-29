@@ -1,4 +1,5 @@
 import logging
+import paddle
 
 from .layer_base import LayerBase
 
@@ -17,14 +18,16 @@ class HostLayerHandler(object):
         
         self.fetch_vars = None # not thread safe, for backward
 
-    def call_for_forward(self, inputs):
-        self.layer(inputs)
-        self.fetch_vars = self.layer.get_fetch_vars()
+    def call_for_forward(self, **inputs):
+        self.fetch_vars = self.layer(**inputs)
+        if not isinstance(self.fetch_vars, (list, tuple)):
+            self.fetch_vars = [self.fetch_vars]
         return self.fetch_vars
 
-    def call_for_backward(self, grads):
+    def call_for_backward(self, grads, fetch_var_names):
         temp_var = 0
-        for name, var in self.fetch_vars.items():
+        for idx, name in enumerate(fetch_var_names):
+            var = self.fetch_vars[idx]
             var_grad = grads["{}@GRAD".format(name)]
             temp_var += var * var_grad
         

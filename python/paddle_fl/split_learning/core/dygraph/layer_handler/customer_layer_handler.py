@@ -15,17 +15,17 @@ class CustomerLayerHandler(object):
         self.layer = layer
         self.optimizer = optimizer
     
-    def call_for_forward(self, inputs):
-        loss = self.layer(inputs)
+    def call_for_forward(self, label, **inputs):
+        fetch_vars = self.layer(**inputs)
+        if not isinstance(fetch_vars, (list, tuple)):
+            fetch_vars = [fetch_vars]
+        loss = self.layer.get_loss(fetch_vars, label)
         loss.backward()
+        return fetch_vars
 
     def call_for_backward(self):
         self.optimizer.step()
         self.layer.clear_gradients()
-
-    def get_fetch_vars(self):
-        # tensor is not trainable
-        return self.layer.get_fetch_vars()
 
     def cancel(self):
         self.layer.clear_gradients()
