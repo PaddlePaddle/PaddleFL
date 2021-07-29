@@ -26,7 +26,7 @@ void GrpcBuffer::write_buffer(const size_t party_id, const std::string data) {
     }
 
     buffer[party_id].push(data);
-    if (buffer[party_id].size() == BUFFER_LENGTH) {
+    if (buffer[party_id].size() == 1) {
         read_cv.notify_all();
     }
 }
@@ -50,9 +50,9 @@ void TransportClient::send(const int party_id, const void* data, size_t size) {
     request.set_data(data, size);
 
     transport::GrpcReply reply;
-    grpc::ClientContext context;
 
     for (size_t i = 0; i < _max_retry; ++i) {
+        grpc::ClientContext context;
         grpc::Status status = stub_->send_data(&context, request, &reply);
         if (status.ok()) {
             return;

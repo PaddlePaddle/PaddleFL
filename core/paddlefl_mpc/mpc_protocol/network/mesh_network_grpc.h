@@ -42,7 +42,7 @@ class GrpcBuffer {
         void read_buffer(const size_t party_id, std::string& data);
 
     private:
-        static const int BUFFER_LENGTH = 1; // this version only supports BUFFER_LENGTH = 1.
+        static const int BUFFER_LENGTH = 65535; // this version only supports BUFFER_LENGTH = 1.
         static const int MAX_NET_SIZE = 3;
         std::vector<std::queue<std::string>> buffer;
 
@@ -94,6 +94,7 @@ class MeshNetworkGrpc : public paddle::mpc::AbstractNetwork, public transport::T
         // gRPC server: start server to listen
         void run_server(const std::string& server_address) {
             grpc::ServerBuilder builder;
+            builder.SetMaxMessageSize(INT_MAX);
             builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
             builder.RegisterService(this);
             server = builder.BuildAndStart();
