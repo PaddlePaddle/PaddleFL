@@ -43,7 +43,7 @@ def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
         vars_map[name] = tensor
     return vars_map
 
-def parse_proto_to_tensor(proto, place=paddle.fluid.CPUPlace()):
+def parse_proto_to_tensor(proto, is_train=True, place=paddle.fluid.CPUPlace()):
     vars_map = {}
     for pb_var in proto.tensors:
         dtype = pb_var.dtype
@@ -52,8 +52,11 @@ def parse_proto_to_tensor(proto, place=paddle.fluid.CPUPlace()):
         shape = pb_var.shape
         np_data = np.array(data).astype(dtype)
         np_data = np_data.reshape(shape)
-        tensor = paddle.to_tensor(np_data, dtype, place)
-        vars_map[name] = tensor
+        if is_train:
+            tensor = paddle.to_tensor(np_data, dtype, place)
+            vars_map[name] = tensor
+        else:
+            vars_map[name] = np_data
     return vars_map
 
 def pack_lod_tensor_to_proto(vars_map):

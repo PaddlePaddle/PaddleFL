@@ -23,8 +23,17 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         self.common_vars = program_loader.common_vars
         self.token = program_loader.token
         self.layer_handler = program_loader.layer_handler
+        self.input_spec = program_loader.input_spec
+        self.exe = program_loader.exe
+        self.main_program = program_loader.main_program
         self.table = lookup_table
         self.reader = reader
+
+        if self.run_type == "INFER":
+            self.target_vars = [
+                    util.find_var(
+                        self.main_program, "save_infer_model/scale_{}.tmp_0".format(idx))
+                    for idx in range(len(self.common_vars["out"]))]
 
     def execute_forward_host_part(self, request, context):
         if request.token != self.token:
@@ -50,8 +59,11 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
                 # forward only
                 fetch_vars = self.layer_handler.call_for_forward(**feed_data)
             elif self.run_type == "INFER":
-                # TODO
-                pass
+                fetch_vars = self.exe.run(
+                        program=self.main_program,
+                        feed=feed_data,
+                        fetch_list=self.target_vars,
+                        return_numpy=False)
             else:
                 raise ValueError("Failed to execute program: "
                         "unknown run type({})".format(self.run_type))
@@ -111,6 +123,23 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             return self.__generate_nil_response("[Host] {}".format(err_msg))
         return self.__generate_nil_response()
 
+    def save_inference_model(self, request, context):
+        if request.token != self.token:
+            err_msg = "Failed: token({}) is not valid.".format(req_token)
+            _LOGGER.error(err_msg, exc_info=True)
+            return self.__generate_nil_response("[Host] {}".format(err_msg))
+
+        try:
+            HostProgramSaver.save_inference_model(
+                    request.path, self.layer_handler, 
+                    self.input_spec, self.common_vars,
+                    request.save_token)
+        except Exception as e:
+            err_msg = "Failed to save inference model: {}".format(e)
+            _LOGGER.error(err_msg, exc_info=True)
+            return self.__generate_nil_response("[Host] {}".format(err_msg))
+        return self.__generate_nil_response()
+
     def cancel_current_step(self, request, context):
         if request.token != self.token:
             err_msg = "Failed: token({}) is not valid.".format(req_token)
@@ -120,7 +149,8 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         return self.__generate_nil_response()
 
     def _parse_vars_from_client(self, request, required_common_vars):
-        vars_map = util.parse_proto_to_tensor(request)
+        vars_map = util.parse_proto_to_tensor(
+                request, is_train=(self.run_type=="TRAIN"))
         # check common in
         for name in required_common_vars:
             if name not in vars_map:
@@ -136,7 +166,8 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
 
     def _inner_cancel_current_step(self, err_msg):
         _LOGGER.error(err_msg, exc_info=True)
-        self.layer_handler.cancel()
+        if self.run_type == "TRAIN":
+            self.layer_handler.cancel()
 
     def __generate_nil_response(self, error_message=None):
         if error_message:
@@ -164,8 +195,12 @@ class HostExecutor(object):
         self.reader = reader
         self.max_workers = max_workers
 
-    def load_layer_handler(self, layer, optimizer, common_vars):
-        self.program_loader.load_layer_handler(layer, optimizer, common_vars)
+    def load_layer_handler(self, layer, optimizer, common_vars, input_spec):
+        self.program_loader.load_layer_handler(
+                layer, optimizer, common_vars, input_spec)
+
+    def load_inference_model(self, local_path):
+        self.program_loader.load_inference_model(local_path)
 
     def load_persistables(self, path):
         self.program_loader.load_persistables(path)
@@ -197,14 +232,32 @@ class HostProgramLoader(object):
         self.run_type = None  # TRAIN or INFER
         self.common_vars = None
         self.layer_handler = None
+        self.input_spec = None
+        self.exe = None
+        self.main_program = None
         self.token = None
 
-    def load_layer_handler(self, layer, optimizer, common_vars):
+    def load_layer_handler(self, layer, optimizer, common_vars, input_spec):
         self.run_type = "TRAIN"
         self.layer_handler = HostLayerHandler(layer, optimizer)
         self.common_vars = common_vars
+        self.input_spec = input_spec
         self.token = "init_from_full_network"
 
+    def load_inference_model(self, local_path_prefix):
+        self.run_type = "INFER"
+        self.exe = paddle.static.Executor(paddle.CPUPlace())
+        inference_program, feed_target_names, fetch_targets = \
+                paddle.static.load_inference_model(
+                        path_prefix=local_path_prefix,
+                        executor=self.exe)
+        self.main_program = inference_program
+        # load common var info
+        with open("{}.{}".format(local_path_prefix, "model_info")) as f:
+            model_info = json.load(f)
+        self.common_vars = model_info["common"]
+        self.token = model_info["token"]
+    
     def load_persistables(self, path):
         layer_state_dict = paddle.load(
                 os.path.join(path, "layer.pdparams"))
@@ -236,4 +289,19 @@ class HostProgramSaver(object):
             "token": save_token,
         }
         with open(os.path.join(dirpath, "model_info"), "w") as f:
+            f.write(json.dumps(model_info))
+
+    @staticmethod
+    def save_inference_model(
+            path, layer_handler, input_spec, 
+            common_vars, save_token):
+
+        paddle.jit.save(layer_handler.layer, path, input_spec)
+
+        model_info = {
+            "common": common_vars,
+            "token": save_token,
+        }
+
+        with open("{}.{}".format(path, "model_info"), "w") as f:
             f.write(json.dumps(model_info))

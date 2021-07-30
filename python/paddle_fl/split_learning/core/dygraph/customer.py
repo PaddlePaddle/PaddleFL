@@ -20,10 +20,12 @@ class CustomerExecutor(object):
         self._connect(endpoints)
         self.run_type = None  # TRAIN or INFER
 
-    def load_layer_handler(self, layer, optimizer, common_vars):
+    def load_layer_handler(
+            self, layer, optimizer, common_vars, input_spec):
         self.run_type = "TRAIN" 
         self.layer_handler = CustomerLayerHandler(layer, optimizer)
         self.common_vars = common_vars
+        self.input_spec = input_spec
         self.token = "init_from_full_network"
 
     def load_persistables(self, path):
@@ -39,6 +41,21 @@ class CustomerExecutor(object):
             model_info = json.load(f)
         self.token = model_info["token"]
 
+    def load_inference_model(self, local_path_prefix):
+        self.run_type = "INFER"
+        self.exe = paddle.static.Executor(paddle.CPUPlace())
+        inference_program, feed_target_names, fetch_targets = \
+            paddle.static.load_inference_model(
+                    path_prefix=local_path_prefix,
+                    executor=self.exe)
+        # load common var info
+        with open("{}.{}".format(local_path_prefix, "model_info")) as f:
+            model_info = json.load(f)
+        self.common_vars = model_info["common"]
+        self.token = model_info["token"]
+        self.main_program = inference_program
+        return feed_target_names, fetch_targets
+
     def _connect(self, endpoints):
         options = [('grpc.max_receive_message_length', 512 * 1024 * 1024),
                    ('grpc.max_send_message_length', 512 * 1024 * 1024)]
@@ -47,7 +64,8 @@ class CustomerExecutor(object):
         self.stub = common_pb2_grpc.FLExecutorStub(self.channel)
 
     def _parse_vars_from_host(self, resp, required_common_vars):
-        vars_map = util.parse_proto_to_tensor(resp)
+        vars_map = util.parse_proto_to_tensor(
+                resp, is_train=(self.run_type=="TRAIN"))
         # check common in
         for name in required_common_vars:
             if name not in vars_map:
@@ -61,7 +79,8 @@ class CustomerExecutor(object):
 
     def _inner_cancel_current_step(self, err_msg):
         _LOGGER.error(err_msg, exc_info=True)
-        self.layer_handler.cancel()
+        if self.run_type == "TRAIN":
+            self.layer_handler.cancel()
 
     def cancel_host_current_step(self, err_msg):
         self.stub.cancel_current_step(
@@ -71,12 +90,13 @@ class CustomerExecutor(object):
                         succ=False,
                         error_message=err_msg)))
 
-    def run(self, usr_key, feed, label):
+    def run(self, usr_key, feed, label=None, fetch_targets=[]):
         if self.run_type == "TRAIN":
             return self._run_for_train(usr_key, feed, label)
         elif self.run_type == "INFER":
-            # TODO
-            pass
+            return self._run_for_infer(
+                    usr_key, feed, 
+                    fetch_list=fetch_targets)
         else:
             raise ValueError("Failed to execute program: "
                     "unknown run type({})".format(self.run_type))
@@ -99,6 +119,23 @@ class CustomerExecutor(object):
         resp = self.stub.execute_backward_host_part(req)
         if not resp.state.succ:
             raise RuntimeError(resp.state.error_message)
+
+    def _execute_middle_customer_part(
+            self, feed, label=None, fetch_list=[]):
+        if self.run_type == "TRAIN":
+            fetch_vars = self.layer_handler.call_for_forward(
+                    label, **feed)
+            return fetch_vars
+        elif self.run_type == "INFER":
+            fetch_vars = self.exe.run(
+                    program=self.main_program,
+                    feed=feed,
+                    fetch_list=fetch_list,
+                    return_numpy=False)
+            return fetch_vars
+        else:
+            raise ValueError("Failed to execute program: "
+                    "unknown run type({})".format(self.run_type))
     
     def _run_for_train(self, usr_key, feed, label):
         try:
@@ -133,7 +170,8 @@ class CustomerExecutor(object):
         
         try:
             # forward and calc grad
-            fetch_vars = self.layer_handler.call_for_forward(label, **feed)
+            fetch_vars = self._execute_middle_customer_part(
+                    feed=feed, label=label)
         except Exception as e:
             err_msg = "Failed to run middle program: {}".format(e)
             self._inner_cancel_current_step(err_msg)
@@ -175,6 +213,41 @@ class CustomerExecutor(object):
             return None
         return fetch_vars
 
+    def _run_for_infer(self, usr_key, feed, fetch_list=[]):
+        try:
+            resp = self._execute_forward_host_part(usr_key)
+        except Exception as e:
+            err_msg = "Failed to execute forward host part: {}".format(e)
+            self._inner_cancel_current_step(err_msg)
+            return None
+
+        try:
+            vars_from_host = self._parse_vars_from_host(
+                    resp, self.common_vars["in"])
+        except Exception as e:
+            err_msg = "Failed to parse vars from host: {}".format(e)
+            self._inner_cancel_current_step(err_msg)
+            self.cancel_host_current_step("[Customer] {}".format(err_msg))
+            return None
+
+        try:
+            feed = self._generate_feed_for_customer_part(feed, vars_from_host)
+        except Exception as e:
+            err_msg = "Failed to generate feed data: {}".format(e)
+            self._inner_cancel_current_step(err_msg)
+            self.cancel_host_current_step("[Customer] {}".format(err_msg))
+            return None
+
+        try:
+            fetch_vars = self._execute_middle_customer_part(
+                    feed=feed, fetch_list=fetch_list)
+        except Exception as e:
+            err_msg = "Failed to run middle program: {}".format(e)
+            self._inner_cancel_current_step(err_msg)
+            self.cancel_host_current_step("[Customer] {}".format(err_msg))
+            return None
+        return fetch_vars
+    
     def save_persistables(self, local_path, remote_path):
         token = CustomerProgramSaver.save_persistables(
                 local_path, self.layer_handler)
@@ -188,6 +261,25 @@ class CustomerExecutor(object):
         if not resp.state.succ:
             err_msg = "Failed to save vars in host side: {}".format(
                     resp.state.error_message)
+            raise RuntimeError(err_msg)
+        return True
+
+    def save_inference_model(
+            self,
+            local_path,
+            remote_path):
+        token = CustomerProgramSaver.save_inference_model(
+                local_path, remote_path, self.layer_handler,
+                self.common_vars, self.input_spec)
+
+        resp = self.stub.save_inference_model(
+                common_pb2.SaveInfo(
+                    token=self.token,
+                    save_token=token,
+                    path=remote_path))
+
+        if not resp.state.succ:
+            err_msg = "Failed to save inference model in host side: {}".format(resp.state.error_message)
             raise RuntimeError(err_msg)
         return True
 
@@ -211,5 +303,22 @@ class CustomerProgramSaver(object):
             "token": token,
         }
         with open(os.path.join(dirpath, "model_info"), "w") as f:
+            f.write(json.dumps(model_info))
+        return token
+
+    @staticmethod
+    def save_inference_model(
+            local_path, remote_path, layer_handler,
+            common_vars, input_spec):
+        paddle.jit.save(layer_handler.layer,
+                local_path, input_spec)
+
+        token = str(time.time())
+        model_info = {
+            "common": common_vars,
+            "token": token,
+        }
+
+        with open("{}.{}".format(local_path, "model_info"), "w") as f:
             f.write(json.dumps(model_info))
         return token
