@@ -269,7 +269,7 @@ class SecAggTrainer(FLTrainer):
         scope = fluid.global_scope()
         self._logger.debug("begin to run current step")
         loss = self.exe.run(self._main_program, feed=feed, fetch_list=fetch)
-        if self.cur_step % self._step == 0:
+        if self.cur_step % self._step == self._step - 1:
             self._logger.debug("begin to run send program")
             noise = 0.0
             scale = pow(10.0, 5)
