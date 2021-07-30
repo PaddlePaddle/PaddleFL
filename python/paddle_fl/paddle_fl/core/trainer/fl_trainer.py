@@ -198,7 +198,7 @@ class FedAvgTrainer(FLTrainer):
             self.exe.run(self._recv_program)
         self._logger.debug("begin to run current step")
         loss = self.exe.run(self._main_program, feed=feed, fetch_list=fetch)
-        if self.cur_step % self._step == 0:
+        if self.cur_step % self._step == self._step - 1:
             self._logger.debug("begin to run send program")
             self.exe.run(self._send_program)
         self.cur_step += 1
