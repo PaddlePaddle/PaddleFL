@@ -24,9 +24,9 @@ class HostLayerHandler(object):
             self.fetch_vars = [self.fetch_vars]
         return self.fetch_vars
 
-    def call_for_backward(self, grads, fetch_var_names):
+    def call_for_backward(self, grads, tensor_names_to_customer):
         temp_var = 0
-        for idx, name in enumerate(fetch_var_names):
+        for idx, name in enumerate(tensor_names_to_customer):
             var = self.fetch_vars[idx]
             var_grad = grads["{}@GRAD".format(name)]
             temp_var += var * var_grad

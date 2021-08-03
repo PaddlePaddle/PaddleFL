@@ -14,7 +14,7 @@
 
 import os
 import subprocess
-
+from typing import Dict, Union
 import time
 import json
 import numpy as np
@@ -43,7 +43,10 @@ def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
         vars_map[name] = tensor
     return vars_map
 
-def parse_proto_to_tensor(proto, is_train=True, place=paddle.fluid.CPUPlace()):
+def parse_proto_to_tensor(
+        proto: common_pb2.Features, 
+        to_tensor: bool = True, 
+        place=paddle.fluid.CPUPlace()) -> Dict[str, Union[np.ndarray, paddle.Tensor]]:
     vars_map = {}
     for pb_var in proto.tensors:
         dtype = pb_var.dtype
@@ -52,7 +55,7 @@ def parse_proto_to_tensor(proto, is_train=True, place=paddle.fluid.CPUPlace()):
         shape = pb_var.shape
         np_data = np.array(data).astype(dtype)
         np_data = np_data.reshape(shape)
-        if is_train:
+        if to_tensor:
             tensor = paddle.to_tensor(np_data, dtype, place)
             vars_map[name] = tensor
         else:

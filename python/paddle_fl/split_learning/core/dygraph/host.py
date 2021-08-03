@@ -7,33 +7,91 @@ import contextlib
 import socket
 import grpc
 import logging
+from typing import List, Dict, Tuple, Union
 
 from core.proto import common_pb2_grpc, common_pb2
 from .layer_handler import HostLayerHandler
+from .layer_handler.layer_base import LayerBase
 from core import util
-    
+from core.table.table_base import TableBase
+from core.reader.reader_base import ReaderBase
+
 _LOGGER = logging.getLogger(__name__)
 
 
-class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
+class HostProgramLoader(object):
+
+    def __init__(self):
+        self.run_type = None  # TRAIN or INFER
+        self.tensor_names_to_customer = None
+        self.layer_handler = None
+        self.input_specs = None
+        self.exe = None
+        self.main_program = None
+        self.token = None
+
+    def init(self, 
+            layer: LayerBase, 
+            optimizer: paddle.optimizer.Optimizer, 
+            tensor_names_to_customer: List[str],
+            input_specs: List[paddle.static.InputSpec]):
+        self.run_type = "TRAIN"
+        self.layer_handler = HostLayerHandler(layer, optimizer)
+        self.tensor_names_to_customer = tensor_names_to_customer
+        self.input_specs = input_specs
+        self.token = "init_from_full_network"
+
+    def load_inference_model(self, 
+            local_path_prefix: str) -> None:
+        self.run_type = "INFER"
+        self.exe = paddle.static.Executor(paddle.CPUPlace())
+        inference_program, feed_target_names, fetch_targets = \
+                paddle.static.load_inference_model(
+                        path_prefix=local_path_prefix,
+                        executor=self.exe)
+        self.main_program = inference_program
+        # load common var info
+        with open("{}.{}".format(local_path_prefix, "model_info")) as f:
+            model_info = json.load(f)
+        self.tensor_names_to_customer = model_info["tensor_names_to_customer"]
+        self.token = model_info["token"]
     
-    def __init__(self, program_loader, lookup_table, reader):
+    def load_persistables(self, path: str) -> None:
+        layer_state_dict = paddle.load(
+                os.path.join(path, "layer.pdparams"))
+        opt_state_dict = paddle.load(
+                os.path.join(path, "optimizer.pdopt"))
+        self.layer_handler.layer.set_state_dict(layer_state_dict)
+        self.layer_handler.optimizer.set_state_dict(opt_state_dict)
+
+        # load token info
+        with open(os.path.join(path, "model_info")) as f:
+            model_info = json.load(f)
+        self.token = model_info["token"]
+
+
+class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
+
+    def __init__(self, 
+            program_loader: HostProgramLoader, 
+            lookup_table: TableBase, 
+            reader: ReaderBase):
         super(FLExecutorServicer, self).__init__()
         self.run_type = program_loader.run_type
-        self.common_vars = program_loader.common_vars
+        self.tensor_names_to_customer = program_loader.tensor_names_to_customer
         self.token = program_loader.token
         self.layer_handler = program_loader.layer_handler
-        self.input_spec = program_loader.input_spec
+        self.input_specs = program_loader.input_specs
         self.exe = program_loader.exe
         self.main_program = program_loader.main_program
         self.table = lookup_table
         self.reader = reader
 
         if self.run_type == "INFER":
-            self.target_vars = [
+            self.infer_target_vars = [
                     util.find_var(
                         self.main_program, "save_infer_model/scale_{}.tmp_0".format(idx))
-                    for idx in range(len(self.common_vars["out"]))]
+                    for idx in range(len(self.tensor_names_to_customer))]
 
     def execute_forward_host_part(self, request, context):
         if request.token != self.token:
@@ -62,7 +120,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
                 fetch_vars = self.exe.run(
                         program=self.main_program,
                         feed=feed_data,
-                        fetch_list=self.target_vars,
+                        fetch_list=self.infer_target_vars,
                         return_numpy=False)
             else:
                 raise ValueError("Failed to execute program: "
@@ -74,7 +132,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
 
         try:
             resp = self._pack_vars_to_client(
-                    fetch_vars, self.common_vars["out"])
+                    fetch_vars, self.tensor_names_to_customer)
         except Exception as e:
             err_msg = "Failed to pack vars to client: {}".format(e)
             self._inner_cancel_current_step(err_msg)
@@ -87,20 +145,20 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             _LOGGER.error(err_msg, exc_info=True)
             return self.__generate_nil_response("[Host] {}".format(err_msg))
         try:
-            common_map = self._parse_vars_from_client(
-                    request, self.common_vars["in"])
+            grad_map = self._parse_vars_from_client(
+                    request, self.tensor_names_to_customer)
         except Exception as e:
             err_msg = "Failed to parse vars from client: {}".format(e)
             self._inner_cancel_current_step(err_msg)
             return self.__generate_nil_response("[Host] {}".format(err_msg))
 
-        for name, tensor in common_map.items():
+        for name, tensor in grad_map.items():
             _LOGGER.debug("Get grad {}: {}".format(name, tensor))
 
         try:
             # backward and minimize
             fetch_vars = self.layer_handler.call_for_backward(
-                    common_map, self.common_vars["out"])
+                    grad_map, self.tensor_names_to_customer)
         except Exception as e:
             err_msg = "Failed to run backward program: {}".format(e)
             self._inner_cancel_current_step(err_msg)
@@ -132,7 +190,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         try:
             HostProgramSaver.save_inference_model(
                     request.path, self.layer_handler, 
-                    self.input_spec, self.common_vars,
+                    self.input_specs, self.tensor_names_to_customer,
                     request.save_token)
         except Exception as e:
             err_msg = "Failed to save inference model: {}".format(e)
@@ -148,18 +206,25 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         self._inner_cancel_current_step(request.state.error_message)
         return self.__generate_nil_response()
 
-    def _parse_vars_from_client(self, request, required_common_vars):
+    def _parse_vars_from_client(self, 
+            request: common_pb2.Features, 
+            tensor_names_to_customer: List[str]) \
+                    -> Dict[str, Union[paddle.Tensor, np.ndarray]]:
         vars_map = util.parse_proto_to_tensor(
-                request, is_train=(self.run_type=="TRAIN"))
-        # check common in
-        for name in required_common_vars:
-            if name not in vars_map:
+                request, to_tensor=(self.run_type=="TRAIN"))
+        vars_grad_map = {}
+        for name in tensor_names_to_customer:
+            grad_name = "{}@GRAD".format(name)
+            if grad_name not in vars_map:
                 raise KeyError(
                         "Failed to parse vars from client: {} not found in response.".format(name))
-        return vars_map
+            vars_grad_map[grad_name] = vars_map[grad_name]
+        return vars_grad_map
 
-    def _pack_vars_to_client(self, fetch_vars, required_common_vars):
-        vars_map = {name: fetch_vars[idx] for idx, name in enumerate(required_common_vars)}
+    def _pack_vars_to_client(self, 
+            fetch_vars: List[paddle.Tensor], 
+            tensor_names_to_customer: List[str]) -> common_pb2.Features:
+        vars_map = {name: fetch_vars[idx] for idx, name in enumerate(tensor_names_to_customer)}
         req = util.pack_tensor_to_proto(vars_map)
         req.token = self.token
         return req
@@ -195,23 +260,27 @@ class HostExecutor(object):
         self.reader = reader
         self.max_workers = max_workers
 
-    def load_layer_handler(self, layer, optimizer, common_vars, input_spec):
-        self.program_loader.load_layer_handler(
-                layer, optimizer, common_vars, input_spec)
+    def init(self, 
+            layer: LayerBase, 
+            optimizer: paddle.optimizer.Optimizer, 
+            tensor_names_to_customer: List[str], 
+            input_specs: List[paddle.static.InputSpec]) -> None:
+        self.program_loader.init(
+                layer, optimizer, tensor_names_to_customer, input_specs)
 
-    def load_inference_model(self, local_path):
+    def load_inference_model(self, local_path: str) -> None:
         self.program_loader.load_inference_model(local_path)
 
-    def load_persistables(self, path):
+    def load_persistables(self, path: str) -> None:
         self.program_loader.load_persistables(path)
 
-    def _is_port_available(self, port):
+    def _is_port_available(self, port: int) -> bool:
         with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
             sock.settimeout(2)
             result = sock.connect_ex(('0.0.0.0', port))
         return result != 0
 
-    def start(self, port):
+    def start(self, port: int) -> None:
         if not self._is_port_available(port):
             raise ValueError("Failed to start: port {} not available".format(port))
         server = grpc.server(
@@ -226,52 +295,6 @@ class HostExecutor(object):
         server.wait_for_termination()
 
 
-class HostProgramLoader(object):
-
-    def __init__(self):
-        self.run_type = None  # TRAIN or INFER
-        self.common_vars = None
-        self.layer_handler = None
-        self.input_spec = None
-        self.exe = None
-        self.main_program = None
-        self.token = None
-
-    def load_layer_handler(self, layer, optimizer, common_vars, input_spec):
-        self.run_type = "TRAIN"
-        self.layer_handler = HostLayerHandler(layer, optimizer)
-        self.common_vars = common_vars
-        self.input_spec = input_spec
-        self.token = "init_from_full_network"
-
-    def load_inference_model(self, local_path_prefix):
-        self.run_type = "INFER"
-        self.exe = paddle.static.Executor(paddle.CPUPlace())
-        inference_program, feed_target_names, fetch_targets = \
-                paddle.static.load_inference_model(
-                        path_prefix=local_path_prefix,
-                        executor=self.exe)
-        self.main_program = inference_program
-        # load common var info
-        with open("{}.{}".format(local_path_prefix, "model_info")) as f:
-            model_info = json.load(f)
-        self.common_vars = model_info["common"]
-        self.token = model_info["token"]
-    
-    def load_persistables(self, path):
-        layer_state_dict = paddle.load(
-                os.path.join(path, "layer.pdparams"))
-        opt_state_dict = paddle.load(
-                os.path.join(path, "optimizer.pdopt"))
-        self.layer_handler.layer.set_state_dict(layer_state_dict)
-        self.layer_handler.optimizer.set_state_dict(opt_state_dict)
-
-        # load token info
-        with open(os.path.join(path, "model_info")) as f:
-            model_info = json.load(f)
-        self.token = model_info["token"]
-
-
 class HostProgramSaver(object):
 
     def __init__(self):
@@ -279,7 +302,9 @@ class HostProgramSaver(object):
 
     @staticmethod
     def save_persistables(
-            dirpath, layer_handler, save_token):
+            dirpath: str, 
+            layer_handler: HostLayerHandler, 
+            save_token: str) -> None:
         layer = layer_handler.layer
         optimizer = layer_handler.optimizer
         paddle.save(layer.state_dict(), os.path.join(dirpath, "layer.pdparams"))
@@ -293,13 +318,16 @@ class HostProgramSaver(object):
 
     @staticmethod
     def save_inference_model(
-            path, layer_handler, input_spec, 
-            common_vars, save_token):
+            path: str, 
+            layer_handler: HostLayerHandler, 
+            input_specs: List[paddle.static.InputSpec], 
+            tensor_names_to_customer: List[str],
+            save_token: str) -> None:
 
-        paddle.jit.save(layer_handler.layer, path, input_spec)
+        paddle.jit.save(layer_handler.layer, path, input_specs)
 
         model_info = {
-            "common": common_vars,
+            "tensor_names_to_customer": tensor_names_to_customer,
             "token": save_token,
         }
 
