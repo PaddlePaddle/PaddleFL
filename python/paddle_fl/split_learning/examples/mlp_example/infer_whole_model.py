@@ -17,7 +17,7 @@ if __name__ == "__main__":
                     executor=exe)
 
     for i, item in enumerate(data_iter.iter()):
-        x1, x2, label = item
+        uid, x1, x2, label = item
         feed = {"x1": x1, "x2": x2}
         fetch_vars = exe.run(
                 program=inference_program,

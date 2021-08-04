@@ -101,12 +101,12 @@ if __name__ == "__main__":
     # exe.load_persistables("split/customer")
 
     for i, item in enumerate(data_iter.iter()):
-        _, x2, label = item
+        uid, _, x2, label = item
         x2_var = to_variable(x2)
         label_var = to_variable(label)
 
         fetch_vars = exe.run(
-                usr_key=str(i),
+                usr_key=uid[0],
                 feed={"x2": x2_var},
                 label=label_var)
         print("predict: {}".format(fetch_vars[0]))

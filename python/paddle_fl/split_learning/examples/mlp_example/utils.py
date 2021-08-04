@@ -9,13 +9,13 @@ class SimpleLookupTable(TableBase):
 
     def __init__(self):
         import data_iter
-        self.table = []
+        self.table = {}
         for item in data_iter.iter():
-            x1, _,  _ = item
-            self.table.append(x1)
+            uid, x1, _,  _ = item
+            self.table[uid[0]] = x1
     
-    def _get_value(self, idx):
-        return self.table[int(idx)]
+    def _get_value(self, uid):
+        return self.table[uid]
 
 
 class SimpleReader(ReaderBase):
@@ -23,6 +23,6 @@ class SimpleReader(ReaderBase):
     def __init__(self):
         pass
     
-    def parse(self, db_value):
-        x = db_value
+    def parse(self, table_value):
+        x = table_value
         return {"x1": x}

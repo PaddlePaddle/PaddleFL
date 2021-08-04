@@ -74,7 +74,7 @@ if __name__ == "__main__":
             learning_rate=0.05, parameters=layer.parameters())
 
     for i, item in enumerate(data_iter.iter()):
-        x1, x2, label = item
+        uid, x1, x2, label = item
         x1_var = to_variable(x1)
         x2_var = to_variable(x2)
         label_var = to_variable(label)

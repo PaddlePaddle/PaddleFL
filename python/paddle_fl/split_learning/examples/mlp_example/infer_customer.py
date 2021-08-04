@@ -24,9 +24,9 @@ if __name__ == "__main__":
             exe.load_inference_model("split/customer_infer")
 
     for i, item in enumerate(data_iter.iter()):
-        _, x2, _ = item
+        uid, _, x2, _ = item
         fetch_vars = exe.run(
-                usr_key=str(i),
+                usr_key=uid[0],
                 feed={"x2": x2},
                 fetch_targets=fetch_targets)
         print("fetch_vars: {}".format(np.array(fetch_vars[0])))
