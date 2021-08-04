@@ -6,8 +6,8 @@ import numpy as np
 import yaml
 import logging
 
-from core.dygraph.layer_handler import HostLayerHandler, LayerBase
-from core.dygraph import HostExecutor
+from core.layer_handler import HostLayerHandler, LayerBase
+from core import HostExecutor
 
 from utils import SimpleLookupTable, SimpleReader
     

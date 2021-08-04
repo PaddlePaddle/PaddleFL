@@ -5,8 +5,8 @@ import numpy as np
 import yaml
 import logging
 
-from core.dygraph.layer_handler import CustomerLayerHandler, LayerBase
-from core.dygraph import CustomerExecutor
+from core.layer_handler import CustomerLayerHandler, LayerBase
+from core import CustomerExecutor
 import data_iter
 
 logging.basicConfig(

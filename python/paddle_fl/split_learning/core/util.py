@@ -23,8 +23,8 @@ import paddle
 import paddle.fluid as fluid
 from paddle.fluid.framework import Parameter, Program
 
-from .proto import common_pb2_grpc, common_pb2
-from . import reformer
+from core.proto import common_pb2_grpc, common_pb2
+from core.static import reformer
 
 
 def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
