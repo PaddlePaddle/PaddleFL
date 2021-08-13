@@ -13,7 +13,13 @@ paddle.enable_static()
 def net():
     embed_size=11
     host_input = fluid.layers.data(
-                    name='Host|input',
+                    name='Host|x1',
+                    shape=[1],
+                    dtype='int64',
+                    lod_level=1)
+
+    customer_input = fluid.layers.data(
+                    name='Customer|x2',
                     shape=[1],
                     dtype='int64',
                     lod_level=1)
@@ -23,25 +29,48 @@ def net():
                 shape=[1],
                 dtype="int64")
 
-    embed = fluid.layers.embedding(
+    host_embed = fluid.layers.embedding(
                 input=host_input,
                 size=[31312, embed_size],
                 param_attr=fluid.ParamAttr(
                         initializer=fluid.initializer.ConstantInitializer(value=0.1)))
 
-    pool = fluid.layers.sequence_pool(
-            input=embed,
+    customer_embed = fluid.layers.embedding(
+                input=customer_input,
+                size=[31312, embed_size],
+                param_attr=fluid.ParamAttr(
+                        initializer=fluid.initializer.ConstantInitializer(value=0.1)))
+
+    host_pool = fluid.layers.sequence_pool(
+            input=host_embed,
             pool_type='max')
-    fc1 = fluid.layers.fc(
+
+    customer_pool = fluid.layers.sequence_pool(
+            input=customer_embed,
+            pool_type='max')
+
+    host_fc1 = fluid.layers.fc(
             name="Host|fc1",
-            input=pool,
+            input=host_pool,
             size=10,
             param_attr=fluid.ParamAttr(
                     initializer=fluid.initializer.ConstantInitializer(value=0.1)))
 
+    customer_fc1 = fluid.layers.fc(
+            name="Customer|fc1",
+            input=customer_pool,
+            size=10,
+            param_attr=fluid.ParamAttr(
+                    initializer=fluid.initializer.ConstantInitializer(value=0.1)))
+
+    concat_fc = fluid.layers.concat(
+            name="Customer|concat",
+            input=[host_fc1, customer_fc1], 
+            axis=-1)
+
     prediction = fluid.layers.fc(
             name="Customer|fc2",
-            input=fc1,
+            input=concat_fc,
             size=2,
             act='softmax',
             param_attr=fluid.ParamAttr(
@@ -51,4 +80,4 @@ def net():
 
     optimizer = fluid.optimizer.SGD(learning_rate=0.01)
     optimizer.minimize(cost)
-    return host_input, label, prediction, cost
+    return host_input, None, label, prediction, cost

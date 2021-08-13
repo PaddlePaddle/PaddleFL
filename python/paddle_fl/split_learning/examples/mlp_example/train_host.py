@@ -9,6 +9,7 @@ import logging
 from core.layer_handler import HostLayerHandler, LayerBase
 from core import HostExecutor
 
+import utils
 from utils import SimpleLookupTable, SimpleReader
     
 logging.basicConfig(
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             parameters=layer.parameters())
     
     exe = HostExecutor(
-            table=SimpleLookupTable(), 
+            table=SimpleLookupTable("data/input.json"), 
             reader=SimpleReader())
     exe.init(
             layer=layer, 

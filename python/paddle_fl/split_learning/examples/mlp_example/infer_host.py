@@ -22,7 +22,7 @@ if __name__ == "__main__":
     paddle.enable_static()
 
     exe = HostExecutor(
-            table=SimpleLookupTable(), 
+            table=SimpleLookupTable("data/input.json"), 
             reader=SimpleReader())
     exe.load_inference_model("split/host_infer")
     exe.start(7858)

@@ -48,8 +48,12 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         if self.run_type == "INFER":
             self.target_vars = [
                     util.find_var(
-                        self.p1_program, "save_infer_model/scale_{}.tmp_0".format(idx))
-                    for idx in range(len(self.p1_common_vars["out"]))]
+                        self.p1_program, "{}.tmp_0".format(x))
+                    for x in self.p1_common_vars["out"]]
+            #self.target_vars = [
+            #        util.find_var(
+            #            self.p1_program, "save_infer_model/scale_{}.tmp_0".format(idx))
+            #        for idx in range(len(self.p1_common_vars["out"]))]
 
     def execute_forward_host_part(self, request, context):
         if request.token != self.token:
@@ -210,9 +214,9 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
 
 
 class HostExecutor(object):
-    def __init__(self, place, lookup_table, reader, max_workers=1):
+    def __init__(self, place, table, reader, max_workers=1):
         self.program_loader = HostProgramLoader(place)
-        self.lookup_table = lookup_table
+        self.lookup_table = table
         self.max_workers = max_workers
         self.reader = reader
 

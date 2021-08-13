@@ -6,7 +6,7 @@ from paddle.static import InputSpec
 import grpc
 import yaml
 
-import data_iter
+import utils
 
 if __name__ == "__main__":
     paddle.enable_static()
@@ -16,7 +16,7 @@ if __name__ == "__main__":
                     path_prefix="whole/static",
                     executor=exe)
 
-    for i, item in enumerate(data_iter.iter()):
+    for i, item in enumerate(utils.data_iter("data/input.json")):
         uid, x1, x2, label = item
         feed = {"x1": x1, "x2": x2}
         fetch_vars = exe.run(

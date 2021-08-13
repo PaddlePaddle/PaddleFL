@@ -14,9 +14,13 @@
 
 from grpc_tools import protoc
 
-protoc.main((
-    '',
-    '-I.',
-    '--python_out=.',
-    '--grpc_python_out=.',
-    'core/proto/common.proto', ))
+def gen_proto_codes():
+    protoc.main((
+        '',
+        '-I.',
+        '--python_out=.',
+        '--grpc_python_out=.',
+        'core/proto/common.proto', ))
+
+if __name__ == "__name__":
+    gen_proto_codes()

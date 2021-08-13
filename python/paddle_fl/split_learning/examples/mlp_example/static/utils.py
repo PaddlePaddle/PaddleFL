@@ -34,11 +34,16 @@ def data_iter(filename):
                 action_data = np.asarray(batch_action, dtype="int64")
                 action_data.reshape([batch_size, 1, 1, len(action)])
                 click_data = np.asarray(batch_click, dtype="int64")
-                yield (batch_uid, title_data, action_data, click_data)
+                yield (batch_uid, create_lod_tensor(title_data), create_lod_tensor(action_data), click_data)
                 batch_uid = []
                 batch_title = []
                 batch_click = []
                 batch_action = []
+
+def create_lod_tensor(data, place=fluid.CPUPlace()):
+    data = np.asarray(data, dtype="int64")
+    shapes = [[len(c) for c in data]]
+    return fluid.create_lod_tensor(data.reshape(-1, 1), shapes, place)
 
 
 class SimpleLookupTable(TableBase):
@@ -60,4 +65,4 @@ class SimpleReader(ReaderBase):
     
     def parse(self, table_value):
         x = table_value
-        return {"x1": x}
+        return {"Host|x1": x}

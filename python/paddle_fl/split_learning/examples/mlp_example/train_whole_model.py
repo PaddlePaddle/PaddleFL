@@ -6,7 +6,7 @@ from paddle.static import InputSpec
 import grpc
 import yaml
 
-import data_iter
+import utils
 
 class MLP(paddle.nn.Layer):
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     optimizer = paddle.optimizer.SGD(
             learning_rate=0.05, parameters=layer.parameters())
 
-    for i, item in enumerate(data_iter.iter()):
+    for i, item in enumerate(utils.data_iter("data/input.json")):
         uid, x1, x2, label = item
         x1_var = to_variable(x1)
         x2_var = to_variable(x2)

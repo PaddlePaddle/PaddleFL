@@ -7,7 +7,7 @@ import logging
 
 from core.layer_handler import CustomerLayerHandler, LayerBase
 from core import CustomerExecutor
-import data_iter
+import utils
 
 logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     feed_target_names, fetch_targets = \
             exe.load_inference_model("split/customer_infer")
 
-    for i, item in enumerate(data_iter.iter()):
+    for i, item in enumerate(utils.data_iter("data/input.json")):
         uid, _, x2, _ = item
         fetch_vars = exe.run(
                 usr_key=uid[0],

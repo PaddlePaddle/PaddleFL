@@ -7,7 +7,7 @@ import logging
 
 from core.layer_handler import CustomerLayerHandler, LayerBase
 from core import CustomerExecutor
-import data_iter
+import utils
 
 logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     # --------------- load params -----------------
     # exe.load_persistables("split/customer")
 
-    for i, item in enumerate(data_iter.iter()):
+    for i, item in enumerate(utils.data_iter("data/input.json")):
         uid, _, x2, label = item
         x2_var = to_variable(x2)
         label_var = to_variable(label)
