@@ -4,23 +4,24 @@ import yaml
 import logging
 import time
 
-from paddle_fl.split_learning import CustomerExecutor
+from core.static import CustomerExecutor
+
 import network
+import utils
 
 _LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
         datefmt='%Y-%m-%d %H:%M',
-        level=logging.DEBUG)
+        level=logging.INFO)
 
 
 if __name__ == "__main__":
-    host_input, label, prediction, cost = network.net()
-    place = fluid.CPUPlace()
+    input_from_host, _, label, prediction, cost = network.net()
     exe = CustomerExecutor(
             endpoints=["0.0.0.0:7858"],
-            place=place)
+            place=fluid.CPUPlace())
     main_program = fluid.default_main_program()
     startup_program = fluid.default_startup_program()
 
@@ -28,15 +29,15 @@ if __name__ == "__main__":
             startup_program=startup_program,
             main_program=main_program)
 
-    customer_input = np.random.randint(2, size=(1, 3)).astype('float32')
-    label_data = np.random.randint(2, size=(1, 1)).astype('int64')
-    for ei in range(3):
-        md5  = "0"
+    for i, item in enumerate(utils.data_iter("../data/input.json")):
+        uid, _, x2, label = item
         loss = exe.run(
-                usr_key=md5,
-                feed={"Customer|input": customer_input, "Customer|label": label_data},
-                    fetch_list=[cost.name])
-        print("[{}] loss: {}".format(ei, np.array(loss)))
+                usr_key=uid[0],
+                feed={
+                    "Customer|x2": x2, 
+                    "Customer|label": label},
+                fetch_list=[cost.name])
+        print("loss: {}".format(np.array(loss)))
 
     if exe.save_persistables(
             "split_program/customer_vars",
@@ -46,6 +47,6 @@ if __name__ == "__main__":
     if exe.save_inference_model(
             "split_program/customer_infer",
             "split_program/host_infer",
-            ["Host|input"],
+            ["Host|x1", "Customer|x2"],
             [prediction.name]):
         _LOGGER.info("Succ save infer model")

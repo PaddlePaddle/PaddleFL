@@ -12,15 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from grpc_tools import protoc
 
-def gen_proto_codes():
-    protoc.main((
-        '',
-        '-I.',
-        '--python_out=.',
-        '--grpc_python_out=.',
-        'core/proto/common.proto', ))
-
-if __name__ == "__name__":
-    gen_proto_codes()
+from .customer_layer_handler import CustomerLayerHandler
+from .host_layer_handler import HostLayerHandler
+from .layer_base import LayerBase
