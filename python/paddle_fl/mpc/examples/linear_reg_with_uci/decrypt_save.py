@@ -24,5 +24,5 @@ decrypt_prediction_file=sys.argv[2]
 BATCH_SIZE=10
 process_data.load_decrypt_data("./mpc_infer_data/uci_loss", (1, ), decrypt_loss_file)
 print("uci_loss done")
-process_data.load_decrypt_data("/mpc_infer_data/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
+process_data.load_decrypt_data("./mpc_infer_data/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
 print("prediction done")
