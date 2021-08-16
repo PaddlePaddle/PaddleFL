@@ -111,7 +111,8 @@ pip3 install paddle_fl
 
 ```
 
-3.
+3.Install PaddleFL from source code
+
 If you want to compile and install from source code, please click [here](./docs/source/md/compile_and_install.md) to get instructions.
 
 
