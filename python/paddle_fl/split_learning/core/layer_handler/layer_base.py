@@ -12,15 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from grpc_tools import protoc
 
-def gen_proto_codes():
-    protoc.main((
-        '',
-        '-I.',
-        '--python_out=.',
-        '--grpc_python_out=.',
-        'core/proto/common.proto', ))
+import paddle
+import numpy as np
+import logging
 
-if __name__ == "__name__":
-    gen_proto_codes()
+_LOGGER = logging.getLogger(__name__)
+
+
+class LayerBase(paddle.nn.Layer):
+
+    def __init__(self):
+        super(LayerBase, self).__init__()
+
+    @paddle.jit.to_static
+    def forward(self, **feed):
+        raise NotImplementedError("Failed to run forward")
+
+    def get_fetch_vars(self):
+        raise NotImplementedError("Failed to get fetch vars")
+
+    def get_loss(self, inputs, predict):
+        raise NotImplementedError("Failed to get loss")
