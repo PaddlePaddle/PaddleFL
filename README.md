@@ -84,6 +84,10 @@ For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/exa
 
 ## Installation
 
+We provide three ways to install PaddleFL：
+
+1. Use PaddleFL in docker
+
 We **highly recommend** to run PaddleFL in Docker
 
 ```sh
@@ -91,11 +95,25 @@ We **highly recommend** to run PaddleFL in Docker
 docker pull paddlepaddle/paddlefl:1.1.2
 docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/bash
 
-#Install paddle_fl
-pip3 install paddle_fl
 ```
 
+2. Install PaddleFL via installation package
+
+We provide compiled PaddlePaddle and PaddleFL installation packages, you can download and install them directly.
+```
+#Install PaddlePaddle
+wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
+pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
+(Replace ** with the python version in the installation environment, for example, python3.8 corresponds to cp38)
+
+#Install PaddleFL
+pip3 install paddle_fl
+
+```
+
+3.
 If you want to compile and install from source code, please click [here](./docs/source/md/compile_and_install.md) to get instructions.
+
 
 If you are using the gloo communication model, you will need Redis. We also provide a stable Redis installation package for download.
 
