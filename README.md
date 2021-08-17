@@ -106,6 +106,9 @@ We provide compiled PaddlePaddle and PaddleFL installation packages, you can dow
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 (Replace ** with the python version in the installation environment, for example, python3.8 corresponds to cp38)
+E.g., if you are using python3.8, the commands are as below:
+wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
+pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 
 #Install PaddleFL
 pip3 install paddle_fl
