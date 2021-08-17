@@ -130,6 +130,7 @@ pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 #Install PaddleFL
 pip3 install paddle_fl
 ```
+上面的命令仅适用于python3.8版本环境安装PaddleFL。基于其他python版本的PaddleFL可以通过从 https://pypi.org/project/paddle-fl/1.1.2/#files 下载对应安装包进行安装。
 
 3.源码安装
 若您希望从源码编译安装，请点击[这里](./docs/source/md/compile_and_install_cn.md)。

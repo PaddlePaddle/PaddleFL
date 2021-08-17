@@ -1,26 +1,3 @@
-# Compile and Install
-
-## Installation
-
-We **highly recommend** to run PaddleFL in Docker
-
-```sh
-#Pull and run the docker
-docker pull hub.baidubce.com/paddlefl/paddle_fl:latest
-docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bash
-
-#Install paddle_fl
-pip3 install paddle_fl
-```
-
-We also prepare a stable redis package for you to download and install, which will be used in tasks with MPC.
-
-```sh
-wget --no-check-certificate https://paddlefl.bj.bcebos.com/redis-stable.tar
-tar -xf redis-stable.tar
-cd redis-stable &&  make
-```
-
 ## Compile From Source Code
 
 #### A. Environment preparation
@@ -28,19 +5,18 @@ cd redis-stable &&  make
 * CentOS 7 (64 bit)
 * Python 3.5/3.6/3.7 ( 64 bit) or above
 * pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.8.5 (if not build paddle from source)
+* PaddlePaddle 1.8.5 
 * Redis 5.0.8 (64 bit)
 * GCC or G++ 8.3.1
 * cmake 3.15+
 
 #### B. Clone the source code, compile and install
 
-Fetch the source code and checkout stable release
+Fetch the source code and prepare for compilation
+
 ```sh
 git clone https://github.com/PaddlePaddle/PaddleFL
 cd /path/to/PaddleFL
-
-# Checkout stable release
 mkdir build && cd build
 ```
 
@@ -55,6 +31,7 @@ For example,
 ```
 cmake .. -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DPYTHON_EXECUTABLE=/usr/local/python/bin/python3.8 -DPYTHON_INCLUDE_DIRS=/usr/local/python/include/python3.8/ -DBUILD_PADDLE_FROM_SOURCE=ON -DWITH_GRPC=ON
 ```
+If you have installed PaddlePaddle in advance and only want to compile PaddleFL, then change "-DBUILD_PADDLE_FROM_SOURCE=ON" in the above command to "-DBUILD_PADDLE_FROM_SOURCE=OFF".
 
 Install paddle if BUILD_PADDLE_FROM_SOURCE=on:
 ```sh
