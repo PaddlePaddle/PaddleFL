@@ -93,7 +93,7 @@ For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/exa
 * CentOS 7 (64 bit)
 * Python 3.5/3.6/3.7 ( 64 bit) or above
 * pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.8.5 
+* PaddlePaddle 1.8.5 
 * Redis 5.0.8 (64 bit)
 * GCC or G++ 8.3.1
 * cmake 3.15+
