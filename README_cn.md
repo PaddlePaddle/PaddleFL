@@ -112,15 +112,14 @@ Docker中环境配置以及paddlepaddle和paddlefl已经安装完成，您可以
 
 我们提供了编译好的PaddlePaddle及PaddleFL安装包，您可以直接进行下载安装。
 
-首先安装paddle
+首先安装PaddlePaddle
 ```
 #Install PaddlePaddle
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
-(**替换成安装环境中的python版本，如python3.8对应cp38)
 ```
 
-例如，如果您使用的python版本为python3.8,那么使用下面的命令：
+安装时，请将**替换成安装环境中的python版本。例如，如果您使用的python版本为python3.8,那么使用下面的命令：
 ```
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
