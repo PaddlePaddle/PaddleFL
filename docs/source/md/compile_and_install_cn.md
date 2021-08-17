@@ -5,7 +5,7 @@
 * CentOS 7 (64 bit)
 * Python 3.5/3.6/3.7 ( 64 bit) or above
 * pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.8.5 (如果选择不从源代码构建paddle)
+* PaddlePaddle 1.8.5 
 * Redis 5.0.8 (64 bit)
 * GCC or G++ 8.3.1
 * cmake 3.15+
@@ -16,8 +16,6 @@
 ```sh
 git clone https://github.com/PaddlePaddle/PaddleFL
 cd /path/to/PaddleFL
-
-# Checkout stable release
 mkdir build && cd build
 ```
 
@@ -32,6 +30,7 @@ make -j$(nproc)
 ```
 cmake .. -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DPYTHON_EXECUTABLE=/usr/local/python/bin/python3.8 -DPYTHON_INCLUDE_DIRS=/usr/local/python/include/python3.8/ -DBUILD_PADDLE_FROM_SOURCE=ON -DWITH_GRPC=ON
 ```
+如果您事先安装好了PaddlePaddle，希望只编译PaddleFL，那么将上面命令中 "-DBUILD_PADDLE_FROM_SOURCE=ON" 改为 "-DBUILD_PADDLE_FROM_SOURCE=OFF" 即可。
 
 
 3.安装paddle (如果选择从源代码构建paddle):
