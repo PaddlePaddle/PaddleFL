@@ -10,7 +10,7 @@ docker pull hub.baidubce.com/paddlefl/paddle_fl:latest
 docker run --name <docker_name> --net=host -it -v $PWD:/root <image id> /bin/bash
 
 #Install paddle_fl
-pip install paddle_fl
+pip3 install paddle_fl
 ```
 
 We also prepare a stable redis package for you to download and install, which will be used in tasks with MPC.
@@ -25,12 +25,12 @@ cd redis-stable &&  make
 
 #### A. Environment preparation
 
-* CentOS 6 or CentOS 7 (64 bit)
-* Python 2.7.15+/3.5.1+/3.6/3.7 ( 64 bit) or above
-* pip or pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.8 (if not build paddle from source)
+* CentOS 7 (64 bit)
+* Python 3.5/3.6/3.7 ( 64 bit) or above
+* pip3 9.0.1+ (64 bit)
+* PaddlePaddle release 1.8.5 (if not build paddle from source)
 * Redis 5.0.8 (64 bit)
-* GCC or G++ 6+
+* GCC or G++ 8.3.1
 * cmake 3.15+
 
 #### B. Clone the source code, compile and install
@@ -44,19 +44,21 @@ cd /path/to/PaddleFL
 mkdir build && cd build
 ```
 
-Execute compile commands, where `PYTHON_EXECUTABLE` is path to the python binary where the PaddlePaddle is installed, `CMAKE_C_COMPILER` is the path of gcc and `CMAKE_CXX_COMPILER` is the path of g++.
+Execute compile commands, where `CMAKE_C_COMPILER` is the path of gcc and `CMAKE_CXX_COMPILER` is the path of g++,  `PYTHON_EXECUTABLE` is path to the python binary where the PaddlePaddle is installed, `PYTHON_INCLUDE_DIRS` is path to the file `Python.h`.
 
 Then you can put the directory in the following command and make:
 ```sh
-cmake ../ -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DCMAKE_C_COMPILER=${gcc_path} -DCMAKE_CXX_COMPILER=${g++_path}
+cmake .. -DCMAKE_C_COMPILER=${gcc_path} -DCMAKE_CXX_COMPILER=${g++_path} -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE} -DPYTHON_INCLUDE_DIRS=${PYTHON_INCLUDE_DIRS} -DBUILD_PADDLE_FROM_SOURCE=ON -DWITH_GRPC=ON
 make -j$(nproc)
 ```
-
-Note that paddle must be built from source after paddle-fl version 1.1.2 by turning on cmake option `BUILD_PADDLE_FROM_SOURCE` (paddlepaddle1.8.5).
+For example,
+```
+cmake .. -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DPYTHON_EXECUTABLE=/usr/local/python/bin/python3.8 -DPYTHON_INCLUDE_DIRS=/usr/local/python/include/python3.8/ -DBUILD_PADDLE_FROM_SOURCE=ON -DWITH_GRPC=ON
+```
 
 Install paddle if BUILD_PADDLE_FROM_SOURCE=on:
 ```sh
-pip or pip3 install ./third_party/paddle/src/extern_paddle-build/python/dist/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl -U
+pip3 install ./third_party/paddle/src/extern_paddle-build/python/dist/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl -U
 ```
 
 Install the package:
