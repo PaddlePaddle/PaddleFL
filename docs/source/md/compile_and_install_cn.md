@@ -37,7 +37,7 @@ cmake .. -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DPYTHON_EXECUTABLE=/us
 ```sh
 pip3 install ./third_party/paddle/src/extern_paddle-build/python/dist/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl -U
 ```
-安装对应的安装包
+4.安装PaddleFL对应的安装包
 
 ```sh
 make install
