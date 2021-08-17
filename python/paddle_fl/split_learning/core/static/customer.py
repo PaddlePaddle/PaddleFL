@@ -11,20 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
 import time
-
 import json
 import grpc
 import logging
 import numpy as np
-
 import paddle.fluid as fluid
-
-from core import util
-from core.static import reformer
-from core.proto import common_pb2_grpc, common_pb2
+from .. import util
+from . import reformer
+from ..proto import common_pb2_grpc, common_pb2
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -105,7 +101,7 @@ class CustomerExecutor(object):
         self.stub = common_pb2_grpc.FLExecutorStub(self.channel)
 
     def _parse_vars_from_host(self, resp, required_common_vars):
-        vars_map = util.parse_proto_to_lod_tensor(resp)
+        vars_map = util.parse_proto_to_tensor(resp)
         # check common in 
         for name in required_common_vars:
             if name not in vars_map:
@@ -114,7 +110,7 @@ class CustomerExecutor(object):
 
     def _pack_vars_to_host(self, fetch_vars, required_common_vars):
         vars_map = {name: fetch_vars[idx] for idx, name in enumerate(required_common_vars)}
-        req = util.pack_lod_tensor_to_proto(vars_map)
+        req = util.pack_tensor_to_proto(vars_map)
         return req
 
     def _inner_cancel_current_step(self, err_msg):

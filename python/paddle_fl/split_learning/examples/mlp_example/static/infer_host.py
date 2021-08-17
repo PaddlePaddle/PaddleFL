@@ -3,9 +3,7 @@ import numpy as np
 import yaml
 import logging
 import json
-
-from core.static import HostExecutor
-    
+from paddle_fl.split_learning.core.static import HostExecutor
 import network
 import utils
 
@@ -13,8 +11,6 @@ logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
         datefmt='%Y-%m-%d %H:%M',
         level=logging.INFO)
- 
-_LOGGER = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     place = fluid.CPUPlace()

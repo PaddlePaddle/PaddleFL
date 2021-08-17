@@ -3,12 +3,8 @@ from paddle.static import InputSpec
 from paddle.fluid.dygraph.base import to_variable
 import paddle
 import numpy as np
-import yaml
 import logging
-
-from core.layer_handler import HostLayerHandler, LayerBase
-from core import HostExecutor
-
+from paddle_fl.split_learning.core import HostExecutor, LayerBase
 import utils
 from utils import SimpleLookupTable, SimpleReader
     
@@ -16,7 +12,6 @@ logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
         datefmt='%Y-%m-%d %H:%M',
         level=logging.INFO)
-_LOGGER = logging.getLogger(__name__)
 
 
 class MLPLayer(LayerBase):

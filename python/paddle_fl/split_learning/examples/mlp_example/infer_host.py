@@ -5,10 +5,7 @@ import paddle
 import numpy as np
 import yaml
 import logging
-
-from core.layer_handler import HostLayerHandler, LayerBase
-from core import HostExecutor
-
+from paddle_fl.split_learning.core import HostExecutor
 from utils import SimpleLookupTable, SimpleReader
     
 logging.basicConfig(

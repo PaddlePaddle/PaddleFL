@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 from .customer_layer_handler import CustomerLayerHandler
 from .host_layer_handler import HostLayerHandler
 from .layer_base import LayerBase

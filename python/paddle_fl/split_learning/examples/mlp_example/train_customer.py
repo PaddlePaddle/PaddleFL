@@ -4,9 +4,7 @@ import paddle
 import numpy as np
 import yaml
 import logging
-
-from core.layer_handler import CustomerLayerHandler, LayerBase
-from core import CustomerExecutor
+from paddle_fl.split_learning.core import CustomerExecutor, LayerBase
 import utils
 
 logging.basicConfig(
@@ -14,7 +12,6 @@ logging.basicConfig(
         datefmt='%Y-%m-%d %H:%M', 
         level=logging.INFO)
 
-_LOGGER = logging.getLogger(__name__)
 
 class MLPLayer(LayerBase):
     """
@@ -109,7 +106,7 @@ if __name__ == "__main__":
                 usr_key=uid[0],
                 feed={"x2": x2_var},
                 label=label_var)
-        print("predict: {}".format(fetch_vars[0]))
+        print("predict: {}".format(fetch_vars[0].numpy()))
     
     # --------------- save params -----------------
     # exe.save_persistables(

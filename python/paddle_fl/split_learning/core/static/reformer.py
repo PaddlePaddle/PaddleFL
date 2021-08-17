@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import paddle
 import paddle.fluid as fluid
-paddle.enable_static()
 
+# paddle.enable_static()
 
 class OpWarpper(object):
     def __init__(self, op):

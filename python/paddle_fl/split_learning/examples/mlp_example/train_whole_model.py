@@ -1,12 +1,12 @@
 import paddle
+import utils
 import numpy as np
 from paddle.fluid.dygraph.base import to_variable
 from paddle.static import InputSpec
 
-import grpc
-import yaml
 
-import utils
+paddle.disable_static()
+
 
 class MLP(paddle.nn.Layer):
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
         feed = {"x1": x1_var, "x2": x2_var}
         predict = layer(**feed)
-        print(predict)
+        print("predict: {}".format(predict.numpy()))
         cost = paddle.nn.functional.cross_entropy(predict, label_var)
         cost = paddle.mean(cost)
 

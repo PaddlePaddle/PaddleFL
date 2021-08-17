@@ -5,8 +5,7 @@ import numpy as np
 import yaml
 import logging
 
-from core.layer_handler import CustomerLayerHandler, LayerBase
-from core import CustomerExecutor
+from paddle_fl.split_learning.core import CustomerExecutor
 import utils
 
 logging.basicConfig(

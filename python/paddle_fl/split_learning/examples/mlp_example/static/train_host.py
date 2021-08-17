@@ -3,9 +3,7 @@ import numpy as np
 import yaml
 import logging
 import json
-
-from core.static import HostExecutor
-
+from paddle_fl.split_learning.core.static import HostExecutor
 import network
 import utils
 

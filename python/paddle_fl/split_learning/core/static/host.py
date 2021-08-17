@@ -11,21 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
 from concurrent import futures
 import contextlib
 import socket
-
 import grpc
 import json
 import logging
-
 import paddle.fluid as fluid
-
-from core import util
-from core.proto import common_pb2_grpc, common_pb2
-from core.static import reformer
+from .. import util
+from ..proto import common_pb2_grpc, common_pb2
+from . import reformer
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,14 +42,14 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         self.feed_data = None
 
         if self.run_type == "INFER":
-            self.target_vars = [
-                    util.find_var(
-                        self.p1_program, "{}.tmp_0".format(x))
-                    for x in self.p1_common_vars["out"]]
             #self.target_vars = [
             #        util.find_var(
-            #            self.p1_program, "save_infer_model/scale_{}.tmp_0".format(idx))
-            #        for idx in range(len(self.p1_common_vars["out"]))]
+            #            self.p1_program, "{}.tmp_0".format(x))
+            #        for x in self.p1_common_vars["out"]]
+            self.target_vars = [
+                    util.find_var(
+                        self.p1_program, "save_infer_model/scale_{}.tmp_0".format(idx))
+                    for idx in range(len(self.p1_common_vars["out"]))]
 
     def execute_forward_host_part(self, request, context):
         if request.token != self.token:
@@ -161,7 +157,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
         return self.__generate_nil_response()
 
     def _parse_vars_from_client(self, request, required_common_vars):
-        vars_map = util.parse_proto_to_lod_tensor(request)
+        vars_map = util.parse_proto_to_tensor(request)
         # check common in 
         for name in required_common_vars:
             if name not in vars_map:
@@ -171,7 +167,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
 
     def _pack_vars_to_client(self, fetch_vars, required_common_vars):
         vars_map = {name: fetch_vars[idx] for idx, name in enumerate(required_common_vars)}
-        req = util.pack_lod_tensor_to_proto(vars_map)
+        req = util.pack_tensor_to_proto(vars_map)
         req.token = self.token
         return req
 

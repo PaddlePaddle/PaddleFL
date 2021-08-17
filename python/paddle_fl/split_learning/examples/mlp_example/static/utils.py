@@ -2,9 +2,7 @@ import numpy as np
 import yaml
 import json
 import paddle.fluid as fluid
-
-from core.table.table_base import TableBase
-from core.reader.reader_base import ReaderBase
+from paddle_fl.split_learning.core import TableBase, ReaderBase
     
 
 def data_iter(filename):

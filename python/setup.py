@@ -24,6 +24,7 @@ from setuptools import find_packages
 from setuptools import setup
 from version import fl_version
 
+import paddle_fl.split_learning.core.proto.gen_code
 
 def python_version():
     """
@@ -31,8 +32,8 @@ def python_version():
     """
     return [int(v) for v in platform.python_version().split(".")]
 
-
 max_version, mid_version, min_version = python_version()
+paddle_fl.split_learning.core.proto.gen_code.gen_proto_codes()
 
 REQUIRED_PACKAGES = [
     'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle >= 1.8.5'
@@ -55,7 +56,13 @@ packages = [
     'paddle_fl.paddle_fl.core.submitter', 'paddle_fl.paddle_fl.core.trainer',
     'paddle_fl.paddle_fl.core.trainer.diffiehellman',
     'paddle_fl.paddle_fl.core.strategy',
-    'paddle_fl.paddle_fl.core.strategy.details'
+    'paddle_fl.paddle_fl.core.strategy.details',
+    'paddle_fl.split_learning.core',
+    'paddle_fl.split_learning.core.layer_handler',
+    'paddle_fl.split_learning.core.reader',
+    'paddle_fl.split_learning.core.table',
+    'paddle_fl.split_learning.core.proto',
+    'paddle_fl.split_learning.core.static',
 ]
 package_data = {
     'paddle_fl.mpc': [

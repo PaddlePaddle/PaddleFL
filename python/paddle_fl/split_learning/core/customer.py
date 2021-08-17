@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import paddle
 import json
 import time
@@ -22,11 +20,10 @@ import grpc
 import yaml
 import logging
 from typing import List, Dict, Any, Union, Tuple
-
-from core.proto import common_pb2_grpc, common_pb2
-from core.layer_handler import CustomerLayerHandler
-from core.layer_handler.layer_base import LayerBase
-from core import util
+from .proto import common_pb2_grpc, common_pb2
+from .layer_handler import CustomerLayerHandler
+from .layer_handler.layer_base import LayerBase
+from . import util
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -94,8 +91,12 @@ class CustomerExecutor(object):
         for name, tensor in vars_from_host.items():
             _LOGGER.debug("Send grad {}: {}".format(name, tensor.grad))
 
-        grad_vars = {"{}@GRAD".format(name): tensor.grad.numpy()
+        # Paddle2.0.0
+        grad_vars = {"{}@GRAD".format(name): tensor.grad
                 for name, tensor in vars_from_host.items()}
+        # Paddle2.1.0
+        #grad_vars = {"{}@GRAD".format(name): tensor.grad.numpy()
+        #        for name, tensor in vars_from_host.items()}
         req = self._pack_vars_to_host(
                 grad_vars, self.tensor_names_from_host, token=self.token)
 

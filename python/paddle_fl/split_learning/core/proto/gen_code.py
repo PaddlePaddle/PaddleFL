@@ -20,7 +20,7 @@ def gen_proto_codes():
         '-I.',
         '--python_out=.',
         '--grpc_python_out=.',
-        'core/proto/common.proto', ))
+        'paddle_fl/split_learning/core/proto/common.proto', ))
 
 if __name__ == "__name__":
     gen_proto_codes()
