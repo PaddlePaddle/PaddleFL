@@ -1,5 +1,8 @@
 [English](./README.md) | 简体中文
 
+[![Release](https://img.shields.io/github/release/PaddlePaddle/PaddleFL.svg)](https://github.com/PaddlePaddle/PaddleFL/releases)
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+
 # PaddleFL
 
 PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可以很轻松地用PaddleFL复制和比较不同的联邦学习算法，开发人员也比较容易在大规模分布式集群中部署PaddleFL联邦学习系统。PaddleFL提供很多种联邦学习策略（横向联邦学习、纵向联邦学习）及其在计算机视觉、自然语言处理、推荐算法等领域的应用。此外，PaddleFL还将提供传统机器学习训练策略的应用，例如多任务学习、联邦学习环境下的迁移学习。依靠着PaddlePaddle的大规模分布式训练和Kubernetes对训练任务的弹性调度能力，PaddleFL可以基于全栈开源软件轻松地部署。
@@ -79,6 +82,19 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 
 
 ## 安装
+
+### 环境依赖
+
+* CentOS 7 (64 bit)
+* Python 3.5/3.6/3.7/3.8 ( 64 bit) 
+* pip3 9.0.1+ (64 bit)
+* PaddlePaddle release 1.8.5 (如果选择不从源代码构建paddle)
+* Redis 5.0.8 (64 bit)
+* GCC or G++ 8.3.1
+* cmake 3.15+
+
+### 安装部署
+
 我们提供三种方式安装PaddleFL，您可以根据自己的实际情况进行选择：
 
 1.在Docker中使用PaddleFL
