@@ -2,6 +2,9 @@
 
 [DOC](https://paddlefl.readthedocs.io/en/latest/) | [Quick Start](https://paddlefl.readthedocs.io/en/latest/compile_and_intall.html) | [中文](./README_cn.md)
 
+[![Release](https://img.shields.io/github/release/PaddlePaddle/PaddleFL.svg)](https://github.com/PaddlePaddle/PaddleFL/releases)
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+
 PaddleFL is an open source federated learning framework based on PaddlePaddle. Researchers can easily replicate and compare different federated learning algorithms with PaddleFL. Developers can also benefit from PaddleFL in that it is easy to deploy a federated learning system in large scale distributed clusters. In PaddleFL, several federated learning strategies will be provided with application in computer vision, natural language processing, recommendation and so on. Application of traditional machine learning training strategies such as Multi-task learning, Transfer Learning in Federated Learning settings will be provided. Based on PaddlePaddle's large scale distributed training and elastic scheduling of training job on Kubernetes, PaddleFL can be easily deployed based on full-stack open sourced software.
 
 
@@ -84,6 +87,18 @@ For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/exa
 
 
 ## Installation
+
+### Environment preparation
+
+* CentOS 7 (64 bit)
+* Python 3.5/3.6/3.7 ( 64 bit) or above
+* pip3 9.0.1+ (64 bit)
+* PaddlePaddle release 1.8.5 
+* Redis 5.0.8 (64 bit)
+* GCC or G++ 8.3.1
+* cmake 3.15+
+
+### Installation steps
 
 We provide three ways to install PaddleFL：
 
