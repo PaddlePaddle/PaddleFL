@@ -117,7 +117,7 @@ wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.wh
 pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 (**替换成安装环境中的python版本，如python3.8对应cp38)
 
-例如，如果您是用的python版本为python3.8,那么使用下面的命令：
+例如，如果您使用的python版本为python3.8,那么使用下面的命令：
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 
