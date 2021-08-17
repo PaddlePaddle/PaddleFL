@@ -106,7 +106,7 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 docker pull paddlepaddle/paddlefl:1.1.2
 docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/bash
 ```
-Docker中环境配置以及paddlepaddle和paddlefl已经安装完成，您可以直接运行示例代码，开始使用PaddleFL.
+Docker中环境配置以及paddlepaddle和paddlefl已经安装完成，您可以直接运行示例代码，开始使用PaddleFL。
 
 2.安装包安装
 
@@ -119,7 +119,7 @@ wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.wh
 pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 ```
 
-安装时，请将**替换成安装环境中的python版本。例如，如果您使用的python版本为python3.8,那么使用下面的命令：
+安装时，请将**替换成安装环境中的python版本。例如，如果您使用的python版本为python3.8，那么使用下面的命令：
 ```
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
