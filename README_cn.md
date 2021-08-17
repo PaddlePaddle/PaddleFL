@@ -78,8 +78,10 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 请参考[MPC的例子](./python/paddle_fl/mpc/examples)，以获取更多的信息。
 
 
-
 ## 安装
+我们提供三种方式安装PaddleFL，您可以根据自己的实际情况进行选择：
+
+1.在Docker中使用PaddleFL
 
 我们**强烈建议** 您在docker中使用PaddleFL。
 
@@ -87,12 +89,26 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 #Pull and run the docker
 docker pull paddlepaddle/paddlefl:1.1.2
 docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/bash
+```
+Docker中环境配置以及paddlepaddle和paddlefl已经安装完成，您可以直接运行示例代码，开始使用PaddleFL.
 
-#Install paddle_fl
+2.安装包安装
+
+我们提供了编译好的PaddlePaddle及PaddleFL安装包，您可以直接进行下载安装。
+```
+#Install PaddlePaddle
+wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
+pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
+(**替换成安装环境中的python版本，如python3.8对应cp38)
+
+#Install PaddleFL
 pip3 install paddle_fl
+
 ```
 
+3.源码安装
 若您希望从源码编译安装，请点击[这里](./docs/source/md/compile_and_install_cn.md)。
+
 
 如果使用gloo通信模型，需要用到redis，我们也提供了稳定的redis安装包, 可供下载。
 

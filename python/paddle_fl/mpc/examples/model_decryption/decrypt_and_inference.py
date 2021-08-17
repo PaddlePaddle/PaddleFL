@@ -18,7 +18,7 @@ import numpy as np
 import paddle
 import paddle.fluid as fluid
 
-import paddle_fl.mpc.data_utils.data_utils import get_datautils
+import paddle_fl.mpc.data_utils.data_utils 
 
 
 mpc_du = get_datautils('aby3')
