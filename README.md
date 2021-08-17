@@ -116,14 +116,14 @@ docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/b
 2. Install PaddleFL via installation package
 
 We provide compiled PaddlePaddle and PaddleFL installation packages, you can download and install them directly.
+
 First, install PaddlePaddle
 ```
 #Install PaddlePaddle
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
-(Replace ** with the python version in the installation environment, for example, python3.8 corresponds to cp38)
 ```
-E.g., if you are using python3.8, the commands are as below:
+Please replace ** with the python version in the installation environment. E.g., if you are using python3.8, the commands are as below:
 ```
 wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
 pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
