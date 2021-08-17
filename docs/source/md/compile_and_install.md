@@ -44,5 +44,5 @@ Install the package:
 make install
 cd /path/to/PaddleFL/python
 ${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
-pip or pip3 install dist/***.whl -U
+pip3 install dist/***.whl -U
 ```

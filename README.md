@@ -133,7 +133,8 @@ Then, install PaddleFL
 #Install PaddleFL
 pip3 install paddle_fl
 ```
-The above command only suit for python with version 3.8. PaddleFL based on other versions of python can be installed by downloading the corresponding installation package from https://pypi.org/project/paddle-fl/1.1.2/#files.
+The above command will automatically install PaddleFL corresponding to python3.8. For other python3 environments, you can download the corresponding installation package from https://pypi.org/project/paddle-fl/1.1.2/#files and install it manually.
+
 
 3. Install PaddleFL from source code
 
