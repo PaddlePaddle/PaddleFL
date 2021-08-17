@@ -88,7 +88,7 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 * CentOS 7 (64 bit)
 * Python 3.5/3.6/3.7/3.8 ( 64 bit) 
 * pip3 9.0.1+ (64 bit)
-* PaddlePaddle release 1.8.5 (如果选择不从源代码构建paddle)
+* PaddlePaddle 1.8.5 
 * Redis 5.0.8 (64 bit)
 * GCC or G++ 8.3.1
 * cmake 3.15+
