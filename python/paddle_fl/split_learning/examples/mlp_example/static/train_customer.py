@@ -3,13 +3,9 @@ import numpy as np
 import yaml
 import logging
 import time
-
-from core.static import CustomerExecutor
-
+from paddle_fl.split_learning.core.static import CustomerExecutor
 import network
 import utils
-
-_LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
@@ -39,14 +35,12 @@ if __name__ == "__main__":
                 fetch_list=[cost.name])
         print("loss: {}".format(np.array(loss)))
 
-    if exe.save_persistables(
-            "split_program/customer_vars",
-            "split_program/host_vars"):
-        _LOGGER.info("Succ save vars")
+    exe.save_persistables(
+        "split_program/customer_vars",
+        "split_program/host_vars")
 
-    if exe.save_inference_model(
-            "split_program/customer_infer",
-            "split_program/host_infer",
-            ["Host|x1", "Customer|x2"],
-            [prediction.name]):
-        _LOGGER.info("Succ save infer model")
+    exe.save_inference_model(
+        "split_program/customer_infer",
+        "split_program/host_infer",
+        ["Host|x1", "Customer|x2"],
+        [prediction.name])

@@ -11,10 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import logging
-
 from .layer_base import LayerBase
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,7 +33,7 @@ class CustomerLayerHandler(object):
             fetch_vars = [fetch_vars]
         loss = self.layer.get_loss(fetch_vars, label)
         loss.backward()
-        return fetch_vars
+        return fetch_vars, loss
 
     def call_for_backward(self):
         self.optimizer.step()

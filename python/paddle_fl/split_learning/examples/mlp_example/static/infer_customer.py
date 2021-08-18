@@ -2,13 +2,9 @@ import paddle.fluid as fluid
 import numpy as np
 import yaml
 import logging
-
-from core.static import CustomerExecutor
-
+from paddle_fl.split_learning.core.static import CustomerExecutor
 import network
 import utils
-
-_LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
         format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',

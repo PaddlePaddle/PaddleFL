@@ -11,24 +11,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
 import subprocess
 from typing import Dict, Union
 import time
 import json
 import numpy as np
-
 import paddle
 import paddle.fluid as fluid
 from paddle.fluid.framework import Parameter, Program
+from .proto import common_pb2_grpc, common_pb2
+from .static import reformer
 
-from core.proto import common_pb2_grpc, common_pb2
-from core.static import reformer
 
-
-def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
+def parse_proto_to_tensor(
+        proto: common_pb2.Features, 
+        to_tensor: bool = True, 
+        place=paddle.fluid.CPUPlace()) \
+                -> Dict[str, Union[np.ndarray, paddle.Tensor, paddle.fluid.core_avx.LoDTensor]]:
     vars_map = {}
+    for pb_var in proto.tensors:
+        dtype = pb_var.dtype
+        name = pb_var.name
+        data = getattr(pb_var, "data_{}".format(dtype))
+        shape = pb_var.shape
+        np_data = np.array(data).astype(dtype).reshape(shape)
+        if to_tensor:
+            tensor = paddle.to_tensor(np_data, dtype, place)
+            vars_map[name] = tensor
+        else:
+            vars_map[name] = np_data
     for pb_var in proto.vars:
         dtype = pb_var.dtype
         name = pb_var.name
@@ -37,63 +49,42 @@ def parse_proto_to_lod_tensor(proto, place=paddle.fluid.CPUPlace()):
         recursive_seq_lens = []
         for sequence_length in pb_var.recursive_sequence_lengths.sequence_lengths:
             recursive_seq_lens.append(sequence_length)
-        np_data = np.array(data).astype(dtype)
-        np_data = np_data.reshape(shape)
+        np_data = np.array(data).astype(dtype).reshape(shape)
         tensor = fluid.create_lod_tensor(np_data, recursive_seq_lens, place)
         vars_map[name] = tensor
     return vars_map
 
-def parse_proto_to_tensor(
-        proto: common_pb2.Features, 
-        to_tensor: bool = True, 
-        place=paddle.fluid.CPUPlace()) -> Dict[str, Union[np.ndarray, paddle.Tensor]]:
-    vars_map = {}
-    for pb_var in proto.tensors:
-        dtype = pb_var.dtype
-        name = pb_var.name
-        data = getattr(pb_var, "data_{}".format(dtype))
-        shape = pb_var.shape
-        np_data = np.array(data).astype(dtype)
-        np_data = np_data.reshape(shape)
-        if to_tensor:
-            tensor = paddle.to_tensor(np_data, dtype, place)
-            vars_map[name] = tensor
+def pack_tensor_to_proto(vars_map: Dict[str, Union[np.ndarray, paddle.fluid.core_avx.LoDTensor]]):
+    proto = common_pb2.Features()
+    for name, tensor in vars_map.items():
+        if isinstance(tensor, paddle.fluid.core_avx.LoDTensor):
+            np_data = np.array(tensor)
+            params = {
+                "name": name,
+                "shape": list(np_data.shape),
+                "dtype": np_data.dtype.name,
+                "data_{}".format(np_data.dtype): np_data.reshape(-1).tolist()
+            }
+            pb_var = common_pb2.Variable(**params)
+            recursive_seq_lens = tensor.recursive_sequence_lengths()
+            for seq_lens in recursive_seq_lens:
+                pb_seq_lens = common_pb2.Variable.RecursiveSequenceLength.SequenceLength()
+                pb_seq_lens.lengths.extend(seq_lens)
+                pb_var.recursive_sequence_lengths.append(pb_seq_lens)
+            proto.vars.append(pb_var)
         else:
-            vars_map[name] = np_data
-    return vars_map
-
-def pack_lod_tensor_to_proto(vars_map):
-    proto = common_pb2.Features()
-    for name, tensor in vars_map.items():
-        np_data = np.array(tensor)
-        pb_var = common_pb2.Variable()
-        pb_var.name = name
-        pb_var.shape.extend(list(np_data.shape))
-        np_data = np_data.reshape(-1)
-        pb_var.dtype = np_data.dtype.name
-        data_handler = getattr(pb_var, "data_{}".format(np_data.dtype))
-        data_handler.extend(np_data.tolist())
-        recursive_seq_lens = tensor.recursive_sequence_lengths()
-        for seq_lens in recursive_seq_lens:
-            pb_seq_lens = common_pb2.Variable.RecursiveSequenceLength.SequenceLength()
-            pb_seq_lens.lengths.extend(seq_lens)
-            pb_var.recursive_sequence_lengths.append(pb_seq_lens)
-        proto.vars.append(pb_var)
-    proto.state.succ = True
-    return proto
-
-def pack_tensor_to_proto(vars_map):
-    proto = common_pb2.Features()
-    for name, tensor in vars_map.items():
-        np_data = np.array(tensor)
-        pb_var = common_pb2.Tensor()
-        pb_var.name = name
-        pb_var.shape.extend(list(np_data.shape))
-        np_data = np_data.reshape(-1)
-        pb_var.dtype = np_data.dtype.name
-        data_handler = getattr(pb_var, "data_{}".format(np_data.dtype))
-        data_handler.extend(np_data.tolist())
-        proto.tensors.append(pb_var)
+            if isinstance(tensor, np.ndarray):
+                np_data = tensor
+            else:
+                np_data = tensor.numpy()
+            params = {
+                "name": name,
+                "shape": list(np_data.shape),
+                "dtype": np_data.dtype.name,
+                "data_{}".format(np_data.dtype): np_data.reshape(-1).tolist()
+            }
+            pb_var = common_pb2.Tensor(**params)
+            proto.tensors.append(pb_var)
     proto.state.succ = True
     return proto
 
@@ -121,7 +112,6 @@ def save_whole_program(main_prog, startup_prog, program_path):
     with open(program_path + '/stop_gradient', 'w') as fout:
         for stop_item in stop_vars:
             fout.write("%s\n" % stop_item)
-
 
 def load_whole_program(program_input):
     with open(program_input + '/startup_program', "rb") as fin:

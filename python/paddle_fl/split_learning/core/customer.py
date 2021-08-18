@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import paddle
 import json
 import time
@@ -22,11 +20,10 @@ import grpc
 import yaml
 import logging
 from typing import List, Dict, Any, Union, Tuple
-
-from core.proto import common_pb2_grpc, common_pb2
-from core.layer_handler import CustomerLayerHandler
-from core.layer_handler.layer_base import LayerBase
-from core import util
+from .proto import common_pb2_grpc, common_pb2
+from .layer_handler import CustomerLayerHandler
+from .layer_handler.layer_base import LayerBase
+from . import util
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,13 +86,17 @@ class CustomerExecutor(object):
         feed = self._generate_feed_for_customer_part(feed, vars_from_host)
         
         # execute forward custmer part (and calcute grad)
-        fetch_vars = self._execute_middle_customer_part(feed=feed, label=label)
+        fetch_vars, loss = self._execute_middle_customer_part(feed=feed, label=label)
         
         for name, tensor in vars_from_host.items():
             _LOGGER.debug("Send grad {}: {}".format(name, tensor.grad))
 
-        grad_vars = {"{}@GRAD".format(name): tensor.grad.numpy()
+        # Paddle2.0.0
+        grad_vars = {"{}@GRAD".format(name): tensor.grad
                 for name, tensor in vars_from_host.items()}
+        # Paddle2.1.0
+        #grad_vars = {"{}@GRAD".format(name): tensor.grad.numpy()
+        #        for name, tensor in vars_from_host.items()}
         req = self._pack_vars_to_host(
                 grad_vars, self.tensor_names_from_host, token=self.token)
 
@@ -104,7 +105,7 @@ class CustomerExecutor(object):
 
         # execute backward host part
         self._execute_backward_host_part(req)
-        return fetch_vars
+        return fetch_vars, loss
 
     def _connect(self, endpoints: List[str]) -> None:
         options = [('grpc.max_receive_message_length', 512 * 1024 * 1024),
@@ -206,8 +207,8 @@ class CustomerExecutor(object):
             fetch_list: List[paddle.fluid.framework.Variable] = []) \
                     -> List[paddle.Tensor]:
         if self.run_type == "TRAIN":
-            fetch_vars = self.layer_handler.call_for_forward(label, **feed)
-            return fetch_vars
+            fetch_vars, loss = self.layer_handler.call_for_forward(label, **feed)
+            return fetch_vars, loss
         elif self.run_type == "INFER":
             fetch_vars = self.exe.run(
                     program=self.main_program,

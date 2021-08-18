@@ -11,6 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from .customer import CustomerExecutor
 from .host import HostExecutor
+from .layer_handler import LayerBase
+from .reader import *
+from .table import *
+
+import paddle
+assert (paddle.version.full_version == "2.0.0"), "Please use PaddlePaddle==2.0.0"

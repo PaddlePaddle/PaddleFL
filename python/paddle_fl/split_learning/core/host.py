@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import paddle
 import numpy as np
 import os
@@ -23,13 +21,12 @@ import socket
 import grpc
 import logging
 from typing import List, Dict, Tuple, Union
-
-from core.proto import common_pb2_grpc, common_pb2
-from core.layer_handler import HostLayerHandler
-from core.layer_handler.layer_base import LayerBase
-from core import util
-from core.table.table_base import TableBase
-from core.reader.reader_base import ReaderBase
+from .proto import common_pb2_grpc, common_pb2
+from .layer_handler import HostLayerHandler
+from .layer_handler.layer_base import LayerBase
+from . import util
+from .table.table_base import TableBase
+from .reader.reader_base import ReaderBase
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -225,8 +222,7 @@ class FLExecutorServicer(common_pb2_grpc.FLExecutorServicer):
             request: common_pb2.Features, 
             tensor_names_to_customer: List[str]) \
                     -> Dict[str, Union[paddle.Tensor, np.ndarray]]:
-        vars_map = util.parse_proto_to_tensor(
-                request, to_tensor=(self.run_type=="TRAIN"))
+        vars_map = util.parse_proto_to_tensor(request, to_tensor=(self.run_type=="TRAIN"))
         vars_grad_map = {}
         for name in tensor_names_to_customer:
             grad_name = "{}@GRAD".format(name)
