@@ -1,5 +1,8 @@
 [English](./README.md) | 简体中文
 
+[![Release](https://img.shields.io/github/release/PaddlePaddle/PaddleFL.svg)](https://github.com/PaddlePaddle/PaddleFL/releases)
+[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+
 # PaddleFL
 
 PaddleFL是一个基于PaddlePaddle的开源联邦学习框架。研究人员可以很轻松地用PaddleFL复制和比较不同的联邦学习算法，开发人员也比较容易在大规模分布式集群中部署PaddleFL联邦学习系统。PaddleFL提供很多种联邦学习策略（横向联邦学习、纵向联邦学习）及其在计算机视觉、自然语言处理、推荐算法等领域的应用。此外，PaddleFL还将提供传统机器学习训练策略的应用，例如多任务学习、联邦学习环境下的迁移学习。依靠着PaddlePaddle的大规模分布式训练和Kubernetes对训练任务的弹性调度能力，PaddleFL可以基于全栈开源软件轻松地部署。
@@ -78,8 +81,23 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 请参考[MPC的例子](./python/paddle_fl/mpc/examples)，以获取更多的信息。
 
 
-
 ## 安装
+
+### 环境依赖
+
+* CentOS 7 (64 bit)
+* Python 3.5/3.6/3.7/3.8 ( 64 bit) 
+* pip3 9.0.1+ (64 bit)
+* PaddlePaddle 1.8.5 
+* Redis 5.0.8 (64 bit)
+* GCC or G++ 8.3.1
+* cmake 3.15+
+
+### 安装部署
+
+我们提供三种方式安装PaddleFL，您可以根据自己的实际情况进行选择：
+
+1.在Docker中使用PaddleFL
 
 我们**强烈建议** 您在docker中使用PaddleFL。
 
@@ -87,12 +105,36 @@ PFM 拥有与PaddlePaddle相同的运行模式。在训练前，用户需要定�
 #Pull and run the docker
 docker pull paddlepaddle/paddlefl:1.1.2
 docker run --name <docker_name> --net=host -it -v $PWD:/paddle <image id> /bin/bash
+```
+Docker中环境配置以及paddlepaddle和paddlefl已经安装完成，您可以直接运行示例代码，开始使用PaddleFL。
 
-#Install paddle_fl
-pip3 install paddle_fl
+2.安装包安装
+
+我们提供了编译好的PaddlePaddle及PaddleFL安装包，您可以直接进行下载安装。
+
+首先安装PaddlePaddle
+```
+#Install PaddlePaddle
+wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
+pip3 install paddlepaddle-1.8.5-cp**-cp**-linux_x86_64.whl
 ```
 
+安装时，请将**替换成安装环境中的python版本。例如，如果您使用的python版本为python3.8，那么使用下面的命令：
+```
+wget https://paddlefl.bj.bcebos.com/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
+pip3 install paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl
+```
+
+然后安装PaddleFL
+```
+#Install PaddleFL
+pip3 install paddle_fl
+```
+上述命令会自动安装python3.8对应的PaddleFL。对于其他python3环境，您可以从 https://pypi.org/project/paddle-fl/1.1.2/#files 下载对应安装包手动安装。
+
+3.源码安装
 若您希望从源码编译安装，请点击[这里](./docs/source/md/compile_and_install_cn.md)。
+
 
 如果使用gloo通信模型，需要用到redis，我们也提供了稳定的redis安装包, 可供下载。
 

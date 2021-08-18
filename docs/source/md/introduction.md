@@ -82,5 +82,5 @@ For more instructions, please refer to [mpc examples](./python/paddle_fl/mpc/exa
 - Add K8S deployment scheme for PFM.
 
 - FL mobile simulator will be open sourced in following versions.
-PaddleFL
+
 
