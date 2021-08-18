@@ -81,9 +81,10 @@ if __name__ == "__main__":
 
         feed = {"x1": x1_var, "x2": x2_var}
         predict = layer(**feed)
-        print("predict: {}".format(predict.numpy()))
         cost = paddle.nn.functional.cross_entropy(predict, label_var)
         cost = paddle.mean(cost)
+        print("predict: {}, loss: {}".format(
+            predict.numpy(), cost.numpy()))
 
         cost.backward()
         optimizer.step()

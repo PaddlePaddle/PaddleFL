@@ -33,7 +33,7 @@ class CustomerLayerHandler(object):
             fetch_vars = [fetch_vars]
         loss = self.layer.get_loss(fetch_vars, label)
         loss.backward()
-        return fetch_vars
+        return fetch_vars, loss
 
     def call_for_backward(self):
         self.optimizer.step()
