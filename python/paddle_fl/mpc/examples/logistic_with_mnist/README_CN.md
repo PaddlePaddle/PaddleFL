@@ -8,7 +8,7 @@
 
 #### 1. 准备数据
 
-使用`process_data.py`脚本中的`generate_encrypted_data()`和`generate_encrypted_test_data()`产生加密训练数据和测试数据，用户可以直接运行脚本`python process_data.py`在指定的目录下（比如`./mpc_data/`）产生加密特征和标签。用户可以通过参数`class_num`指定label的类别数目，从而产生适用于`logistic_fc_sigmoid`（二分类）或`lenet``logistic_fc_softmax`（十分类）网络的加密数据。在指定目录下生成对应于3个计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`mnist2_feature.part0`表示属于party0的feature数据。
+使用`process_data.py`脚本中的`generate_encrypted_data()`和`generate_encrypted_test_data()`产生加密训练数据和测试数据，用户可以直接运行脚本`python3 process_data.py aby3`或`python3 process_data.py privc`在指定的目录下（比如`./mpc_data/`）产生加密特征和标签。用户可以通过参数`class_num`指定label的类别数目，从而产生适用于`logistic_fc_sigmoid`（二分类）或`lenet``logistic_fc_softmax`（十分类）网络的加密数据。在指定目录下生成对应于3个(ABY3)/2个(PrivC)计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`mnist2_feature.part0`表示属于party0的feature数据。
 
 #### 2. 使用shell脚本启动demo
 
@@ -21,10 +21,13 @@ export LOCALHOST=/your/localhost
 export REDIS_PORT=/your/redis/port
 ```
 
-然后使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
+然后使用`run_standalone_**.sh`脚本，启动并运行demo，命令如下：
 
 ```bash 
-bash run_standalone.sh train_fc_sigmoid.py
+`如果采用ABY3`
+bash run_standalone_aby3.sh train_fc_sigmoid.py
+`如果采用PrivC`
+bash run_standalone_privc.sh train_fc_sigmoid.py
 ```
 
 运行之后将在屏幕上打印训练过程中所处的epoch和step，并在完成训练后打印出训练花费的时间。
@@ -33,13 +36,14 @@ bash run_standalone.sh train_fc_sigmoid.py
 
 #### 3. 解密数据
 
-使用`process_data.py`脚本中的`decrypt_data_to_file()`，将保存的密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python decrypt_save.py decrypt_file`，将把明文预测结果保存在`decrypt_file`文件中。
+使用`process_data.py`脚本中的`decrypt_data_to_file()`，将保存的密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python3 decrypt_save.py decrypt_file aby3`或者`python3 decrypt_save.py decrypt_file privc`，将把明文预测结果保存在`decrypt_file`文件中。
 
 ```python
 import sys
 
-decrypt_file=sys.argv[1]
+decrypt_file = sys.argv[1]
 import process_data
+process_data.protocol = sys.argv[2]
 process_data.decrypt_data_to_file("./mpc_infer_data/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 
@@ -75,22 +79,23 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 在各计算party分别执行以下命令，启动demo：
 
 ```
-$PYTHON_EXECUTABLE train_fc_sigmoid.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE train_fc_sigmoid.py $PARTY_ID $SERVER $PORT $PROTOCOL
 ```
 
-其中，PYTHON_EXECUTABLE表示自己安装了PaddleFL的python，PARTY_ID表示计算party的编号，值为0、1或2，SERVER和PORT分别表示redis server的IP地址和端口号。
+其中，PYTHON_EXECUTABLE表示自己安装了PaddleFL的python，PARTY_ID表示计算party的编号，值为0、1或2，SERVER和PORT分别表示redis server的IP地址和端口号, PROTOCOL表示采用的MPC协议。
 
 同样地，密文prediction数据将会保存到`./mpc_infer_data/`目录下的文件中。比如，在party0中将保存为文件`mnist_output_prediction.part0`.
 
 #### 5. 解密预测数据
 
-各计算party将`./mpc_infer_data/`目录下的`mnist_output_prediction.part`文件发送到数据方的`./mpc_infer_data/`目录下。数据方使用`process_data.py`脚本中的`decrypt_data_to_file()`，将密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python decrypt_save.py decrypt_file`，将把明文预测结果保存在`decrypt_file`文件中。
+各计算party将`./mpc_infer_data/`目录下的`mnist_output_prediction.part`文件发送到数据方的`./mpc_infer_data/`目录下。数据方使用`process_data.py`脚本中的`decrypt_data_to_file()`，将密文预测结果进行解密，并且将解密得到的明文预测结果保存到指定文件中。例如，将下面的内容写到一个`decrypt_save.py`脚本中，然后`python3 decrypt_save.py decrypt_file aby3` 或者`python3 decrypt_save.py decrypt_file privc`，将把明文预测结果保存在`decrypt_file`文件中。
 
 ```python
 import sys
 
-decrypt_file=sys.argv[1]
+decrypt_file = sys.argv[1]
 import process_data
+process_data.protocol = sys.argv[2]
 process_data.decrypt_data_to_file("./mpc_infer_data/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 

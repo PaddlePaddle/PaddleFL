@@ -19,6 +19,7 @@ import time
 import logging
 import numpy as np
 import six
+import sys
 import paddle
 from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
@@ -27,8 +28,8 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
-
-mpc_du = get_datautils('aby3')
+protocol = "aby3"
+mpc_du = get_datautils(protocol)
 sample_reader = paddle.dataset.mnist.train()
 test_reader = paddle.dataset.mnist.test()
 
@@ -37,7 +38,8 @@ def generate_encrypted_train_data(mpc_data_dir, class_num):
     """
     generate encrypted samples
     """
-
+    global protocol
+    mpc_du = get_datautils(protocol)
     def encrypted_mnist_features():
         """
         feature reader
@@ -66,7 +68,8 @@ def generate_encrypted_test_data(mpc_data_dir, class_num, label_mnist_filepath):
     """
     generate encrypted samples
     """
-
+    global protocol
+    mpc_du = get_datautils(protocol)
     def encrypted_mnist_features():
         """
         feature reader
@@ -99,6 +102,8 @@ def load_decrypt_data(filepath, shape):
     """
     load the encrypted data and reconstruct
     """
+    global protocol
+    mpc_du = get_datautils(protocol)
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
@@ -113,6 +118,8 @@ def load_decrypt_bs_data(filepath, shape):
     """
     load the encrypted data and reconstruct
     """
+    global protocol
+    mpc_du = get_datautils(protocol)
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
@@ -128,12 +135,25 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
     """
     load the encrypted data (arithmetic share) and reconstruct to a file
     """
+    global protocol
+    mpc_du = get_datautils(protocol)
     if os.path.exists(decrypted_filepath):
         os.remove(decrypted_filepath)
     part_readers = []
-    for id in six.moves.range(3):
-        part_readers.append(mpc_du.load_shares(filepath, id=id, shape=shape))
-    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
+
+    if protocol == "aby3":
+        for id in six.moves.range(3):
+            part_readers.append(
+                mpc_du.load_shares(
+                    filepath, id=id, shape=shape))
+        mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
+                                                part_readers[2])
+    elif protocol == "privc":
+        for id in six.moves.range(2):
+            part_readers.append(
+                mpc_du.load_shares(
+                    filepath, id=id, shape=shape))
+        mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1])
 
     for instance in mpc_share_reader():
         p = mpc_du.reconstruct(np.array(instance))
@@ -146,6 +166,8 @@ def decrypt_bs_data_to_file(filepath, shape, decrypted_filepath):
     """
     load the encrypted data (boolean share) and reconstruct to a file
     """
+    global protocol
+    mpc_du = get_datautils(protocol)
     if os.path.exists(decrypted_filepath):
         os.remove(decrypted_filepath)
     part_readers = []
@@ -164,6 +186,8 @@ def decrypt_bs_data_to_file(filepath, shape, decrypted_filepath):
 if __name__ == '__main__':
     mpc_data_dir = './mpc_data/'
     label_mnist_filepath = mpc_data_dir + "label_mnist"
+    protocol = sys.argv[1]
+    mpc_du = get_datautils(protocol)
     if not os.path.exists(mpc_data_dir):
         os.mkdir(mpc_data_dir)
     if os.path.exists(label_mnist_filepath):
