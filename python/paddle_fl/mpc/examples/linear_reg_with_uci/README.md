@@ -17,7 +17,7 @@ process_data.protocol = sys.argv[1]
 process_data.generate_encrypted_data()
 ```
 
-Encrypted data files of feature and label would be generated and saved in `/tmp` directory. Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `house_feature.part0` means it is a feature file of party 0.
+Encrypted data files of feature and label would be generated and saved in `./mpc_data` directory. Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `house_feature.part0` means it is a feature file of party 0.
 
 #### (2). Launch Demo with A Shell Script
 
@@ -30,13 +30,13 @@ export LOCALHOST=/your/localhost
 export REDIS_PORT=/your/redis/port
 ```
 
-Launch demo with the `run_standalone.sh` script. The concrete command is:
+Launch demo with the `run_standalone_*.sh` script. The concrete command is:
 
 ```bash
 `if ABY3`
-bash run_standalone.sh uci_demo.py aby3
+bash run_standalone_aby3.sh uci_demo.py
 `if PrivC`
-bash run_standalone.sh uci_demo.py privc
+bash run_standalone_privc.sh uci_demo.py
 ```
 
 The loss with cypher text format will be displayed on screen while training. At the same time, the loss data would be also save in `./mpc_infer_data/` directory, and the format of file name is similar to what is described in Step 1.
@@ -88,7 +88,7 @@ Data owner encrypts data. Concrete operations are consistent with “Prepare Dat
 
 #### (2). Distribute Encrypted Data
 
-According to the suffix of file name, distribute encrypted data files to `/tmp ` directories of all 3 computation parties. For example, send `house_feature.part0` and `house_label.part0` to `/tmp` of party 0 with `scp` command.
+According to the suffix of file name, distribute encrypted data files to `./mpc_data ` directories of all 3 computation parties. For example, send `house_feature.part0` and `house_label.part0` to `./mpc_data` of party 0 with `scp` command.
 
 #### (3). Modify uci_demo.py
 

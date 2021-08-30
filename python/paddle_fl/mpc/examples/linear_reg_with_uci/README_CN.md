@@ -17,7 +17,7 @@ process_data.protocol = sys.argv[1]
 process_data.generate_encrypted_data()
 ```
 
-以ABY3协议为例，将在/tmp目录下生成对应于3个计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`house_feature.part0`表示属于party0的feature数据。
+以ABY3协议为例，将在./mpc_data目录下生成对应于3个计算party的feature和label的加密数据文件，以后缀名区分属于不同party的数据。比如，`house_feature.part0`表示属于party0的feature数据。
 
 #### 2. 使用shell脚本启动demo
 
@@ -30,13 +30,13 @@ export LOCALHOST=/your/localhost
 export REDIS_PORT=/your/redis/port
 ```
 
-然后使用`run_standalone.sh`脚本，启动并运行demo，命令如下：
+然后使用`run_standalone_**.sh`脚本，启动并运行demo，命令如下：
 
 ```bash 
 `若采用ABY3`
-bash run_standalone.sh uci_demo.py aby3
+bash run_standalone_aby3.sh uci_demo.py
 `若采用PrivC`
-bash run_standalone.sh uci_demo.py privc
+bash run_standalone_privc.sh uci_demo.py
 ```
 
 运行之后将在屏幕上打印训练过程中的密文loss数据，同时，对应的密文loss数据将会保存到./mpc_infer_data/目录下的文件中，文件命名格式类似于步骤1中所述。
@@ -46,7 +46,7 @@ bash run_standalone.sh uci_demo.py privc
 #### 3. 解密数据
 
 最后，demo会使用`process_data.py`脚本中的`load_decrypt_data()`，恢复并打印出明文的loss数据和prediction结果，用以和明文Paddle模型结果进行对比。
-例如，将下面的内容写到一个decrypt_save.py脚本中，然后python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file aby3，将把明文losss数据和预测结果分别保存在文件中。
+例如，将下面的内容写到一个decrypt_save.py脚本中，然后python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file aby3 或者 python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file privc，将把明文losss数据和预测结果分别保存在文件中。
 
 ```python
 import sys
@@ -87,9 +87,9 @@ fi
 
 #### 2. 分发数据
 
-按照后缀名，将步骤1中准备好的数据分别发送到对应的计算party的/tmp目录下。比如，使用scp命令，将
+按照后缀名，将步骤1中准备好的数据分别发送到对应的计算party的./mpc_data目录下。比如，使用scp命令，将
 
-`house_feature.part0`和`house_label.part0`发送到party0的/tmp目录下。
+`house_feature.part0`和`house_label.part0`发送到party0的./mpc_data目录下。
 
 #### 3. 计算party修改uci_demo.py脚本
 
