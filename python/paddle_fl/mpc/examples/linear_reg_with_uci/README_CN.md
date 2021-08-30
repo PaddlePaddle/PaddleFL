@@ -46,7 +46,7 @@ bash run_standalone_privc.sh uci_demo.py
 #### 3. 解密数据
 
 最后，demo会使用`process_data.py`脚本中的`load_decrypt_data()`，恢复并打印出明文的loss数据和prediction结果，用以和明文Paddle模型结果进行对比。
-例如，将下面的内容写到一个decrypt_save.py脚本中，然后python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file aby3 或者 python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file privc，将把明文losss数据和预测结果分别保存在文件中。
+例如，将下面的内容写到一个decrypt_save.py脚本中，然后python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file aby3 或者 python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file privc，将把明文loss数据和预测结果分别保存在文件中。
 
 ```python
 import sys
