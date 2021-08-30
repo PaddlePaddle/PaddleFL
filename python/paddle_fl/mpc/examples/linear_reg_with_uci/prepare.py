@@ -14,7 +14,9 @@
 """
 Prepare data for UCI Housing.
 """
+import sys
+
 import process_data
 
-
+process_data.protocol = sys.argv[1]
 process_data.generate_encrypted_data()

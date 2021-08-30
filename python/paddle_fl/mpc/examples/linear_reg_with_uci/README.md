@@ -8,10 +8,12 @@ This document introduces how to run UCI Housing demo based on Paddle-MPC, which 
 
 #### (1). Prepare Data
 
-Generate encrypted data utilizing `generate_encrypted_data()` in `process_data.py` script. For example, users can write the following code into a python script named `prepare.py`, and then run the script with command `python prepare.py`.
+Generate encrypted data utilizing `generate_encrypted_data()` in `process_data.py` script. For example, users can write the following code into a python script named `prepare.py`, and then run the script with command `python3 prepare.py aby3` or `python3 prepare.py privc`. Users can choose to use ABY3 protocol or PrivC protocol according to the needs of parties.
 
 ```python
+import sys
 import process_data
+process_data.protocol = sys.argv[1]
 process_data.generate_encrypted_data()
 ```
 
@@ -31,18 +33,21 @@ export REDIS_PORT=/your/redis/port
 Launch demo with the `run_standalone.sh` script. The concrete command is:
 
 ```bash
-bash run_standalone.sh uci_demo.py
+`if ABY3`
+bash run_standalone.sh uci_demo.py aby3
+`if PrivC`
+bash run_standalone.sh uci_demo.py privc
 ```
 
-The loss with cypher text format will be displayed on screen while training. At the same time, the loss data would be also save in `/tmp` directory, and the format of file name is similar to what is described in Step 1.
+The loss with cypher text format will be displayed on screen while training. At the same time, the loss data would be also save in `./mpc_infer_data/` directory, and the format of file name is similar to what is described in Step 1.
 
-Besides, predictions would be made in this demo once training is finished. The predictions with cypher text format would also be save in `/tmp` directory.
+Besides, predictions would be made in this demo once training is finished. The predictions with cypher text format would also be save in `./mpc_infer_data/` directory.
 
 #### (3). Decrypt Data
 
 Finally, using `load_decrypt_data()` in `process_data.py` script, this demo would decrypt and print the loss and predictions, which can be compared with related results of Paddle plain text model.
 
-For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py decrypt_loss_file decrypt_prediction_file`. The decrypted loss and prediction results would be saved into two files correspondingly.
+For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file aby3` or `python3 decrypt_save.py decrypt_loss_file decrypt_prediction_file privc`. The decrypted loss and prediction results would be saved into two files correspondingly.
 
 ```python
 import sys
@@ -52,17 +57,18 @@ import process_data
 
 decrypt_loss_file=sys.argv[1]
 decrypt_prediction_file=sys.argv[2]
+process_data.protocol = sys.argv[3]
 BATCH_SIZE=10
-process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
-process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
+process_data.load_decrypt_data("./mpc_infer_data/uci_loss", (1, ), decrypt_loss_file)
+process_data.load_decrypt_data("./mpc_infer_data/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
 ```
 
-**Note** that remember to delete the loss and prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running. For simplifying users operations, we provide the following commands in `run_standalone.sh`, which can delete the files mentioned above when running this script.
+**Note** that remember to delete the loss and prediction files in `./mpc_infer_data` directory generated in last running, in case of any influence on the decrypted results of current running. For simplifying users operations, you can write the following commands in `run_standalone.sh`, which can delete the files mentioned above when running this script.
 
 ```bash
 # remove temp data generated in last time
-LOSS_FILE="/tmp/uci_loss.*"
-PRED_FILE="/tmp/uci_prediction.*"
+LOSS_FILE="./mpc_infer_data/uci_loss.*"
+PRED_FILE="./mpc_infer_data/uci_prediction.*"
 if [ "$LOSS_FILE" ]; then
         rm -rf $LOSS_FILE
 fi
@@ -93,7 +99,7 @@ Each computation party makes the following modifications on `uci_demo.py` accord
   Modify `localhost` in the following code as the IP address of the machine.
 
   ```python
-  pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+  pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port))
   ```
 
 #### (4). Launch Demo on Each Party
@@ -107,18 +113,18 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 Launch demo on each computation party with the following command,
 
 ```
-$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT $PROTOCOL
 ```
 
-where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively.
+where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively. PROTOCOL is the MPC protocol that users choose.
 
-Similarly, training loss with cypher text format would be printed on the screen of each computation party. And at the same time, the loss and predictions would be saved in `/tmp` directory.
+Similarly, training loss with cypher text format would be printed on the screen of each computation party. And at the same time, the loss and predictions would be saved in `./mpc_infer_data` directory.
 
-**Note** that remember to delete the loss and prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
+**Note** that remember to delete the loss and prediction files in `./mpc_infer_data` directory generated in last running, in case of any influence on the decrypted results of current running.
 
 #### (5). Decrypt Loss and Prediction Data
 
-Each computation party sends `uci_loss.part` and `uci_prediction.part` files in `/tmp` directory to the `/tmp` directory of data owner. Data owner decrypts and gets the plain text of loss and predictions with ` load_decrypt_data()` in `process_data.py`.
+Each computation party sends `uci_loss.part` and `uci_prediction.part` files in `./mpc_infer_data` directory to the `./mpc_infer_data` directory of data owner. Data owner decrypts and gets the plain text of loss and predictions with ` load_decrypt_data()` in `process_data.py`.
 
 For example, the following code can be written into a python script to decrypt and print training loss and predictions.
 
@@ -130,9 +136,10 @@ import process_data
 
 decrypt_loss_file=sys.argv[1]
 decrypt_prediction_file=sys.argv[2]
+process_data.protocol = sys.argv[3]
 BATCH_SIZE=10
-process_data.load_decrypt_data("/tmp/uci_loss", (1, ), decrypt_loss_file)
-process_data.load_decrypt_data("/tmp/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
+process_data.load_decrypt_data("./mpc_infer_data/uci_loss", (1, ), decrypt_loss_file)
+process_data.load_decrypt_data("./mpc_infer_data/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)
 ```
 
 ### 3. Convergence of paddle_fl.mpc vs paddle

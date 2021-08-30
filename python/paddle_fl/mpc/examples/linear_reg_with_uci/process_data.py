@@ -22,7 +22,8 @@ import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-mpc_du = get_datautils('aby3')
+protocol = 'aby3'
+mpc_du = get_datautils(protocol)
 sample_reader = paddle.dataset.uci_housing.train()
 
 
@@ -65,7 +66,7 @@ def generate_encrypted_data_online(role, server, port):
         main_program = fluid.Program()
         startup_program = fluid.Program()
         with fluid.program_guard(main_program, startup_program):
-            pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+            pfl_mpc.init(protocol, int(role), "localhost", server, int(port))
             input = fluid.data(name='input', shape=[feature_num], dtype='float32')
             out = pfl_mpc.layers.share(input, party_id=data_location_party)
 
