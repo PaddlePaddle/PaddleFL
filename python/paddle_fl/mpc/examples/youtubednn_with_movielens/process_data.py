@@ -21,7 +21,7 @@ import time
 import six
 import pandas as pd
 import logging
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 import args
 import get_topk
 
@@ -31,6 +31,7 @@ logger = logging.getLogger('fluid')
 logger.setLevel(logging.INFO)
 
 
+aby3 = get_datautils("aby3") 
 args = args.parse_args()
 
 watch_vec_size = args.watch_vec_size
@@ -180,7 +181,7 @@ def save_cypher(cypher_file, vec):
             open(cypher_file + exts[2], 'ab') as file2:
         files = [file0, file1, file2]
         for idx in six.moves.range(0, 3):  # 3 parts
-            share = aby3.get_aby3_shares(shares, idx)
+            share = aby3.get_shares(shares, idx)
             files[idx].write(share.tostring())
 
 
@@ -190,7 +191,7 @@ def load_decrypt_data(filepath, shape):
     """
     part_readers = []
     for id in six.moves.range(3):
-        part_readers.append(aby3.load_aby3_shares(filepath, id=id, shape=shape))
+        part_readers.append(aby3.load_shares(filepath, id=id, shape=shape))
     aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1], part_readers[2])
 
     for instance in aby3_share_reader():
@@ -206,7 +207,7 @@ def decrypt_data_to_file(cypher_filepath, plaintext_filepath, shape):
     part_readers = []
     for id in six.moves.range(3):
         part_readers.append(
-            aby3.load_aby3_shares(
+            aby3.load_shares(
                 cypher_filepath, id=id, shape=shape))
     aby3_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
                                               part_readers[2])

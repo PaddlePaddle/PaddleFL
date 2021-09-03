@@ -25,7 +25,7 @@ import paddle
 import paddle.fluid as fluid
 import paddle.fluid.profiler as profiler
 import paddle_fl.mpc as pfl_mpc
-from paddle_fl.mpc.data_utils import aby3
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
 import args
 import mpc_network
@@ -35,6 +35,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('fluid')
 logger.setLevel(logging.INFO)
 
+aby3 = get_datautils("aby3")
 
 def read_share(file, shape):
     """
@@ -141,7 +142,7 @@ def train(args):
         video_array = np.array(fluid.global_scope().find_var('l4_weight').get_tensor())
         if os.path.exists(video_vec_part_filepath):
             os.system('rm -rf ' + video_vec_part_filepath)
-        with open(video_vec_part_filepath, 'w') as f:
+        with open(video_vec_part_filepath, 'wb') as f:
             f.write(np.array(video_array).tostring())
 
         end = time.time()
@@ -197,7 +198,7 @@ def infer(args):
                          return_numpy=True,
                          fetch_list=fetch_vars)
 
-            with open(user_vec_part_filepath, 'a+') as f:
+            with open(user_vec_part_filepath, 'ab+') as f:
                 f.write(np.array(l3[0]).tostring())
 
 
