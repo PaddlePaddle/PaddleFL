@@ -1,0 +1,4 @@
+opencv-python==4.2.0.32
+paddlepaddle==1.8.5
+paddle-serving-client==0.4.0
+zmq
