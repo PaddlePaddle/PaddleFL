@@ -26,7 +26,7 @@ import hashlib
 import hmac
 
 logging.basicConfig(
-    filename="log/test.log",
+    filename="logs/test.log",
     filemode="w",
     format="%(asctime)s %(name)s:%(levelname)s:%(message)s",
     datefmt="%d-%M-%Y %H:%M:%S",
