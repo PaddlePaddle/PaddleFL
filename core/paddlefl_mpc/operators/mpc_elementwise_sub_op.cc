@@ -38,7 +38,7 @@ public:
                 "The dimensions of X should be equal with the dimensions of Y. "
                 "But received the dimensions of X is [%s], the dimensions of Y is [%s]",
             ctx->GetInputDim("X"), ctx->GetInputDim("Y")));
-  
+
         ctx->ShareDim("X", /*->*/ "Out");
         ctx->ShareLoD("X", /*->*/ "Out");
     }
@@ -59,7 +59,7 @@ MPC elementwise sub Operator.
 class MpcElementwiseSubGradOp : public framework::OperatorWithKernel {
 public:
     using framework::OperatorWithKernel::OperatorWithKernel;
-  
+
     void InferShape(framework::InferShapeContext *ctx) const override {
         auto out_grad_name = framework::GradVarName("Out");
         PADDLE_ENFORCE_EQ(ctx->HasInput("X"), true, "Input(X) should not be null.");
@@ -96,20 +96,32 @@ protected:
     }
 };
 
+template <typename T>
+struct CopyElements<platform::CPUDeviceContext, T> {
+    void operator()(T* dst, const T* src, size_t num) {
+        for (size_t i = 0; i < num; i++) {
+            dst[i] = src[i];
+        }
+    }
+};
 }  // namespace operators
 }  // namespace paddle
 
 namespace ops = paddle::operators;
-REGISTER_OPERATOR(mpc_elementwise_sub, ops::MpcElementwiseSubOp, 
-                 ops::MpcElementwiseSubOpMaker, 
-                 ops::MpcElementwiseSubGradMaker<paddle::framework::OpDesc>); 
+REGISTER_OPERATOR(mpc_elementwise_sub, ops::MpcElementwiseSubOp,
+                 ops::MpcElementwiseSubOpMaker,
+                 ops::MpcElementwiseSubGradMaker<paddle::framework::OpDesc>);
 
-REGISTER_OPERATOR(mpc_elementwise_sub_grad, ops::MpcElementwiseSubGradOp); 
+REGISTER_OPERATOR(mpc_elementwise_sub_grad, ops::MpcElementwiseSubGradOp);
+
+#ifndef USE_CUDA
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_elementwise_sub, 
+    mpc_elementwise_sub,
     ops::MpcElementwiseSubKernel<paddle::platform::CPUDeviceContext, int64_t>);
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_elementwise_sub_grad, 
+    mpc_elementwise_sub_grad,
     ops::MpcElementwiseSubGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

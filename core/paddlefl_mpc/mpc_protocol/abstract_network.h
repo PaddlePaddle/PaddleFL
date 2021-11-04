@@ -17,8 +17,6 @@
 #include <cstddef>
 #include <vector>
 
-#include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
-
 namespace paddle {
 namespace mpc {
 

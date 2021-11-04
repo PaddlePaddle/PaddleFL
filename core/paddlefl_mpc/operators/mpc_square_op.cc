@@ -52,7 +52,7 @@ class MpcSquareGradOp : public framework::OperatorWithKernel {
 public:
     using framework::OperatorWithKernel::OperatorWithKernel;
     using Tensor = framework::Tensor;
-    
+
     void InferShape(framework::InferShapeContext *ctx) const override {
         ctx->ShareDim(framework::GradVarName("Out"), framework::GradVarName("X"));
         ctx->ShareLoD(framework::GradVarName("Out"), framework::GradVarName("X"));
@@ -78,16 +78,30 @@ protected:
 
 
 namespace ops = paddle::operators;
-REGISTER_OPERATOR(mpc_square, ops::MpcSquareOp, 
-                 ops::MpcSquareOpMaker, 
+REGISTER_OPERATOR(mpc_square, ops::MpcSquareOp,
+                 ops::MpcSquareOpMaker,
                  ops::MpcSquareGradOpMaker<paddle::framework::OpDesc>);
 
-REGISTER_OPERATOR(mpc_square_grad, ops::MpcSquareGradOp); 
+REGISTER_OPERATOR(mpc_square_grad, ops::MpcSquareGradOp);
+
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_square,
+    ops::MpcSquareKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_square_grad,
+    ops::MpcSquareGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_square, 
+    mpc_square,
     ops::MpcSquareKernel<paddle::platform::CPUDeviceContext, int64_t>);
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_square_grad, 
+    mpc_square_grad,
     ops::MpcSquareGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

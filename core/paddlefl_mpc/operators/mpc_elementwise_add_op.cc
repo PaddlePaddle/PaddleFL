@@ -69,7 +69,7 @@ class MpcElementwiseAddGradOp : public framework::OperatorWithKernel {
 public:
     using framework::OperatorWithKernel::OperatorWithKernel;
     using Tensor = framework::Tensor;
-  
+
     void InferShape(framework::InferShapeContext *ctx) const override {
         auto out_grad_name = framework::GradVarName("Out");
         PADDLE_ENFORCE_EQ(ctx->HasInput("X"), true, "Input(X) should not be null.");
@@ -111,16 +111,28 @@ protected:
 }  // namespace paddle
 
 namespace ops = paddle::operators;
-REGISTER_OPERATOR(mpc_elementwise_add, ops::MpcElementwiseAddOp, 
-                 ops::MpcElementwiseAddOpMaker, 
-                 ops::MpcElementwiseAddOpGradMaker<paddle::framework::OpDesc>); 
+REGISTER_OPERATOR(mpc_elementwise_add, ops::MpcElementwiseAddOp,
+                 ops::MpcElementwiseAddOpMaker,
+                 ops::MpcElementwiseAddOpGradMaker<paddle::framework::OpDesc>);
 
-REGISTER_OPERATOR(mpc_elementwise_add_grad, ops::MpcElementwiseAddGradOp); 
+REGISTER_OPERATOR(mpc_elementwise_add_grad, ops::MpcElementwiseAddGradOp);
+
+#ifdef USE_CUDA
+REGISTER_OP_CUDA_KERNEL(
+    mpc_elementwise_add,
+    ops::MpcElementwiseAddKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_elementwise_add_grad,
+    ops::MpcElementwiseAddGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_elementwise_add, 
+    mpc_elementwise_add,
     ops::MpcElementwiseAddKernel<paddle::platform::CPUDeviceContext, int64_t>);
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_elementwise_add_grad, 
+    mpc_elementwise_add_grad,
     ops::MpcElementwiseAddGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+#endif // USE_CUDA

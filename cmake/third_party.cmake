@@ -234,4 +234,9 @@ ENDIF()
 #     list(APPEND third_party_deps extern_cub)
 # endif(WITH_GPU)
 
+if(WITH_GPU)
+    include(external/nccl)       # download nccl
+    list(APPEND third_party_deps extern_nccl)
+endif(WITH_GPU)
+
 add_custom_target(third_party DEPENDS ${third_party_deps})

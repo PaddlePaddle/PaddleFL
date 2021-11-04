@@ -96,6 +96,13 @@ $$param\_out = param - learning\_rate * grad$$
   }
 };
 
+template <typename T>
+struct GetLearningRate<platform::CPUDeviceContext, T> {
+    double operator()(const framework::Tensor* t) {
+        return *t->data<T>();
+    }
+};
+
 }  // namespace operators
 }  // namespace paddle
 
@@ -103,6 +110,11 @@ namespace ops = paddle::operators;
 REGISTER_OPERATOR(
     mpc_sgd, ops::MpcSGDOp, ops::MpcSGDOpMaker,
     ops::MpcSGDOpInferVarType);
+
+#ifndef USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(
     mpc_sgd,
     ops::MpcSGDOpKernel<paddle::platform::CPUDeviceContext, int64_t, float>);
+
+#endif // USE_CUDA

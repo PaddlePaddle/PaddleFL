@@ -151,11 +151,15 @@ void BooleanTensor<T>::bitwise_and(const BooleanTensor* rhs,
     // t1:          1<-2    2->1
     // t2:  0<-1    1->2
     if (party() > 0) {
+        NCCL_GROUP_START
         aby3_ctx()->network()->template recv(next_party(), *(ret->share(1)));
         aby3_ctx()->network()->template send(pre_party(), *(ret->share(0)));
+        NCCL_GROUP_END
     } else {
+        NCCL_GROUP_START
         aby3_ctx()->network()->template send(pre_party(), *(ret->share(0)));
         aby3_ctx()->network()->template recv(next_party(), *(ret->share(1)));
+        NCCL_GROUP_END
     }
 }
 
@@ -248,9 +252,7 @@ void BooleanTensor<T>::ppa(const BooleanTensor* rhs,
 
     for (size_t i = 0; i < k; ++i) {
 
-        std::transform(k_mask->data(), k_mask->data() + k_mask->numel(),
-                       k_mask->data(),
-                       [&keep_masks, i](T) -> T { return keep_masks[i]; });
+        assign_to_tensor(k_mask, (T)keep_masks[i]);
 
         g.lshift(std::exp2(i), &g1);
         p.lshift(std::exp2(i), &p1);
@@ -278,9 +280,7 @@ void a2b(AbstractContext* aby3_ctx,
     std::shared_ptr<TensorAdapter<T>> tmp[4];
     for (auto& ti: tmp) {
         ti = tensor_factory->template create<T>(a->shape());
-        // set 0
-        std::transform(ti->data(), ti->data() + ti->numel(), ti->data(),
-                       [](T) -> T { return 0; });
+        assign_to_tensor(ti.get(), (T)0);
     }
 
     std::shared_ptr<BooleanTensor<T>> lhs =
@@ -295,14 +295,18 @@ void a2b(AbstractContext* aby3_ctx,
         aby3_ctx->template gen_zero_sharing_boolean(*lhs->share(1));
         lhs->share(0)->bitwise_xor(lhs->share(1), lhs->share(0));
 
+        NCCL_GROUP_START
         aby3_ctx->network()->template send(2, *(lhs->share(0)));
         aby3_ctx->network()->template recv(1, *(lhs->share(1)));
+        NCCL_GROUP_END
 
     } else if (aby3_ctx->party() == 1) {
 
         aby3_ctx->template gen_zero_sharing_boolean(*lhs->share(0));
+        NCCL_GROUP_START
         aby3_ctx->network()->template send(0, *(lhs->share(0)));
         aby3_ctx->network()->template recv(2, *(lhs->share(1)));
+        NCCL_GROUP_END
 
         a->share(1)->copy(rhs->share(1));
 
@@ -310,8 +314,10 @@ void a2b(AbstractContext* aby3_ctx,
 
         aby3_ctx->template gen_zero_sharing_boolean(*lhs->share(0));
 
+        NCCL_GROUP_START
         aby3_ctx->network()->template recv(0, *(lhs->share(1)));
         aby3_ctx->network()->template send(1, *(lhs->share(0)));
+        NCCL_GROUP_END
 
         a->share(0)->copy(rhs->share(0));
     }
@@ -328,10 +334,17 @@ BooleanTensor<T>& BooleanTensor<T>::operator=(const FixedPointTensor<T, N>* othe
 
 template <typename T>
 void tensor_rshift_transform(const TensorAdapter<T>* lhs,
-                             size_t rhs, TensorAdapter<T>* ret) {
-    const T* begin = lhs->data();
-    std::transform(begin, begin + lhs->numel(), ret->data(),
-                   [rhs](T in) { return (in >> rhs) & 1; });
+                             size_t rhs,
+                             TensorAdapter<T>* ret,
+                             TensorAdapterFactory* tensor_factory) {
+    auto one = tensor_factory->template create<T>(lhs->shape());
+    auto tmp = tensor_factory->template create<T>(lhs->shape());
+    assign_to_tensor(one.get(), (T)1);
+
+    lhs->rshift(rhs, tmp.get());
+
+    tmp->bitwise_and(one.get(), ret);
+
 };
 
 template<typename T>
@@ -339,14 +352,14 @@ template<size_t N>
 void BooleanTensor<T>::bit_extract(size_t i, const FixedPointTensor<T, N>* in) {
     a2b(aby3_ctx().get(), tensor_factory().get(), in, this, i + 1);
 
-    tensor_rshift_transform(share(0), i, share(0));
-    tensor_rshift_transform(share(1), i, share(1));
+    tensor_rshift_transform(share(0), i, share(0), tensor_factory().get());
+    tensor_rshift_transform(share(1), i, share(1), tensor_factory().get());
 }
 
 template<typename T>
 void BooleanTensor<T>::bit_extract(size_t i, BooleanTensor* ret) const {
-    tensor_rshift_transform(share(0), i, ret->share(0));
-    tensor_rshift_transform(share(1), i, ret->share(1));
+    tensor_rshift_transform(share(0), i, ret->share(0), tensor_factory().get());
+    tensor_rshift_transform(share(1), i, ret->share(1), tensor_factory().get());
 }
 
 template<typename T>
@@ -355,9 +368,7 @@ void BooleanTensor<T>::b2a(FixedPointTensor<T, N>* ret) const {
     std::shared_ptr<TensorAdapter<T>> tmp[2];
     for (auto& ti: tmp) {
         ti = tensor_factory()->template create<T>(shape());
-        // set 0
-        std::transform(ti->data(), ti->data() + ti->numel(), ti->data(),
-                       [](T) -> T { return 0; });
+        assign_to_tensor(ti.get(), (T)0);
     }
     BooleanTensor<T> bt(tmp[0].get(), tmp[1].get());
 
@@ -385,8 +396,10 @@ void BooleanTensor<T>::b2a(FixedPointTensor<T, N>* ret) const {
     bt.reveal_to_one(0, dest);
 
     if (party() == 0) {
+        NCCL_GROUP_START
         aby3_ctx()->network()->template recv(1, *(ret->mutable_share(1)));
         aby3_ctx()->network()->template send(2, *(ret->mutable_share(0)));
+        NCCL_GROUP_END
     } else if (party() == 1) {
         aby3_ctx()->network()->template send(0, *(ret->mutable_share(0)));
     } else { // party == 2
@@ -408,6 +421,7 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
 
     auto tmp0 = tensor_factory()->template create<T>(ret->shape());
     auto tmp1 = tensor_factory()->template create<T>(ret->shape());
+    auto one = tensor_factory()->template create<T>(ret->shape());
 
     TensorAdapter<T>* tmp[2] = {tmp0.get(), tmp1.get()};
 
@@ -422,10 +436,10 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         // m0 = a * (b0 ^ b1) + s0
         // m1 = a * (1 ^ b0 ^ b1) + s0
         share(0)->bitwise_xor(share(1), m[0]);
-        std::transform(m[0]->data(), m[0]->data() + m[0]->numel(), m[0]->data(),
-                       [](T in) { return 1 & in; });
-        std::transform(m[0]->data(), m[0]->data() + m[0]->numel(), m[1]->data(),
-                       [](T in) { return 1 ^ in; });
+
+        assign_to_tensor(one.get(), (T)(1));
+        one->bitwise_and(m[0], m[0]);
+        one->bitwise_xor(m[0], m[1]);
 
         m[0]->mul(rhs, m[0]);
         m[1]->mul(rhs, m[1]);
@@ -439,8 +453,10 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
 
         // ret0 = s2
         // ret1 = s1
+        NCCL_GROUP_START
         aby3_ctx()->network()->template recv(idx2, *(ret->mutable_share(0)));
         aby3_ctx()->network()->template recv(idx1, *(ret->mutable_share(1)));
+        NCCL_GROUP_END
 
     } else if (party() == idx1) {
         // ret0 = s1
@@ -449,8 +465,10 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
         ObliviousTransfer::ot(idx0, idx1, idx2, share(1),
                     const_cast<const common::TensorAdapter<T>**>(null_arg),
                     tmp, ret->mutable_share(1));
+        NCCL_GROUP_START
         aby3_ctx()->network()->template send(idx0, *(ret->share(0)));
         aby3_ctx()->network()->template send(idx2, *(ret->share(1)));
+        NCCL_GROUP_END
     } else if (party() == idx2) {
         // ret0 = a * b + s0
         aby3_ctx()->template gen_zero_sharing_arithmetic(*(ret->mutable_share(1)));
@@ -459,9 +477,11 @@ void BooleanTensor<T>::mul(const TensorAdapter<T>* rhs,
                     const_cast<const common::TensorAdapter<T>**>(null_arg),
                     tmp, null_arg[0]);
 
+        NCCL_GROUP_START
         aby3_ctx()->network()->template send(idx0, *(ret->share(1)));
 
         aby3_ctx()->network()->template recv(idx1, *(ret->mutable_share(0)));
+        NCCL_GROUP_END
     }
 }
 

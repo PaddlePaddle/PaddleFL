@@ -83,7 +83,18 @@ REGISTER_OPERATOR(mpc_relu,
                   ops::MpcReluOpMaker,
                   ops::MpcReluGradMaker<paddle::framework::OpDesc>);
 REGISTER_OPERATOR(mpc_relu_grad, ops::MpcReluGradOp);
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(mpc_relu,
+                       ops::MpcReluKernel<paddle::platform::CUDADeviceContext, int64_t>);
+REGISTER_OP_CUDA_KERNEL(mpc_relu_grad,
+                       ops::MpcReluGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(mpc_relu,
-                       ops::MpcReluKernel<CPU, int64_t>);
+                       ops::MpcReluKernel<paddle::platform::CPUDeviceContext, int64_t>);
 REGISTER_OP_CPU_KERNEL(mpc_relu_grad,
-                       ops::MpcReluGradKernel<CPU, int64_t>);
+                       ops::MpcReluGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

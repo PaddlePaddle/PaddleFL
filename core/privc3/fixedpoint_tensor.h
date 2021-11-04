@@ -26,8 +26,10 @@ namespace aby3 {
 template<typename T>
 using TensorAdapter = common::TensorAdapter<T>;
 using TensorAdapterFactory = common::TensorAdapterFactory;
+#ifndef USE_CUDA
 template<typename T>
 using PaddleTensor = common::PaddleTensor<T>;
+#endif
 using PaddleTensorFactory = common::PaddleTensorFactory;
 
 template<typename T, size_t N>
@@ -97,20 +99,25 @@ public:
     // div by FixedPointedTensor
     // TODO@yqy : not surport operator rhs <= 0 now
     void div(const FixedPointTensor* rhs, FixedPointTensor* ret,
-             size_t iter = 16, double x0 = pow(2, -15)) const;
+             size_t iter = 16, double x0 = 0x1p-15) const;
 
     // long div by boolean circuit
     // res_int_len: estimated bit len of the integer part of result
     void long_div(const FixedPointTensor* rhs,
                   FixedPointTensor* ret, size_t res_int_len = 20) const;
 
+    void square_root(FixedPointTensor* ret,
+                     size_t iter = 4, double x0 = 1.) const;
+
     void inverse_square_root(FixedPointTensor* ret,
-                             size_t iter = 16, double x0 = 0x1p-10) const;
+                             size_t iter = 4, double x0 = 1.) const;
 
     // dot_mul
     template<template<typename U, size_t...> class CTensor,
-            size_t... N1>
+             size_t... N1>
     void dot_mul(const CTensor<T, N1...>* rhs, FixedPointTensor* ret) const;
+
+    void dot_mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const;
 
     //sum all element
     void sum(FixedPointTensor* ret) const;
@@ -119,13 +126,15 @@ public:
     void mat_mul(const FixedPointTensor* rhs,
                  FixedPointTensor* ret,
                  bool trans_lhs = false,
-                 bool trans_rhs = false) const;
+                 bool trans_rhs = false,
+                 bool sum_reduce_batch = false) const;
 
     // mat_mul with TensorAdapter
     void mat_mul(const TensorAdapter<T>* rhs,
                  FixedPointTensor* ret,
                  bool trans_lhs = false,
-                 bool trans_rhs = false) const;
+                 bool trans_rhs = false,
+                 bool sum_reduce_batch = false) const;
 
     // exp approximate: exp(x) = \lim_{n->inf} (1+x/n)^n
     // where n = 2^ite
@@ -199,11 +208,22 @@ public:
             size_t... N1>
     void neq(const CTensor<T, N1...>* rhs, BooleanTensor<T>* ret) const;
 
+    void lt(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const;
+    void leq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const;
+    void gt(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const;
+    void geq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const;
+    void eq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const;
+    void neq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const;
+
     // element-wise max
     // if not null, cmp stores true if rhs is bigger
     template<template<typename U, size_t...> class CTensor,
             size_t... N1>
     void max(const CTensor<T, N1...>* rhs,
+             FixedPointTensor* ret,
+             BooleanTensor<T>* cmp = nullptr) const;
+
+    void max(const TensorAdapter<T>* rhs,
              FixedPointTensor* ret,
              BooleanTensor<T>* cmp = nullptr) const;
 
@@ -213,6 +233,10 @@ public:
     // which indicating the max element's position
     void max_pooling(FixedPointTensor* ret,
                      BooleanTensor<T>* pos = nullptr) const;
+
+    // for tensor with shape like [k, n, m, ...]
+    // ret shape is [1, n, m, ...]
+    void avg_pooling(FixedPointTensor* ret) const;
 
     // only support pred for 1 in binary classification for now
     static void preds_to_indices(const FixedPointTensor* preds,
@@ -270,11 +294,15 @@ private:
     static void reshare(const TensorAdapter<T>* send_val,
                  TensorAdapter<T>* recv_val) {
         if (party() == 0) {
+            NCCL_GROUP_START
             aby3_ctx()->network()->template recv(next_party(), *recv_val);
             aby3_ctx()->network()->template send(pre_party(), *send_val);
+            NCCL_GROUP_END
         } else {
+            NCCL_GROUP_START
             aby3_ctx()->network()->template send(pre_party(), *send_val);
             aby3_ctx()->network()->template recv(next_party(), *recv_val);
+            NCCL_GROUP_END
         }
     }
 

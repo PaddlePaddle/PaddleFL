@@ -55,7 +55,7 @@ ExternalProject_Add(
                     -DCMAKE_C_FLAGS_RELEASE=${CMAKE_C_FLAGS_RELEASE}
                     -DCMAKE_BUILD_TYPE=${THIRD_PARTY_BUILD_TYPE}
                     -DCMAKE_INSTALL_PREFIX=${PADDLE_INSTALL_ROOT}
-                    -DWITH_GPU=off
+                    -DWITH_GPU=${WITH_GPU}
                     -DWITH_MKL=ON
                     -DWITH_DISTRIBUTE=ON
                     -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
@@ -72,13 +72,14 @@ include_directories(${PADDLE_BUILD_DIR}/third_party/install/mkldnn/include/)
 include_directories(${PADDLE_BUILD_DIR}/third_party/eigen3/src/extern_eigen3/)
 include_directories(${PADDLE_BUILD_DIR}/third_party/dlpack/src/extern_dlpack/include)
 include_directories(${PADDLE_BUILD_DIR}/third_party/install/xxhash/include/)
+include_directories(${PADDLE_BUILD_DIR}/third_party/threadpool/src/extern_threadpool)
 
 ADD_LIBRARY(paddle_framework SHARED IMPORTED GLOBAL)
 SET_PROPERTY(TARGET paddle_framework PROPERTY IMPORTED_LOCATION ${PADDLE_BUILD_DIR}/python/paddle/libs/libpaddle_framework.so)
 ADD_DEPENDENCIES(paddle_framework extern_paddle)
 
 ADD_LIBRARY(dnnl SHARED IMPORTED GLOBAL)
-SET_PROPERTY(TARGET dnnl PROPERTY IMPORTED_LOCATION ${PADDLE_BUILD_DIR}/third_party/install/mkldnn/lib64/libdnnl.so)
+SET_PROPERTY(TARGET dnnl PROPERTY IMPORTED_LOCATION ${PADDLE_BUILD_DIR}/third_party/install/mkldnn/lib/libdnnl.so)
 
 ADD_LIBRARY(iomp5 SHARED IMPORTED GLOBAL)
 SET_PROPERTY(TARGET iomp5 PROPERTY IMPORTED_LOCATION ${PADDLE_BUILD_DIR}/third_party/install/mklml/lib/libiomp5.so)

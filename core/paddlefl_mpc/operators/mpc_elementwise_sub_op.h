@@ -37,6 +37,11 @@ public:
 };
 
 template <typename DeviceContext, typename T>
+struct CopyElements {
+    void operator()(T* dst, const T* src, size_t num);
+};
+
+template <typename DeviceContext, typename T>
 class MpcElementwiseSubGradKernel : public MpcOpKernel<T> {
 public:
     void ComputeImpl(const framework::ExecutionContext &ctx) const override {
@@ -47,9 +52,9 @@ public:
 
         if (dx) {
             auto dx_data = dx->mutable_data<T>(ctx.GetPlace());
-            for (size_t i = 0; i < dout->numel(); i++) {
-               dx_data[i] = dout_data[i];
-            }
+
+            auto cpy_functor = CopyElements<DeviceContext, T>();
+            cpy_functor(dx_data, dout_data, dout->numel());
         }
         if (dy) {
             dy->mutable_data<T>(ctx.GetPlace());

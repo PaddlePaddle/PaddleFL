@@ -27,17 +27,24 @@ class ObliviousTransfer {
                   Tensor<T>* buffer[2], Tensor<T>* ret) {
     // TODO: check tensor shape equals
     auto aby3_ctx = paddle::mpc::ContextHolder::mpc_ctx();
+    auto tensor_factory = paddle::mpc::ContextHolder::tensor_factory();
     const size_t numel = buffer[0]->numel();
     if (aby3_ctx->party() == sender) {
       bool common = helper == aby3_ctx->next_party();
-      aby3_ctx->template gen_random(*buffer[0], common);
-      aby3_ctx->template gen_random(*buffer[1], common);
-      for (size_t i = 0; i < numel; ++i) {
-        buffer[0]->data()[i] ^= m[0]->data()[i];
-        buffer[1]->data()[i] ^= m[1]->data()[i];
-      }
+
+      auto rand0 = tensor_factory->template create<T>(buffer[0]->shape());
+      auto rand1 = tensor_factory->template create<T>(buffer[0]->shape());
+
+      aby3_ctx->template gen_random(*rand0.get(), common);
+      aby3_ctx->template gen_random(*rand1.get(), common);
+
+      rand0->bitwise_xor(m[0], buffer[0]);
+      rand1->bitwise_xor(m[1], buffer[1]);
+
+      NCCL_GROUP_START
       aby3_ctx->network()->template send(receiver, *buffer[0]);
       aby3_ctx->network()->template send(receiver, *buffer[1]);
+      NCCL_GROUP_END
 
     } else if (aby3_ctx->party() == helper) {
       bool common = sender == aby3_ctx->next_party();
@@ -45,21 +52,41 @@ class ObliviousTransfer {
       aby3_ctx->template gen_random(*buffer[0], common);
       aby3_ctx->template gen_random(*buffer[1], common);
 
-      for (size_t i = 0; i < numel; ++i) {
-        buffer[0]->data()[i] = choice->data()[i] & 1 ?
-            buffer[1]->data()[i] : buffer[0]->data()[i];
-      }
-      aby3_ctx->network()->template send(receiver, *buffer[0]);
+      auto tmp0 = tensor_factory->template create<T>(buffer[0]->shape());
+      auto tmp1 = tensor_factory->template create<T>(buffer[0]->shape());
+      assign_to_tensor(tmp0.get(), (T)1);
+      // choice in tmp1
+      tmp0->bitwise_and(choice, tmp1.get());
+      // tmp0 = r0 ^ r1
+      buffer[0]->bitwise_xor(buffer[1], tmp0.get());
+      // b1 = choice * (r0 ^ r1)
+      tmp0->mul(tmp1.get(), buffer[1]);
+      // t0 = choice * (r0 ^ r1) + r0
+      buffer[1]->bitwise_xor(buffer[0], tmp0.get());
+      aby3_ctx->network()->template send(receiver, *tmp0);
+
     } else if (aby3_ctx->party() == receiver) {
+      NCCL_GROUP_START
       aby3_ctx->network()->template recv(sender, *buffer[0]);
       aby3_ctx->network()->template recv(sender, *buffer[1]);
       aby3_ctx->network()->template recv(helper, *ret);
-      size_t i = 0;
-      std::for_each(ret->data(), ret->data() + numel, [&buffer, &i, choice, ret](T& in) {
-                    bool c = choice->data()[i] & 1;
-                    in ^= buffer[c]->data()[i];
-                    ++i;}
-                    );
+      NCCL_GROUP_END
+
+      auto tmp0 = tensor_factory->template create<T>(buffer[0]->shape());
+      auto tmp1 = tensor_factory->template create<T>(buffer[0]->shape());
+
+      assign_to_tensor(tmp0.get(), (T)1);
+      tmp0->bitwise_and(choice, tmp1.get());
+      // choice in tmp1
+      tmp0->bitwise_and(choice, tmp1.get());
+      // tmp0 = r0 ^ r1
+      buffer[0]->bitwise_xor(buffer[1], tmp0.get());
+      // b1 = choice * (r0 ^ r1)
+      tmp0->mul(tmp1.get(), buffer[1]);
+      // t0 = choice * (r0 ^ r1) + r0
+      buffer[1]->bitwise_xor(buffer[0], tmp0.get());
+
+      ret->bitwise_xor(tmp0.get(), ret);
     }
   }
 };

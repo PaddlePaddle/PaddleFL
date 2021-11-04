@@ -17,6 +17,9 @@
 #include <cmath>
 #include <iostream>
 
+// use cpu prng here
+#undef USE_CUDA
+
 #include "prng_utils.h"
 
 namespace aby3 {

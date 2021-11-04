@@ -41,7 +41,7 @@ public:
 
     /* This operator is used to perform multiplication.
     *  lhs's dimension should be equal to rhs's dimension.
-    */ 
+    */
     virtual void elementwise_mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, int axis = -1) = 0;
 
     virtual void elementwise_mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, Tensor *dx, Tensor *dy, int axis = -1) = 0;
@@ -49,26 +49,26 @@ public:
     /* This function is used to perform matrix multiplication.
      * The attribute `x_num_col_dims` and `y_num_col_dims` determines how $x$(lhs) and $y$(rhs) are flattened (Default: 1).
      *
-     * If the input $x$ is a tensor with more than two dimensions, 
-     * $x$ will be flattened into a two-dimensional matrix first. 
-     * The flattening rule is: the first `num_col_dims` will be flattened to 
-     * form the first dimension of the final matrix (the height of the matrix), 
-     * and the rest `rank(x) - num_col_dims` dimensions are flattened to 
-     * form the second dimension of the final matrix (the width of the matrix). 
-     * As a result, height of the flattened matrix is equal to the product of $x$'s 
-     * first `x_num_col_dims` dimensions' sizes, 
-     * and width of the flattened matrix is equal to the product of $x$'s 
+     * If the input $x$ is a tensor with more than two dimensions,
+     * $x$ will be flattened into a two-dimensional matrix first.
+     * The flattening rule is: the first `num_col_dims` will be flattened to
+     * form the first dimension of the final matrix (the height of the matrix),
+     * and the rest `rank(x) - num_col_dims` dimensions are flattened to
+     * form the second dimension of the final matrix (the width of the matrix).
+     * As a result, height of the flattened matrix is equal to the product of $x$'s
+     * first `x_num_col_dims` dimensions' sizes,
+     * and width of the flattened matrix is equal to the product of $x$'s
      * last `rank(x) - num_col_dims` dimensions' size.
-     * 
+     *
      * see PaddlePaddle doc (API: mul) for details.
     */
-    virtual void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out, 
+    virtual void mul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
                             int x_num_col_dims = 1, int y_num_col_dims = 1) = 0;
 
-    virtual void mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *out, 
+    virtual void mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *out,
                                  Tensor *dx, Tensor *dy, int x_num_col_dims, int y_num_col_dims) = 0;
-    
-    /* This operator is used to perform (batched) matrix multiplication 
+
+    /* This operator is used to perform (batched) matrix multiplication
     *  over the last two dimensions of the input tensors $x$(lhs) and $y$(rhs).
     *  [Input]: The input tensors' rank can be 2 or 3.
     *  [trans_lhs] [trans_rhs]: Whether to transpose
@@ -89,7 +89,8 @@ public:
                         const Tensor *rhs,
                         Tensor *out,
                         bool trans_lhs = false,
-                        bool trans_rhs = false) = 0;
+                        bool trans_rhs = false,
+                        bool sum_reduce_batch = false) = 0;
 
     virtual void mean(const Tensor *in, Tensor *out) = 0;
 
@@ -104,7 +105,7 @@ public:
 
     /* sigmoid function.
      * mode: sigmoid(piece_wise_3), sigmoid_enhanced(piece_wise_5), sigmoid_chebyshev, sigmoid_high_precision(exp)
-     */ 
+     */
     virtual void sigmoid(const Tensor *op, Tensor *out, const std::string mode = "sigmoid") = 0;
 
     virtual void softmax(const Tensor *op, Tensor *out, bool use_relu, bool use_long_div) = 0;
@@ -134,6 +135,8 @@ public:
     // pos_info keeps which element is max in a col, for backward grad
     // for filter in other shape, reshape input first
     virtual void max_pooling(const Tensor* in, Tensor* out, Tensor* pos_info) {}
+
+    virtual void avg_pooling(const Tensor* in, Tensor* out) {}
 
     // column wise max
     // in shape [n, ...], out shape [1, ...]

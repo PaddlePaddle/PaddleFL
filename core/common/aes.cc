@@ -54,17 +54,19 @@ void AES::set_key(const block& user_key) {
 }
 
 void AES::ecb_enc_block(const block& plaintext, block& cyphertext) const {
-    cyphertext = _mm_xor_si128(plaintext, _round_key[0]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[1]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[2]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[3]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[4]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[5]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[6]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[7]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[8]);
-    cyphertext = _mm_aesenc_si128(cyphertext, _round_key[9]);
-    cyphertext = _mm_aesenclast_si128(cyphertext, _round_key[10]);
+    block cipher = _mm_xor_si128(plaintext, _round_key[0]);
+    cipher = _mm_xor_si128(plaintext, _round_key[0]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[1]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[2]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[3]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[4]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[5]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[6]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[7]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[8]);
+    cipher = _mm_aesenc_si128(cipher, _round_key[9]);
+    cipher = _mm_aesenclast_si128(cipher, _round_key[10]);
+    cyphertext = cipher;
 }
 
 #else

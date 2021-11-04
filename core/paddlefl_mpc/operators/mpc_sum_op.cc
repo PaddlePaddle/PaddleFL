@@ -32,7 +32,7 @@ public:
 
     void InferShape(framework::InferShapeContext* ctx) const override {
         PADDLE_ENFORCE_EQ(
-            ctx->HasInputs("X"), true, 
+            ctx->HasInputs("X"), true,
             platform::errors::NotFound("Input(X) of MpcElementwiseAddOp should not be null."));
 
         PADDLE_ENFORCE_EQ(
@@ -51,7 +51,7 @@ public:
         if (N == 1) {
             VLOG(3) << "Warning: SumOp have only one input, may waste memory";
         }
-        
+
         framework::DDim in_dim({0});
         for (size_t i = 0; i < x_dims.size(); ++i) {
             auto& x_dim = x_dims[i];
@@ -154,9 +154,17 @@ DECLARE_INPLACE_OP_INFERER(MpcSumInplace, {"X", "Out"});
 namespace ops = paddle::operators;
 
 //REGISTER_OP_WITHOUT_GRADIENT(mpc_sum, ops::MpcSumOp, ops::MpcSumOpMaker);
-REGISTER_OPERATOR(mpc_sum, ops::MpcSumOp, 
-                  ops::MpcSumOpMaker, 
-                  ops::MpcSumGradMaker, 
+REGISTER_OPERATOR(mpc_sum, ops::MpcSumOp,
+                  ops::MpcSumOpMaker,
+                  ops::MpcSumGradMaker,
                   ops::MpcSumInplace);
 
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(mpc_sum, ops::MpcSumKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(mpc_sum, ops::MpcSumKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

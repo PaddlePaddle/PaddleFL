@@ -64,7 +64,7 @@ class MpcMeanGradOp : public framework::OperatorWithKernel {
 public:
     using framework::OperatorWithKernel::OperatorWithKernel;
     using Tensor = framework::Tensor;
-    
+
     void InferShape(framework::InferShapeContext *ctx) const override {
         ctx->SetOutputDim(framework::GradVarName("X"), ctx->GetInputDim("X"));
         ctx->ShareLoD("X", framework::GradVarName("X"));
@@ -91,16 +91,30 @@ protected:
 
 namespace ops = paddle::operators;
 REGISTER_OPERATOR(mpc_mean, ops::MpcMeanOp,
-                 ops::MpcMeanOpMaker, 
+                 ops::MpcMeanOpMaker,
                  ops::MpcMeanOpInferVarType,
                  ops::MpcMeanOpGradMaker<paddle::framework::OpDesc>);
 
 REGISTER_OPERATOR(mpc_mean_grad, ops::MpcMeanGradOp);
 
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_mean,
+    ops::MpcMeanKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_mean_grad,
+    ops::MpcMeanGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(
-    mpc_mean, 
+    mpc_mean,
     ops::MpcMeanKernel<paddle::platform::CPUDeviceContext, int64_t>);
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_mean_grad, 
+    mpc_mean_grad,
     ops::MpcMeanGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

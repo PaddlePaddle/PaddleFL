@@ -12,9 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-#include "paddle/fluid/framework/op_registry.h"
-#include <unordered_map>
 #include "mpc_pool_op.h"
+
+#include <unordered_map>
+
+#include "paddle/fluid/framework/op_registry.h"
 
 namespace paddle {
 namespace operators {
@@ -81,8 +83,8 @@ public:
                           ksize.size(), strides.size(), framework::make_ddim(ksize),
                           framework::make_ddim(strides));
 
-        PADDLE_ENFORCE_EQ(data_format, "NCHW", 
-            "data format can only be 'NCHW' ", 
+        PADDLE_ENFORCE_EQ(data_format, "NCHW",
+            "data format can only be 'NCHW' ",
             in_x_dims.size(), in_x_dims);
 
         // update paddings if "SAME" or global_pooling
@@ -138,7 +140,7 @@ protected:
     framework::OpKernelType GetKernelTypeForVar(
             const std::string& var_name, const Tensor& tensor,
             const framework::OpKernelType& expected_kernel_type) const {
-        return framework::OpKernelType(expected_kernel_type.data_type_, 
+        return framework::OpKernelType(expected_kernel_type.data_type_,
                                        tensor.place(), tensor.layout());
     }
 };
@@ -188,7 +190,7 @@ public:
             "where N is batch size, C is the number of channels, "
             "H is the height of the feature, "
             "and W is the width of the feature.");
-        AddOutput("One_hot_tensor", 
+        AddOutput("One_hot_tensor",
             "one hot tensor");
         AddAttr<std::string>("pooling_type",
             "(string), pooling type, can be \"max\" for max-pooling "
@@ -259,6 +261,52 @@ protected:
     }
 };
 
+template <typename T, typename Func>
+struct VisitDataStrideWise<paddle::platform::CPUDeviceContext, T, Func> {
+    void operator()(DDim in_dims, DDim out_dims,
+                    std::vector<int>& ksize, std::vector<int>& strides, std::vector<int>& paddings,
+                    const T* src, T* target, int src_stride, int target_stride, Func visitor) {
+        const int share_size = in_dims[0];
+        const int batch_size = in_dims[1];
+        const int channel_size = in_dims[2];
+        const int input_height = in_dims[3];
+        const int input_width = in_dims[4];
+        const int out_height = out_dims[3];
+        const int out_width = out_dims[4];
+        const int out_mat_numel = out_height * out_width;
+
+        const int ksize_height = ksize[0];
+        const int ksize_width = ksize[1];
+        const int filter_numel = ksize_height * ksize_width;
+        const int stride_height = strides[0];
+        const int stride_width = strides[1];
+        const int padding_height = paddings[0];
+        const int padding_width = paddings[1];
+
+        int hstart, hend;
+        int wstart, wend;
+
+        int idx = 0;
+        while (idx++ < batch_size * channel_size) {
+            for (size_t ph = 0; ph < out_height; ++ph) {
+                hstart =  ph * stride_height - padding_height;
+                hend = std::min(hstart + ksize_height, input_height);
+                hstart = std::max(hstart, 0);
+
+                for (size_t pw = 0; pw < out_width; ++pw) {
+                    wstart = pw * stride_width - padding_width;
+                    wend = std::min(wstart + ksize_width, input_width);
+                    wstart = std::max(wstart, 0);
+
+                    visitor(ph, pw, input_height, input_width, out_height, out_width, hstart, hend,
+                               wstart, wend, src, target);
+                }
+            }
+            src += src_stride;
+            target += target_stride;
+        }
+}
+};
 
 }  // namespace operators
 }  // namespace paddle
@@ -271,7 +319,13 @@ REGISTER_OPERATOR(
     paddle::framework::DefaultGradOpMaker<paddle::imperative::OpBase, true>);
 REGISTER_OPERATOR(mpc_pool2d_grad, ops::MpcPoolOpGrad);
 
+#ifdef USE_CUDA
+
+#else // USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(
     mpc_pool2d, ops::MpcPoolKernel<paddle::platform::CPUDeviceContext, int64_t>);
 REGISTER_OP_CPU_KERNEL(
     mpc_pool2d_grad, ops::MpcPoolGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

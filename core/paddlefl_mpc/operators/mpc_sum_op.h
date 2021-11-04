@@ -50,9 +50,9 @@ public:
                      }
                  }
                  if (start != 2) {
-                     auto t = framework::EigenVector<T>::Flatten(*out);
                      auto &device_ctx = ctx.template device_context<DeviceContext>();
-                     t.device(*device_ctx.eigen_device()) = t.constant(static_cast<T>(0));
+                     math::SetConstant<DeviceContext, T> set_constant;
+                     set_constant(device_ctx, out, 0.0);
                  }
              }
 

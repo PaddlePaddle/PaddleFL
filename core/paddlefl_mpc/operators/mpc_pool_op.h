@@ -76,52 +76,12 @@ inline void UpdateKsize(std::vector<T>* ksize,
     }
 }
 
-template <typename T, typename Func>
-void VisitDataStrideWise(DDim in_dims, DDim out_dims,
-                         std::vector<int>& ksize, std::vector<int>& strides, std::vector<int>& paddings,
-                         const T* src, T* target, int src_stride, int target_stride, Func visitor) {
-
-    const int share_size = in_dims[0];
-    const int batch_size = in_dims[1];
-    const int channel_size = in_dims[2];
-    const int input_height = in_dims[3];
-    const int input_width = in_dims[4];
-    const int out_height = out_dims[3];
-    const int out_width = out_dims[4];
-    const int out_mat_numel = out_height * out_width;
-
-    const int ksize_height = ksize[0];
-    const int ksize_width = ksize[1];
-    const int filter_numel = ksize_height * ksize_width;
-    const int stride_height = strides[0];
-    const int stride_width = strides[1];
-    const int padding_height = paddings[0];
-    const int padding_width = paddings[1];
-
-    int hstart, hend;
-    int wstart, wend;
-
-    int idx = 0;
-    while (idx++ < batch_size * channel_size) {
-        for (size_t ph = 0; ph < out_height; ++ph) {
-            hstart =  ph * stride_height - padding_height;
-            hend = std::min(hstart + ksize_height, input_height);
-            hstart = std::max(hstart, 0);
-
-            for (size_t pw = 0; pw < out_width; ++pw) {
-                wstart = pw * stride_width - padding_width;
-                wend = std::min(wstart + ksize_width, input_width);
-                wstart = std::max(wstart, 0);
-
-                visitor(ph, pw, input_height, input_width, out_height, out_width, hstart, hend,
-                        wstart, wend, src, target);
-            }
-        }
-        src += src_stride;
-        target += target_stride;
-    }
-}
-
+template <typename DeviceContext, typename T, typename Func>
+struct VisitDataStrideWise {
+    void operator()(DDim in_dims, DDim out_dims,
+                    std::vector<int>& ksize, std::vector<int>& strides, std::vector<int>& paddings,
+                    const T* src, T* target, int src_stride, int target_stride, Func vistor);
+};
 
 template <typename DeviceContext, typename T>
 class MpcPoolKernel : public MpcOpKernel<T> {
@@ -132,6 +92,7 @@ public:
         Tensor* out = context.Output<Tensor>("Out");
         Tensor* out_one_hot_tensor = context.Output<Tensor>("One_hot_tensor");
 
+        std::string pooling_type = context.Attr<std::string>("pooling_type");
         std::vector<int> ksize = context.Attr<std::vector<int>>("ksize");
         std::vector<int> strides = context.Attr<std::vector<int>>("strides");
         std::vector<int> paddings = context.Attr<std::vector<int>>("paddings");
@@ -156,7 +117,8 @@ public:
         auto& dev_ctx = context.template device_context<DeviceContext>();
         Tensor input2col = context.AllocateTmpTensor<T, DeviceContext>(out_one_hot_tensor->dims(), dev_ctx);
         T* input2col_data = input2col.data<T>();
-        std::fill(input2col_data, input2col_data + input2col.numel(), static_cast<T>(0));
+        math::SetConstant<DeviceContext, T> set_constant;
+        set_constant(dev_ctx, &input2col, 0);
 
         framework::DDim data_dims;
         data_dims = framework::slice_ddim(in_x_dims, 3, in_x_dims.size());
@@ -179,8 +141,12 @@ public:
         const int input2col_plaintext_size = out_one_hot_tensor->numel() / 2;
 
         // im2col
-        auto get_im2col = [=] (int ph, int pw, int input_height, int input_width, int out_height, int out_width,
-                               int hstart, int hend, int wstart, int wend, const T* src, T* target) {
+        auto get_im2col = [input2col_plaintext_size, input_plaintext_size]
+#ifdef __NVCC__
+            __host__ __device__
+#endif
+            (int ph, int pw, int input_height, int input_width, int out_height, int out_width,
+             int hstart, int hend, int wstart, int wend, const T* src, T* target) {
 
             size_t out_index = ph * out_width + pw;
             size_t offset = out_height * out_width;
@@ -195,9 +161,11 @@ public:
             }
         };
 
+        auto visit_functor = VisitDataStrideWise<DeviceContext, T, decltype(get_im2col)>();
+
         // input2col
         // convert in_x_data (S, B, C, H, W) into (S, B, C, filter_size * filter_size, H_output * W_output)
-        VisitDataStrideWise(in_x_dims, out_dims, ksize, strides, paddings, in_x_data, input2col_data, input_stride, one_hot_tensor_stride, get_im2col);
+        visit_functor(in_x_dims, out_dims, ksize, strides, paddings, in_x_data, input2col_data, input_stride, one_hot_tensor_stride, get_im2col);
 
         const T* input2col_data2 = input2col.data<T>();
 
@@ -218,7 +186,7 @@ public:
         out_one_hot_tensor_trans.mutable_data<T>(out_one_hot_tensor->dims(), context.GetPlace());
         out_one_hot_tensor_trans.Resize({in2col_dims[0], in2col_dims[3], in2col_dims[1], in2col_dims[2], in2col_dims[4]});
 
-        // convert input2col (S, B, C, filter_size * filter_size, H_output * W_output) 
+        // convert input2col (S, B, C, filter_size * filter_size, H_output * W_output)
         // into input2col_trans (S, filter_size * filter_size, B, C, H_output * W_output)
         const int Rank = 5;
         Eigen::array<int, Rank>  permute;
@@ -229,17 +197,22 @@ public:
         auto* dev = dev_ctx.eigen_device();
         eigen_out.device(*dev) = eigen_in.shuffle(permute);
 
-        // maxpooling
-        mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->max_pooling(
-            &input2col_trans, &max2col, &out_one_hot_tensor_trans);
-
         permute = {0, 2, 3, 1, 4};
 
-        // convert out_one_hot_tensor_trans: (S, filter_size * filter_size, B, C, H_output * W_output)
-        // into out_one_hot_tensor (S, B, C, filter_size * filter_size, H_output * W_output)
-        auto eigen_in2 = framework::EigenTensor<T, Rank>::From(out_one_hot_tensor_trans);
-        auto eigen_out2 = framework::EigenTensor<T, Rank>::From(*out_one_hot_tensor);
-        eigen_out2.device(*dev) = eigen_in2.shuffle(permute);
+        if (pooling_type == "max") {
+            // maxpooling
+            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->max_pooling(
+                &input2col_trans, &max2col, &out_one_hot_tensor_trans);
+
+            // convert out_one_hot_tensor_trans: (S, filter_size * filter_size, B, C, H_output * W_output)
+            // into out_one_hot_tensor (S, B, C, filter_size * filter_size, H_output * W_output)
+            auto eigen_in2 = framework::EigenTensor<T, Rank>::From(out_one_hot_tensor_trans);
+            auto eigen_out2 = framework::EigenTensor<T, Rank>::From(*out_one_hot_tensor);
+            eigen_out2.device(*dev) = eigen_in2.shuffle(permute);
+        } else if (pooling_type == "avg") {
+            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->avg_pooling(
+                &input2col_trans, &max2col);
+        }
 
         // convert max2col: (S, 1, B, C, H_output * W_output)
         // into out_one_hot_tensor (S, B, C, 1, H_output * W_output)
@@ -270,6 +243,7 @@ public:
         const Tensor* out_grad = context.Input<Tensor>(framework::GradVarName("Out"));
         Tensor* in_x_grad = context.Output<Tensor>(framework::GradVarName("X"));
 
+        std::string pooling_type = context.Attr<std::string>("pooling_type");
         std::vector<int> ksize = context.Attr<std::vector<int>>("ksize");
         std::vector<int> strides = context.Attr<std::vector<int>>("strides");
         std::vector<int> paddings = context.Attr<std::vector<int>>("paddings");
@@ -306,7 +280,10 @@ public:
 
             // create data var of input and output variable
             T* in_x_grad_data = in_x_grad->mutable_data<T>(context.GetPlace());
-            std::fill(in_x_grad_data, in_x_grad_data + in_x_grad->numel(), static_cast<T>(0));
+
+            math::SetConstant<DeviceContext, T> set_constant;
+            set_constant(dev_ctx, in_x_grad, 0);
+
             const T* one_hot_tensor_data = one_hot_tensor->data<T>();
             const T* out_grad_data = out_grad->data<T>();
             T* expanded_out_grad_data = expanded_out_grad_tensor.data<T>();
@@ -325,13 +302,18 @@ public:
             const int one_hot_tensor_plaintext_size = one_hot_tensor->numel() / 2;
 
             // expand out grad
-            auto get_expand_out_grad = [=] (int ph, int pw, int input_height, int input_width,
-                                            int out_height, int out_width, int hstart, int hend,
-                                            int wstart, int wend, const T* src, T* target) {
+            auto get_expand_out_grad =
+                [filter_numel, one_hot_tensor_plaintext_size, output_plaintext_size]
+#ifdef __NVCC__
+            __host__ __device__
+#endif
+                (int ph, int pw, int input_height, int input_width,
+                 int out_height, int out_width, int hstart, int hend,
+                 int wstart, int wend, const T* src, T* target) {
 
                 size_t out_grad_index = ph * out_width + pw;
                 size_t offset = out_height * out_width;
-                 
+
                 for (size_t index = 0; index < filter_numel; ++index) {
                     target[out_grad_index + index * offset] = src[out_grad_index]; //share0
                     target[out_grad_index + index * offset + one_hot_tensor_plaintext_size] =
@@ -340,20 +322,29 @@ public:
             };
 
             // expand [S, B, C, H_poolout, W_poolout] into [S, B, C, ksize * ksize, H_poolout*W_poolout]
-            VisitDataStrideWise(in_x_dims, out_dims, ksize, strides, paddings, out_grad_data,
-                                expanded_out_grad_data, output_stride, one_hot_tensor_stride, get_expand_out_grad);
+            auto visit_functor = VisitDataStrideWise<DeviceContext, T, decltype(get_expand_out_grad)>();
 
+            visit_functor(in_x_dims, out_dims, ksize, strides, paddings, out_grad_data,
+                          expanded_out_grad_data, output_stride, one_hot_tensor_stride, get_expand_out_grad);
+
+            VLOG(3) << "pool type: " << pooling_type;
             // compute mul result = out_grad.expand * one_hot_tensor
-            mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->arith_bool_mul(
-                &expanded_out_grad_tensor, one_hot_tensor, &mul_result_tensor);
-
+            if (pooling_type == "max") {
+                mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->arith_bool_mul(
+                    &expanded_out_grad_tensor, one_hot_tensor, &mul_result_tensor);
+            } else if (pooling_type == "avg") {
+                float scale = 1.0 / (ksize[0] * ksize[1]);
+                mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(
+                    &expanded_out_grad_tensor, scale, &mul_result_tensor);
+            }
 
             // updata input X's grad
-            auto update_in_grad = [=] (int ph, int pw,
-                                       int input_height, int input_width,
-                                       int out_height, int out_width,
-                                       int hstart, int hend, int wstart, int wend,
-                                       const T* src, T* target) {
+            auto update_in_grad = [input_plaintext_size, one_hot_tensor_plaintext_size]
+#ifdef __NVCC__
+            __host__ __device__
+#endif
+            (int ph, int pw, int input_height, int input_width, int out_height, int out_width,
+             int hstart, int hend, int wstart, int wend, const T* src, T* target) {
 
                 size_t index = 0;
                 size_t in_pos = 0;
@@ -370,8 +361,9 @@ public:
                 }
             };
             // convert [S, B, C, filter_size * filter_size, ] into [S, B, C, H, W]
-            VisitDataStrideWise(in_x_dims, out_dims, ksize, strides, paddings, mul_result_data,
-                                in_x_grad_data, one_hot_tensor_stride, input_stride, update_in_grad);
+            auto visit_functor_ = VisitDataStrideWise<DeviceContext, T, decltype(update_in_grad)>();
+            visit_functor_(in_x_dims, out_dims, ksize, strides, paddings, mul_result_data,
+                          in_x_grad_data, one_hot_tensor_stride, input_stride, update_in_grad);
 
         } //if (in_x_grad)
     } // void ComputeImpl

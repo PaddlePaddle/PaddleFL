@@ -3480,6 +3480,67 @@ TEST_F(FixedTensorTest, max_pooling_test) {
     EXPECT_EQ(0, ppos->data()[3]);
 }
 
+TEST_F(FixedTensorTest, avg_pooling_test) {
+    std::vector<size_t> shape = { 4, 1 };
+    std::vector<size_t> shape_ = { 1, 1 };
+
+    std::shared_ptr<TensorAdapter<int64_t>> sl[3] = { gen(shape), gen(shape), gen(shape) };
+    std::shared_ptr<TensorAdapter<int64_t>> sfout[6] = {
+        gen(shape_), gen(shape_), gen(shape_), gen(shape_), gen(shape_), gen(shape_)};
+
+    assign_to_tensor(sl[1].get(), 0l);
+    assign_to_tensor(sl[2].get(), 0l);
+    sl[0]->data()[0] = 2 * 0x1p16f;
+    sl[0]->data()[1] = 1 * 0x1p16f;
+    sl[0]->data()[2] = 4 * 0x1p16f;
+    sl[0]->data()[3] = 3 * 0x1p16f;
+    // input [2 1 4 3]
+
+    auto pavg = gen(shape_);
+
+    Fix64N16 fl0(sl[0].get(), sl[1].get());
+    Fix64N16 fl1(sl[1].get(), sl[2].get());
+    Fix64N16 fl2(sl[2].get(), sl[0].get());
+
+    Fix64N16 fout0(sfout[0].get(), sfout[1].get());
+    Fix64N16 fout1(sfout[2].get(), sfout[3].get());
+    Fix64N16 fout2(sfout[4].get(), sfout[5].get());
+
+
+    _t[0] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[0], [&](){
+                fl0.avg_pooling(&fout0);
+                fout0.reveal_to_one(0, pavg.get());
+            });
+        }
+    );
+    _t[1] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[1], [&](){
+                fl1.avg_pooling(&fout1);
+                fout1.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    _t[2] = std::thread(
+        [&] () {
+        g_ctx_holder::template run_with_context(
+            _exec_ctx.get(), _mpc_ctx[2], [&](){
+                fl2.avg_pooling(&fout2);
+                fout2.reveal_to_one(0, nullptr);
+            });
+        }
+    );
+    for (auto &t: _t) {
+        t.join();
+    }
+
+    EXPECT_NEAR(2.5, pavg->data()[0] / 0x1p16f, 2 / 0x1p16f);
+}
+
 TEST_F(FixedTensorTest, inv_sqrt_test) {
     std::vector<size_t> shape = { 1 };
 
@@ -3487,9 +3548,9 @@ TEST_F(FixedTensorTest, inv_sqrt_test) {
     std::shared_ptr<TensorAdapter<int64_t>> sfout[6] = {
         gen(shape), gen(shape), gen(shape), gen(shape), gen(shape), gen(shape)};
 
-    sl[0]->data()[0] = 0x4p16;
-    sl[1]->data()[0] = 0;
-    sl[2]->data()[0] = 0;
+    sl[0]->data()[0] = 0x1p16 * 0.0354767;
+    sl[1]->data()[0] = 0x1p16 * 0;
+    sl[2]->data()[0] = 0x1p16 * 0;
     // input [4]
 
     auto p = gen(shape);
@@ -3533,8 +3594,8 @@ TEST_F(FixedTensorTest, inv_sqrt_test) {
         t.join();
     }
 
-    // inv_sqrt(4) = 1/2
-    EXPECT_NEAR(0.5, p->data()[0] / 0x1p16f, 2 / 0x1p16f);
+    // inv_sqrt(0.0354767) = 5.309191522470555
+    EXPECT_NEAR(5.309191522470555, p->data()[0] / 0x1p16f, 0.03);
 
 }
 

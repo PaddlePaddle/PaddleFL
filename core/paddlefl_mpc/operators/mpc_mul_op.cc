@@ -245,6 +245,18 @@ REGISTER_OPERATOR(mpc_mul, ops::MpcMulOp,
 
 REGISTER_OPERATOR(mpc_mul_grad, ops::MpcMulGradOp);
 
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_mul,
+    ops::MpcMulKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_mul_grad,
+    ops::MpcMulGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(
     mpc_mul,
     ops::MpcMulKernel<paddle::platform::CPUDeviceContext, int64_t>);
@@ -252,3 +264,5 @@ REGISTER_OP_CPU_KERNEL(
 REGISTER_OP_CPU_KERNEL(
     mpc_mul_grad,
     ops::MpcMulGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

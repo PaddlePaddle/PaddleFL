@@ -45,8 +45,8 @@ static inline int SizeFromAxis(const int axis, DDim dims) {
 }
 
 
-// Out = softmax(Logits) = relu(Logits_i) / sum(relu(Logits_i)): prediction of input. 
-// todo: loss=? 
+// Out = softmax(Logits) = relu(Logits_i) / sum(relu(Logits_i)): prediction of input.
+// todo: loss=?
 template <typename DeviceContext, typename T>
 class MpcSoftmaxWithCrossEntropyKernel : public MpcOpKernel<T> {
 public:
@@ -62,6 +62,11 @@ public:
         mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->softmax(
             in_x_t, out_softmax_t, use_relu, use_long_div);
     }
+};
+
+template <typename DeviceContext, typename T>
+struct SetExpandData {
+    void operator()(T* dst, const T* src, size_t n, size_t d);
 };
 
 // dx = dout.expand * (softmax(x) - labels)
@@ -89,15 +94,12 @@ public:
         Tensor dout_expand;
         T* dout_expand_data = dout_expand.mutable_data<T>(dx->dims(), ctx.GetPlace());
 
-        for (size_t i = 0; i < n; ++i) {
-            for (size_t j = 0; j < d; ++j) {
-                dout_expand_data[i * d + j] = dout_data[i];
-            }
-        }
+        auto set_expand_functor = SetExpandData<DeviceContext, T>();
+        set_expand_functor(dout_expand_data, dout_data, n, d);
 
         // dx = dout.expand * (softmax - label)
         Tensor softmax_minus_label;
-        T* softmax_minus_label_data = softmax_minus_label.mutable_data<T>(dx->dims(), ctx.GetPlace());
+        softmax_minus_label.mutable_data<T>(in_label_t->dims(), ctx.GetPlace());
         mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->sub(in_softmax_t, in_label_t, &softmax_minus_label);
         mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->elementwise_mul(&dout_expand, &softmax_minus_label, dx);
     }
