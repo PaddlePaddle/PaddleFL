@@ -51,6 +51,23 @@ option(WITH_GPU "Compile with gpu" ON)
 
 ########################### the project build part ###############################
 
+if (WITH_GPU)
+    find_package(CUDA)
+    add_definitions(-DUSE_CUDA)
+    add_definitions(-DPADDLE_WITH_MKLDNN)
+    add_definitions(-DPADDLE_WITH_CUDA)
+    add_definitions(-DEIGEN_USE_GPU)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" "-std=c++14")
+    list(APPEND CUDA_NVCC_FLAGS "--expt-extended-lambda")
+    list(APPEND CUDA_NVCC_FLAGS "-Xcompiler -fPIC")
+    list(APPEND CUDA_NVCC_FLAGS "-w")
+    list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
+    list(APPEND CUDA_NVCC_FLAGS "-O3 -DNDEBUG")
+
+    include_directories(${CUDNN_INCLUDE_DIR})
+    include_directories(${CUDA_TOOLKIT_INCLUDE})
+endif(WITH_GPU)
+
 include(third_party)
 include(generic)
 
@@ -69,23 +86,6 @@ endif(USE_OPENMP)
 if (USE_ABY3_TRUNC1)
     add_compile_definitions(USE_ABY3_TRUNC1)
 endif(USE_ABY3_TRUNC1)
-
-if (WITH_GPU)
-    find_package(CUDA)
-    add_definitions(-DUSE_CUDA)
-    add_definitions(-DPADDLE_WITH_MKLDNN)
-    add_definitions(-DPADDLE_WITH_CUDA)
-    add_definitions(-DEIGEN_USE_GPU)
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" "-std=c++14")
-    list(APPEND CUDA_NVCC_FLAGS "--expt-extended-lambda")
-    list(APPEND CUDA_NVCC_FLAGS "-Xcompiler -fPIC")
-    list(APPEND CUDA_NVCC_FLAGS "-w")
-    list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
-    list(APPEND CUDA_NVCC_FLAGS "-O3 -DNDEBUG")
-
-    include_directories(${CUDNN_INCLUDE_DIR})
-    include_directories(${CUDA_TOOLKIT_INCLUDE})
-endif(WITH_GPU)
 
 add_subdirectory(core/common)
 if (NOT WITH_GPU)

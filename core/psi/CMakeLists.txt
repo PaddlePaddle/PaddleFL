@@ -5,7 +5,7 @@ set(PSI_SRCS
 )
 
 add_library(psi_o OBJECT ${PSI_SRCS})
-add_dependencies(psi_o crypto common)
+add_dependencies(psi_o crypto common extern_paddle)
 
 add_library(psi SHARED $<TARGET_OBJECTS:psi_o>)
 
