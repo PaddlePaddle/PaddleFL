@@ -151,9 +151,22 @@ REGISTER_OPERATOR(
 REGISTER_OPERATOR(mpc_sigmoid_cross_entropy_with_logits_grad,
                   ops::MpcSigmoidCrossEntropyWithLogitsGradOp,
                   ops::MpcSigmoidCrossEntropyWithLogitsGradInplaceInferer);
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_sigmoid_cross_entropy_with_logits,
+    ops::MpcSigmoidCrossEntropyWithLogitsKernel<paddle::platform::CUDADeviceContext, int64_t>);
+REGISTER_OP_CUDA_KERNEL(
+    mpc_sigmoid_cross_entropy_with_logits_grad,
+    ops::MpcSigmoidCrossEntropyWithLogitsGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(
     mpc_sigmoid_cross_entropy_with_logits,
     ops::MpcSigmoidCrossEntropyWithLogitsKernel<paddle::platform::CPUDeviceContext, int64_t>);
 REGISTER_OP_CPU_KERNEL(
     mpc_sigmoid_cross_entropy_with_logits_grad,
     ops::MpcSigmoidCrossEntropyWithLogitsGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+
+#endif // USE_CUDA

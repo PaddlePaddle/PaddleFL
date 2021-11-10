@@ -55,6 +55,23 @@ void PaddleTensor<T>::add(const TensorAdapter<T> *rhs,
 }
 
 template <typename T>
+void PaddleTensor<T>::sum(TensorAdapter<T> *ret) const {
+  auto ret_ = dynamic_cast<PaddleTensor<T> *>(ret);
+
+  PADDLE_ENFORCE_EQ(1, ret_->_tensor.numel(),
+                    "Result numel should be one.");
+
+  auto eigen_x = paddle::framework::EigenVector<T>::Flatten(_tensor);
+
+  auto dims = paddle::framework::make_ddim({});
+  auto eigen_z = paddle::framework::EigenTensor<T, 0>::From(ret_->_tensor, dims);
+
+  auto &place = *eigen_device();
+
+  eigen_z.device(place) = eigen_x.sum();
+}
+
+template <typename T>
 void PaddleTensor<T>::sub(const TensorAdapter<T> *rhs,
                           TensorAdapter<T> *ret) const {
   auto rhs_ = dynamic_cast<const PaddleTensor<T> *>(rhs);
@@ -104,7 +121,8 @@ template <typename T>
 void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
                               TensorAdapter<T> *ret,
                               bool transpose_lhs,
-                              bool transpose_rhs) const {
+                              bool transpose_rhs,
+                              bool sum_reduce_batch) const {
   auto rhs_ = dynamic_cast<const PaddleTensor<T> *>(rhs);
   auto ret_ = dynamic_cast<PaddleTensor<T> *>(ret);
 
@@ -153,6 +171,17 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
       return EigenTensor4::From(t, dims);
   };
 
+  auto to_eigen_tensor2 = [](paddle::framework::Tensor &t) {
+      auto dims = t.dims();
+      if (dims.size() == 2) {
+          dims = paddle::framework::make_ddim({dims[0], dims[1]});
+      } else { // dims.size() == 3
+          PADDLE_ENFORCE(dims[0] == 1, "expected BatchSize = 1.");
+          dims = paddle::framework::make_ddim({dims[1], dims[2]});
+      }
+      return EigenTensor2::From(t, dims);
+  };
+
 
   auto &place = *eigen_device();
 
@@ -169,7 +198,7 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
   PADDLE_ENFORCE(batch_size_b == batch_size || batch_size_b == 1,
                  "Mat B BatchSize mismatched.");
 
-  PADDLE_ENFORCE(t_c.dimension(0) == batch_size,
+  PADDLE_ENFORCE(t_c.dimension(0) == sum_reduce_batch ? 1 : batch_size,
                  "Result Mat BatchSize mismatched.");
 
   auto hc = t_c.dimension(1);
@@ -179,15 +208,22 @@ void PaddleTensor<T>::mat_mul(const TensorAdapter<T> *rhs,
   // please refer to
   // github.com/eigenteam/eigen-git-mirror/blob/master/unsupported/Eigen/CXX11/src/Tensor/README.md
 
-    Eigen::array<Eigen::IndexPair<int>, 1> axis = {
-        Eigen::IndexPair<int>(1 - transpose_lhs, 0 + transpose_rhs)};
 
+    if (sum_reduce_batch) {
+        Eigen::array<Eigen::IndexPair<int>, 2> axis = { Eigen::IndexPair<int>(0, 0),
+            Eigen::IndexPair<int>(2 - transpose_lhs, 1 + transpose_rhs)};
+        auto t_c = to_eigen_tensor2(mat_out);
+        t_c.device(place) = t_a.contract(t_b, axis);
+    } else{
+        Eigen::array<Eigen::IndexPair<int>, 1> axis = {
+            Eigen::IndexPair<int>(1 - transpose_lhs, 0 + transpose_rhs)};
 #pragma omp for
-    for (int i = 0; i < batch_size; ++i) {
-        Eigen::TensorMap<Eigen::Tensor<T, 2, Eigen::RowMajor, Eigen::DenseIndex>>
-            t_c_chip(t_c.data() + i * hc * wc, hc, wc);
-        int idx_t_b = batch_size_b == 1 ? 0 : i;
-        t_c_chip.device(place) = t_a.chip(i, 0).contract(t_b.chip(idx_t_b, 0), axis);
+        for (int i = 0; i < batch_size; ++i) {
+            Eigen::TensorMap<Eigen::Tensor<T, 2, Eigen::RowMajor, Eigen::DenseIndex>>
+                t_c_chip(t_c.data() + i * hc * wc, hc, wc);
+            int idx_t_b = batch_size_b == 1 ? 0 : i;
+            t_c_chip.device(place) = t_a.chip(i, 0).contract(t_b.chip(idx_t_b, 0), axis);
+        }
     }
 
 }

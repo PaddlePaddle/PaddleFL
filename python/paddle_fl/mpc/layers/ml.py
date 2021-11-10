@@ -340,7 +340,7 @@ def pool2d(input,
     """
     pool2d
     """
-    if pool_type not in ["max"]:
+    if pool_type not in ["max", "avg"]:
         raise ValueError(
             "Unknown Attr(pool_type): '%s'. It can only be 'max'.",
             str(pool_type))
@@ -442,7 +442,7 @@ def batch_norm(input,
                act=None,
                is_test=False,
                momentum=0.9,
-               epsilon=1e-05,
+               epsilon=1e-04,
                param_attr=None,
                bias_attr=None,
                data_layout='NCHW',
@@ -561,7 +561,7 @@ def batch_norm(input,
     helper.append_op(
         type="mpc_batch_norm", inputs=inputs, outputs=outputs, attrs=attrs)
 
-    return helper.append_activation(batch_norm_out)
+    return helper.append_mpc_activation(batch_norm_out)
 
 
 def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
@@ -695,7 +695,7 @@ def reshape(x, shape, actual_shape=None, act=None, inplace=False, name=None):
         outputs={"Out": out,
                  "XShape": x_shape})
 
-    return helper.append_activation(out)
+    return helper.append_mpc_activation(out)
 
 
 def mean_normalize(f_min, f_max, f_mean, sample_num):

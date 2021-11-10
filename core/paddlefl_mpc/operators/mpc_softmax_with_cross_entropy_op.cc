@@ -187,7 +187,7 @@ public:
 Softmax With Cross Entropy Operator.
 Cross entropy loss with softmax is used as the output layer extensively. This
 operator computes the softmax normalized values for each row of the input
-tensor. 
+tensor.
 Conputing cross-entropy loss is not supported now.
 Now, we only support soft_label=true, axis=-1 or (rank-1).
 Forward: out = softmax(x). todo: add cross_entropy
@@ -221,6 +221,17 @@ DECLARE_INPLACE_OP_INFERER(MpcSoftmaxWithCrossEntropyInplaceInference,
 DECLARE_INPLACE_OP_INFERER(MpcSoftmaxWithCrossEntropyGradInplaceInference,
                            {"Softmax", framework::GradVarName("Logits")});
 
+template <typename T>
+struct SetExpandData<paddle::platform::CPUDeviceContext, T> {
+    void operator()(T* dst, const T* src, size_t n, size_t d) {
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = 0; j < d; ++j) {
+                dst[i * d + j] = src[i];
+            }
+        }
+    }
+};
+
 }  // namespace operators
 }  // namespace paddle
 
@@ -234,8 +245,12 @@ REGISTER_OPERATOR(mpc_softmax_with_cross_entropy, ops::MpcSoftmaxWithCrossEntrop
 REGISTER_OPERATOR(mpc_softmax_with_cross_entropy_grad,
                   ops::MpcSoftmaxWithCrossEntropyOpGrad,
                   ops::MpcSoftmaxWithCrossEntropyGradInplaceInference);
+
+#ifndef USE_CUDA
+
 REGISTER_OP_CPU_KERNEL(mpc_softmax_with_cross_entropy,
                        ops::MpcSoftmaxWithCrossEntropyKernel<paddle::platform::CPUDeviceContext, int64_t>);
 REGISTER_OP_CPU_KERNEL(mpc_softmax_with_cross_entropy_grad,
                        ops::MpcSoftmaxWithCrossEntropyGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
 
+#endif // USE_CUDA

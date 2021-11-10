@@ -25,6 +25,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
+
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
 
 namespace paddle {

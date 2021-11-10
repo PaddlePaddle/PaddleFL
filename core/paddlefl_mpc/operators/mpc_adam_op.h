@@ -18,17 +18,21 @@
 
 #include <math.h>
 
-#include "./math/math_function.h"
-#include "core/paddlefl_mpc/mpc_protocol/aby3_operators.h"
+// #include "./math/math_function.h"
+#include "core/paddlefl_mpc/mpc_protocol/mpc_operators.h"
 
 namespace paddle {
 namespace operators {
 
-static inline float GetAttrFromTensor(const framework::Tensor* tensor) {
-  const float* tensor_data = tensor->data<float>();
-  framework::Tensor cpu_tensor;
-  return tensor_data[0];
-}
+template <typename DeviceContext, typename T>
+struct GetAttrFromTensor{
+    T operator()(const framework::Tensor* t);
+};
+
+template <typename DeviceContext, typename T>
+struct SetAttrToTensor{
+    void operator()(framework::Tensor* t, T val);
+};
 
 template <typename DeviceContext, typename T, typename T1>
 class MpcAdamOpKernel : public MpcOpKernel<T> {
@@ -60,13 +64,14 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
     auto* beta2_pow_out = ctx.Output<LoDTensor>("Beta2PowOut");
 
     T1 beta1 = static_cast<T1>(ctx.Attr<float>("beta1"));
+    auto get_attr_functor = GetAttrFromTensor<DeviceContext, T1>();
     if (ctx.HasInput("Beta1Tensor")) {
       auto* beta1_tensor = ctx.Input<framework::Tensor>("Beta1Tensor");
       PADDLE_ENFORCE_EQ(beta1_tensor->numel(), 1,
                         platform::errors::InvalidArgument(
                             "Input(Beta1Tensor) size must be 1, but get %d",
                             beta1_tensor->numel()));
-      beta1 = static_cast<T1>(GetAttrFromTensor(beta1_tensor));
+      beta1 = get_attr_functor(beta1_tensor);
     }
     T1 beta2 = static_cast<T1>(ctx.Attr<float>("beta2"));
     if (ctx.HasInput("Beta2Tensor")) {
@@ -75,7 +80,7 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
                         platform::errors::InvalidArgument(
                             "Input(Beta2Tensor) size must be 1, but get %d",
                             beta2_tensor->numel()));
-      beta2 = static_cast<T1>(GetAttrFromTensor(beta2_tensor));
+      beta2 = get_attr_functor(beta2_tensor);
     }
     VLOG(3) << "beta1_pow.numel() : " << beta1_pow->numel()
             << "beta2_pow.numel() : " << beta2_pow->numel();
@@ -83,8 +88,7 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
 
     PADDLE_ENFORCE_EQ(beta1_pow_out->numel(), 1,
                       platform::errors::InvalidArgument(
-                          "beta1 pow output size should be 1, but received "
-                          "value is:%d.",
+                          "beta1 pow output size should be 1, but received " "value is:%d.",
                           beta1_pow_out->numel()));
 
     PADDLE_ENFORCE_EQ(beta2_pow_out->numel(), 1,
@@ -104,10 +108,10 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
       //     param_out->mutable_data<T>(ctx.GetPlace()));
       // functor(param->numel());
 
-      T1 lr_value = *lr->template data<T1>();
+      T1 lr_value = get_attr_functor(lr);
 
-      T1 beta1_pow_ = *beta1_pow->template data<T1>();
-      T1 beta2_pow_ = *beta2_pow->template data<T1>();
+      T1 beta1_pow_ = get_attr_functor(beta1_pow);
+      T1 beta2_pow_ = get_attr_functor(beta2_pow);
 
       double lr_ =  lr_value * sqrt(1 - beta2_pow_) / (1 - beta1_pow_);
 
@@ -131,7 +135,7 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
       set_const(
           dev_ctx,
           &temp,
-          T(epsilon * pow(2, mpc::ABY3_SCALING_FACTOR) / 3));
+          T(epsilon * pow(2, paddle::mpc::FIXED_POINTER_SCALING_FACTOR) / 3));
 
       // temp = epsilon + mom2_out
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->add(mom2_out, &temp, &temp);
@@ -143,10 +147,9 @@ class MpcAdamOpKernel : public MpcOpKernel<T> {
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->scale(&temp, lr_, &temp);
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->sub(param, &temp, param_out);
 
-      beta1_pow_out->mutable_data<T1>(ctx.GetPlace())[0] =
-          beta1 * beta1_pow->template data<T1>()[0];
-      beta2_pow_out->mutable_data<T1>(ctx.GetPlace())[0] =
-          beta2 * beta2_pow->template data<T1>()[0];
+      auto set_attr_functor = SetAttrToTensor<DeviceContext, T1>();
+      set_attr_functor(beta1_pow_out, beta1 * beta1_pow_);
+      set_attr_functor(beta2_pow_out, beta2 * beta2_pow_);
 
     } else {
       PADDLE_THROW("Variable type not supported by adam_op");

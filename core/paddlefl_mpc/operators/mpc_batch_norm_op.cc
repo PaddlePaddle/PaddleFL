@@ -89,7 +89,7 @@ public:
                 "= [%s], the dimension of input X = [%d]",
                 x_dims, x_dims.size()));
 
-        
+
         const int64_t C =
             ((this->IsMKLDNNType() == true) || (data_layout == DataLayout::kNCHW)
                  ? x_dims[2]
@@ -157,7 +157,7 @@ protected:
     framework::OpKernelType GetKernelTypeForVar(
             const std::string& var_name, const Tensor& tensor,
             const framework::OpKernelType& expected_kernel_type) const {
-        return framework::OpKernelType(expected_kernel_type.data_type_, 
+        return framework::OpKernelType(expected_kernel_type.data_type_,
                                        tensor.place(), tensor.layout());
     }
 };
@@ -365,6 +365,29 @@ protected:
     }
 };
 
+template <typename T>
+struct Expand<platform::CPUDeviceContext, T> {
+
+    void operator()(const Tensor* input, Tensor* output, int S, int N, int C, int sample_size) {
+        // Expand tensor into specified shape
+        // input shape: {S, C}
+        // outout shape: {S, N, C, H, W}, sample_size = H * W
+        const T* input_data = input->data<T>();
+        T* output_data = output->data<T>();
+        int input_share_offset = C;
+        int output_share_offset = N * C * sample_size;
+        for (int nc = 0; nc < N * C; ++nc) {
+            int nc_offset = nc * sample_size;
+            std::fill(output_data + nc_offset, output_data + nc_offset + sample_size, *(input_data + nc % C));
+            std::fill(output_data + nc_offset + output_share_offset,
+                      output_data + nc_offset + output_share_offset + sample_size,
+                      *(input_data + nc % C + input_share_offset));
+        }
+    }
+
+};
+
+std::shared_ptr<mpc::MpcOperators> mpc_operators;
 
 }  // namespace operators
 }  // namespace paddle
@@ -372,13 +395,15 @@ protected:
 namespace ops = paddle::operators;
 
 REGISTER_OPERATOR(
-    mpc_batch_norm, ops::MpcBatchNormOp, ops::MpcBatchNormOpMaker, 
+    mpc_batch_norm, ops::MpcBatchNormOp, ops::MpcBatchNormOpMaker,
     ops::MpcBatchNormOpInferVarType,
     ops::MpcBatchNormGradOpMaker<paddle::framework::OpDesc>,
     ops::MpcBatchNormGradOpMaker<paddle::imperative::OpBase>);
 REGISTER_OPERATOR(mpc_batch_norm_grad, ops::MpcBatchNormGradOp);
 
+#ifndef USE_CUDA
 REGISTER_OP_CPU_KERNEL(
     mpc_batch_norm, ops::MpcBatchNormKernel<paddle::platform::CPUDeviceContext, int64_t>);
 REGISTER_OP_CPU_KERNEL(
     mpc_batch_norm_grad, ops::MpcBatchNormGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+#endif // USE_CUDA

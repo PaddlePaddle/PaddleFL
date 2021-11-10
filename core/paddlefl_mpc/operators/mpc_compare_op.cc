@@ -3,9 +3,9 @@
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-    
+
     http://www.apache.org/licenses/LICENSE-2.0
-    
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,26 +70,50 @@ MPC Compare Operator.
 
 namespace ops = paddle::operators;
 REGISTER_OP_WITHOUT_GRADIENT(mpc_greater_than, ops::MpcCompareOp, ops::MpcCompareOpMaker);
-REGISTER_OP_CPU_KERNEL(mpc_greater_than, 
+REGISTER_OP_WITHOUT_GRADIENT(mpc_greater_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
+REGISTER_OP_WITHOUT_GRADIENT(mpc_less_than, ops::MpcCompareOp, ops::MpcCompareOpMaker);
+REGISTER_OP_WITHOUT_GRADIENT(mpc_less_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
+REGISTER_OP_WITHOUT_GRADIENT(mpc_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
+REGISTER_OP_WITHOUT_GRADIENT(mpc_not_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
+
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(mpc_greater_than,
+    ops::MpcCompareOpKernel<paddle::platform::CUDADeviceContext, int64_t, ops::MpcGreaterThanFunctor>);
+
+REGISTER_OP_CUDA_KERNEL(mpc_greater_equal,
+    ops::MpcCompareOpKernel<paddle::platform::CUDADeviceContext, int64_t, ops::MpcGreaterEqualFunctor>);
+
+REGISTER_OP_CUDA_KERNEL(mpc_less_than,
+    ops::MpcCompareOpKernel<paddle::platform::CUDADeviceContext, int64_t, ops::MpcLessThanFunctor>);
+
+REGISTER_OP_CUDA_KERNEL(mpc_less_equal,
+    ops::MpcCompareOpKernel<paddle::platform::CUDADeviceContext, int64_t, ops::MpcLessEqualFunctor>);
+
+REGISTER_OP_CUDA_KERNEL(mpc_equal,
+    ops::MpcCompareOpKernel<paddle::platform::CUDADeviceContext, int64_t, ops::MpcEqualFunctor>);
+
+REGISTER_OP_CUDA_KERNEL(mpc_not_equal,
+    ops::MpcCompareOpKernel<paddle::platform::CUDADeviceContext, int64_t, ops::MpcNotEqualFunctor>);
+
+#else // USE_CUDA
+
+REGISTER_OP_CPU_KERNEL(mpc_greater_than,
     ops::MpcCompareOpKernel<paddle::platform::CPUDeviceContext, int64_t, ops::MpcGreaterThanFunctor>);
 
-REGISTER_OP_WITHOUT_GRADIENT(mpc_greater_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
-REGISTER_OP_CPU_KERNEL(mpc_greater_equal, 
+REGISTER_OP_CPU_KERNEL(mpc_greater_equal,
     ops::MpcCompareOpKernel<paddle::platform::CPUDeviceContext, int64_t, ops::MpcGreaterEqualFunctor>);
 
-REGISTER_OP_WITHOUT_GRADIENT(mpc_less_than, ops::MpcCompareOp, ops::MpcCompareOpMaker);
-REGISTER_OP_CPU_KERNEL(mpc_less_than, 
+REGISTER_OP_CPU_KERNEL(mpc_less_than,
     ops::MpcCompareOpKernel<paddle::platform::CPUDeviceContext, int64_t, ops::MpcLessThanFunctor>);
 
-REGISTER_OP_WITHOUT_GRADIENT(mpc_less_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
-REGISTER_OP_CPU_KERNEL(mpc_less_equal, 
+REGISTER_OP_CPU_KERNEL(mpc_less_equal,
     ops::MpcCompareOpKernel<paddle::platform::CPUDeviceContext, int64_t, ops::MpcLessEqualFunctor>);
 
-REGISTER_OP_WITHOUT_GRADIENT(mpc_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
-REGISTER_OP_CPU_KERNEL(mpc_equal, 
+REGISTER_OP_CPU_KERNEL(mpc_equal,
     ops::MpcCompareOpKernel<paddle::platform::CPUDeviceContext, int64_t, ops::MpcEqualFunctor>);
 
-REGISTER_OP_WITHOUT_GRADIENT(mpc_not_equal, ops::MpcCompareOp, ops::MpcCompareOpMaker);
-REGISTER_OP_CPU_KERNEL(mpc_not_equal, 
+REGISTER_OP_CPU_KERNEL(mpc_not_equal,
     ops::MpcCompareOpKernel<paddle::platform::CPUDeviceContext, int64_t, ops::MpcNotEqualFunctor>);
 
+#endif // USE_CUDA

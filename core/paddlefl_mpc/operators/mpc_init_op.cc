@@ -23,6 +23,12 @@ namespace operators {
 
 using mpc::MpcConfig;
 
+struct GetCUDAPlaceDevId : public boost::static_visitor<int> {
+    int operator()(const platform::CPUPlace &) const { return 0; }
+    int operator()(const platform::CUDAPlace &gpu) const { return gpu.GetDeviceId(); }
+    int operator()(const platform::CUDAPinnedPlace &) const { return 0; }
+};
+
 class MpcInitOp : public framework::OperatorBase {
 public:
 
@@ -47,6 +53,11 @@ public:
         _mpc_config.set_int(MpcConfig::NET_SERVER_PORT, net_server_port);
         _mpc_config.set(MpcConfig::ENDPOINTS, endpoints);
         _mpc_config.set(MpcConfig::NETWORK_MODE, network_mode);
+
+        if (platform::is_gpu_place(dev_place)) {
+            int dev_id = boost::apply_visitor(GetCUDAPlaceDevId(), dev_place);
+            _mpc_config.set_int(MpcConfig::DEVICE_ID, dev_id);
+        }
         mpc::MpcInstance::init_instance(_mpc_config);
     }
 };
@@ -87,7 +98,7 @@ class MpcInitOpShapeInference : public framework::InferShapeBase {
  public:
   void operator()(framework::InferShapeContext* ctx) const override {
     // init protocol_name.
-    // Other ops can infer output's shape according to protocol_name, 
+    // Other ops can infer output's shape according to protocol_name,
     // e.g., mpc_mean_op, mpc_mul_op.
     auto protocol_name = ctx->Attrs().Get<std::string>("protocol_name");
     mpc::MpcInstance::init_protocol_name(protocol_name);

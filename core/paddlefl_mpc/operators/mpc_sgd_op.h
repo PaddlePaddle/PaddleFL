@@ -19,6 +19,11 @@
 namespace paddle {
 namespace operators {
 
+template <typename DeviceContext, typename T>
+struct GetLearningRate{
+    double operator()(const framework::Tensor* t);
+};
+
 template <typename DeviceContext, typename T, typename T1>
 class MpcSGDOpKernel : public MpcOpKernel<T> {
   public:
@@ -47,7 +52,9 @@ class MpcSGDOpKernel : public MpcOpKernel<T> {
         PADDLE_ENFORCE_EQ(param->numel(), sz);
         PADDLE_ENFORCE_EQ(grad->numel(), sz);
 
-        double lr = *learning_rate->data<T1>();
+        auto get_lr_functor = GetLearningRate<DeviceContext, T1>();
+
+        double lr = get_lr_functor(learning_rate);
 
         param_out->mutable_data<T>(ctx.GetPlace());
         PADDLE_ENFORCE_NOT_NULL(mpc::MpcInstance::mpc_protocol, "Protocol %s is not yet created in MPC Protocol.");

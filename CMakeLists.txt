@@ -47,7 +47,26 @@ option(USE_ABY3_TRUNC1 "Compile with ABY3 truncate 1 algorithm" OFF)
 
 option(BUILD_PADDLE_FROM_SOURCE "build paddle from source" OFF)
 
+option(WITH_GPU "Compile with gpu" ON)
+
 ########################### the project build part ###############################
+
+if (WITH_GPU)
+    find_package(CUDA)
+    add_definitions(-DUSE_CUDA)
+    add_definitions(-DPADDLE_WITH_MKLDNN)
+    add_definitions(-DPADDLE_WITH_CUDA)
+    add_definitions(-DEIGEN_USE_GPU)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" "-std=c++14")
+    list(APPEND CUDA_NVCC_FLAGS "--expt-extended-lambda")
+    list(APPEND CUDA_NVCC_FLAGS "-Xcompiler -fPIC")
+    list(APPEND CUDA_NVCC_FLAGS "-w")
+    list(APPEND CUDA_NVCC_FLAGS "--expt-relaxed-constexpr")
+    list(APPEND CUDA_NVCC_FLAGS "-O3 -DNDEBUG")
+
+    include_directories(${CUDNN_INCLUDE_DIR})
+    include_directories(${CUDA_TOOLKIT_INCLUDE})
+endif(WITH_GPU)
 
 include(third_party)
 include(generic)
@@ -69,7 +88,9 @@ if (USE_ABY3_TRUNC1)
 endif(USE_ABY3_TRUNC1)
 
 add_subdirectory(core/common)
-add_subdirectory(core/privc)
+if (NOT WITH_GPU)
+    add_subdirectory(core/privc)
+endif()
 add_subdirectory(core/privc3)
 add_subdirectory(core/paddlefl_mpc/mpc_protocol)
 add_subdirectory(core/paddlefl_mpc/operators)
@@ -92,6 +113,13 @@ if (WITH_GRPC)
 endif()
 
 # generate dynamic .so lib
+if (WITH_GPU)
+add_library(paddle_enc SHARED
+    $<TARGET_OBJECTS:common_o>
+    $<TARGET_OBJECTS:mpc_tensor_o>
+    $<TARGET_OBJECTS:mpc_protocol_o>
+    $<TARGET_OBJECTS:mpc_ops_o>)
+else()
 add_library(paddle_enc SHARED
     $<TARGET_OBJECTS:common_o>
     $<TARGET_OBJECTS:mpc_tensor_o>
@@ -99,6 +127,7 @@ add_library(paddle_enc SHARED
     $<TARGET_OBJECTS:mpc_ops_o>
     $<TARGET_OBJECTS:transport_o>
     $<TARGET_OBJECTS:privc_o>)
+endif()
 
 target_link_libraries(paddle_enc "-Wl,--whole-archive ${ZLIB_LIBRARIES} -Wl,--no-whole-archive" zlib)
 target_link_libraries(paddle_enc gmp)
@@ -116,9 +145,17 @@ target_link_libraries(paddle_enc hiredis)
 target_link_libraries(paddle_enc crypto)
 target_link_libraries(paddle_enc fluid_framework)
 
+if (WITH_GPU)
+    target_link_libraries(paddle_enc mpc_protocol_cu)
+    target_link_libraries(paddle_enc mpc_tensor_cu)
+    target_link_libraries(paddle_enc common_cu)
+    target_link_libraries(paddle_enc "-Wl,-no-as-needed" mpc_ops_cu)
+endif (WITH_GPU)
+
 set(CMAKE_SKIP_INSTALL_RPATH TRUE)
 
 set(PADDLE_ENCRYPTED_LIB_PATH "${CMAKE_SOURCE_DIR}/python/paddle_fl/mpc/libs")
+
 if (WITH_GRPC)
     install(DIRECTORY "${THIRD_PARTY_PATH}/install/grpc/lib/"
         DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}/third_party)
@@ -137,3 +174,10 @@ install(TARGETS paddle_enc mpc_data_utils
 if (WITH_PSI)
     install(TARGETS psi LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
 endif()
+
+if (WITH_GPU)
+    install(TARGETS mpc_tensor_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
+    install(TARGETS mpc_protocol_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
+    install(TARGETS common_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
+    install(TARGETS mpc_ops_cu LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
+endif (WITH_GPU)

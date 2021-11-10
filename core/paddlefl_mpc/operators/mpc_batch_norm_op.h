@@ -18,7 +18,9 @@ limitations under the License. */
 #include <string>
 #include <vector>
 #include "mpc_op.h"
+#ifndef USE_CUDA
 #include "./math/math_function.h"
+#endif // USE_CUDA
 #include "core/paddlefl_mpc/mpc_protocol/mpc_operators.h"
 
 namespace paddle {
@@ -28,27 +30,15 @@ using DDim = framework::DDim;
 using Tensor = framework::Tensor;
 using LoDTensor = framework::LoDTensor;
 using DataLayout = framework::DataLayout;
-std::shared_ptr<mpc::MpcOperators> mpc_operators;
+extern std::shared_ptr<mpc::MpcOperators> mpc_operators;
 // TODO: remove dependency on aby3 protocol
 const int MPC_ONE_SHARE = (1 << paddle::mpc::FIXED_POINTER_SCALING_FACTOR) / 3;
 
-template <typename T>
-void Expand(const Tensor* input, Tensor* output, int S, int N, int C, int sample_size) {
-    // Expand tensor into specified shape
-    // input shape: {S, C}
-    // outout shape: {S, N, C, H, W}, sample_size = H * W
-    const T* input_data = input->data<T>();
-    T* output_data = output->data<T>();
-    int input_share_offset = C;
-    int output_share_offset = N * C * sample_size;
-    for (int nc = 0; nc < N * C; ++nc) {
-        int nc_offset = nc * sample_size;
-        std::fill(output_data + nc_offset, output_data + nc_offset + sample_size, *(input_data + nc % C));
-        std::fill(output_data + nc_offset + output_share_offset,
-                  output_data + nc_offset + output_share_offset + sample_size,
-                  *(input_data + nc % C + input_share_offset));
-    }
-}
+template <typename DeviceContext, typename T>
+struct Expand {
+    void operator()(const Tensor* input, Tensor* output, int S, int N, int C, int sample_size);
+
+};
 
 template <typename DeviceContext, typename T>
 void TransToChannelFirst(const Tensor* input, Tensor* output, const framework::ExecutionContext &ctx) {
@@ -106,8 +96,13 @@ void ComputeSum(const Tensor* input, int C, Tensor* sum, const framework::Execut
         DDim dim(shape_.data(), shape_.size());
         input_slice.Resize(dim);
         mpc_operators->sum(&input_slice, &sum_slice);
+#ifdef __NVCC__
+        cudaMemcpy(sum_data + i, sum_slice_data, sizeof(T), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(sum_data + i + C, sum_slice_data + 1, sizeof(T), cudaMemcpyDeviceToDevice);
+#else // __NVCC__
         sum_data[i] = sum_slice_data[0];
         sum_data[i + C] = sum_slice_data[1];
+#endif // __NVCC__
     }
 }
 
@@ -129,7 +124,10 @@ void ComputeMeanVariance(const Tensor* input, int S, int N, int C, int sample_si
 
     Tensor saved_mean_e_expand;
     T* saved_mean_e_expand_data = saved_mean_e_expand.mutable_data<T>(input->dims(), ctx.GetPlace());
-    Expand<T>(saved_mean_e, &saved_mean_e_expand, S, N, C, sample_size);
+
+    auto expand_functor = Expand<DeviceContext, T>();
+    expand_functor (saved_mean_e, &saved_mean_e_expand, S, N, C, sample_size);
+
     mpc_operators->sub(input, &saved_mean_e_expand, &saved_mean_e_expand);
     mpc_operators->elementwise_mul(&saved_mean_e_expand, &saved_mean_e_expand, &saved_mean_e_expand);
     ComputeSum<DeviceContext, T>(&saved_mean_e_expand, C, saved_variance_e, ctx);
@@ -239,8 +237,11 @@ public:
         inv_std.mutable_data<T>({S, C}, ctx.GetPlace());
 
         Tensor epsilon_expand;
-        T* epsilon_expand_data = epsilon_expand.mutable_data<int64_t>({S, C}, ctx.GetPlace());
-        std::fill(epsilon_expand_data, epsilon_expand_data + S * C, MPC_ONE_SHARE * epsilon); // todo
+        epsilon_expand.mutable_data<int64_t>({S, C}, ctx.GetPlace());
+
+        math::SetConstant<DeviceContext, T> set_constant;
+        auto& dev_ctx = ctx.template device_context<DeviceContext>();
+        set_constant(dev_ctx, &epsilon_expand, MPC_ONE_SHARE * epsilon); // TODO
 
         // inv_std = 1 / sqrt(variance + epsilon)
         if (global_stats) {
@@ -258,6 +259,8 @@ public:
             mpc_operators->add(saved_variance, &epsilon_expand, &var_plus_epsilon);
             mpc_operators->inverse_square_root(&var_plus_epsilon, &inv_std);
 
+            framework::TensorCopy(inv_std, ctx.GetPlace(), saved_variance);
+
             mean_arr.ShareDataWith(*saved_mean);
         }
 
@@ -266,29 +269,17 @@ public:
         //   (x * inv_var * scale) + (bias - est_mean * inv_var * scale)
         const auto *scale = ctx.Input<Tensor>("Scale");
         const auto *bias = ctx.Input<Tensor>("Bias");
-        const T* scale_data = scale->data<T>();
-        const T* bias_data = bias->data<T>();
-
-        Tensor scale_expand;
-        auto* scale_expand_data = scale_expand.mutable_data<T>({S, C}, ctx.GetPlace());
-        std::fill(scale_expand_data, scale_expand_data + C, scale_data[0]);
-        std::fill(scale_expand_data + C, scale_expand_data + C + C, scale_data[1]);
-
-        Tensor bias_expand;
-        auto* bias_expand_data = bias_expand.mutable_data<T>({S, C}, ctx.GetPlace());
-        std::fill(bias_expand_data, bias_expand_data + C, bias_data[0]);
-        std::fill(bias_expand_data + C, bias_expand_data + C + C, bias_data[1]);
 
         Tensor new_scale;
         Tensor new_bias;
         Tensor new_bias_tmp;
-        new_scale.mutable_data<T>(scale_expand.dims(), ctx.GetPlace());
-        new_bias.mutable_data<T>(scale_expand.dims(), ctx.GetPlace());
-        new_bias_tmp.mutable_data<T>(scale_expand.dims(), ctx.GetPlace());
+        new_scale.mutable_data<T>(scale->dims(), ctx.GetPlace());
+        new_bias.mutable_data<T>(scale->dims(), ctx.GetPlace());
+        new_bias_tmp.mutable_data<T>(scale->dims(), ctx.GetPlace());
 
-        mpc_operators->elementwise_mul(&inv_std, &scale_expand, &new_scale);
+        mpc_operators->elementwise_mul(&inv_std, scale, &new_scale);
         mpc_operators->elementwise_mul(&mean_arr, &new_scale, &new_bias_tmp);
-        mpc_operators->sub(&bias_expand, &new_bias_tmp, &new_bias);
+        mpc_operators->sub(bias, &new_bias_tmp, &new_bias);
 
         switch (data_layout) {
             case DataLayout::kNCHW: {
@@ -297,11 +288,13 @@ public:
 
                 Tensor new_scale_expand;
                 new_scale_expand.mutable_data<T>(x->dims(), ctx.GetPlace());
-                Expand<T>(&new_scale, &new_scale_expand, S, N, C, sample_size);
+
+                auto expand_functor = Expand<DeviceContext, T>();
+                expand_functor(&new_scale, &new_scale_expand, S, N, C, sample_size);
 
                 Tensor new_bias_expand;
                 new_bias_expand.mutable_data<T>(x->dims(), ctx.GetPlace());
-                Expand<T>(&new_bias, &new_bias_expand, S, N, C, sample_size);
+                expand_functor(&new_bias, &new_bias_expand, S, N, C, sample_size);
 
                 mpc_operators->elementwise_mul(x, &new_scale_expand, &x_new_scale);
                 mpc_operators->add(&x_new_scale, &new_bias_expand, y);
@@ -392,8 +385,11 @@ public:
             var_plus_epsilon.mutable_data<T>(running_variance->dims(), ctx.GetPlace());
 
             Tensor epsilon_expand;
-            T* epsilon_expand_data = epsilon_expand.mutable_data<T>({S, C}, ctx.GetPlace());
-            std::fill(epsilon_expand_data, epsilon_expand_data + S * C, MPC_ONE_SHARE * epsilon);
+            epsilon_expand.mutable_data<T>({S, C}, ctx.GetPlace());
+
+            math::SetConstant<DeviceContext, T> set_constant;
+            auto& dev_ctx = ctx.template device_context<DeviceContext>();
+            set_constant(dev_ctx, &epsilon_expand, MPC_ONE_SHARE * epsilon); // TODO
 
             mpc_operators->add(running_variance, &epsilon_expand,  &var_plus_epsilon);
             mpc_operators->inverse_square_root(&var_plus_epsilon, &inv_var_tmp);
@@ -463,7 +459,9 @@ public:
                 mpc_operators->scale(&scale_inv_var_nhw, 1.0 / scale_coefff, &scale_inv_var_nhw);
                 Tensor scale_inv_var_nhw_expand;
                 scale_inv_var_nhw_expand.mutable_data<T>(d_y_dim, ctx.GetPlace());
-                Expand<T>(&scale_inv_var_nhw, &scale_inv_var_nhw_expand, S, N, C, sample_size);
+
+                auto expand_functor = Expand<DeviceContext, T>();
+                expand_functor(&scale_inv_var_nhw, &scale_inv_var_nhw_expand, S, N, C, sample_size);
 
                 if (!use_global_stats) {
                     Tensor dy_scale;
@@ -473,7 +471,7 @@ public:
 
                     Tensor dy_sum_expand;
                     dy_sum_expand.mutable_data<T>(d_y_dim, ctx.GetPlace());
-                    Expand<T>(&dy_sum, &dy_sum_expand, S, N, C, sample_size);
+                    expand_functor(&dy_sum, &dy_sum_expand, S, N, C, sample_size);
 
                     Tensor dy_scale_minus_dy;
                     dy_scale_minus_dy.mutable_data<T>(d_y_dim, ctx.GetPlace());
@@ -482,7 +480,7 @@ public:
 
                     Tensor mean_expand;
                     mean_expand.mutable_data<T>(d_y_dim, ctx.GetPlace());
-                    Expand<T>(saved_mean, &mean_expand, S, N, C, sample_size);
+                    expand_functor(saved_mean, &mean_expand, S, N, C, sample_size);
 
                     Tensor x_minus_mean;
                     x_minus_mean.mutable_data<T>(d_y_dim, ctx.GetPlace());
@@ -493,7 +491,7 @@ public:
 
                     Tensor tmp_expand;
                     tmp_expand.mutable_data<T>(d_y_dim, ctx.GetPlace());
-                    Expand<T>(&tmp, &tmp_expand, S, N, C, sample_size);
+                    expand_functor(&tmp, &tmp_expand, S, N, C, sample_size);
 
                     Tensor tmp_expand2;
                     tmp_expand2.mutable_data<T>(d_y_dim, ctx.GetPlace());

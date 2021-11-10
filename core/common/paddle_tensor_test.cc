@@ -281,6 +281,30 @@ TEST_F(PaddleTensorTest, matmul_test3) {
     EXPECT_TRUE(eq);
 }
 
+TEST_F(PaddleTensorTest, matmul_test4) {
+    std::vector<size_t> shape0 = { 2, 2, 3 };
+    std::vector<size_t> shape1 = { 2, 3, 2 };
+    std::vector<size_t> shape2 = { 1, 2, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt1 = _tensor_factory->template create<int64_t>(shape1);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 12; ++i) {
+        pt0->data()[i] = i;
+        pt1->data()[i] = i;
+    }
+    pt0->mat_mul(pt1.get(), pt2.get(), 0, 0, 1);
+
+    // | 0 1 2 | | 6  7  8 |    | 0 1 | |  6  7 |   | 10 13 |   | 172 193 |
+    // | 3 4 5 |,| 9 10 11 |  x | 2 3 | |  8  9 | = | 28 40 | + | 244 274 |
+    //                          | 4 5 |,| 10 11 |
+
+    std::vector<int64_t> res = { 182, 206, 272, 314 };
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
+}
+
 TEST_F(PaddleTensorTest, xor_test) {
     std::vector<size_t> shape = { 1 };
     auto pt0 = _tensor_factory->template create<int64_t>(shape);
@@ -551,5 +575,27 @@ TEST_F(PaddleTensorTest, mul128_test4) {
     // | 0 1| * | 0 2| = | 0 2|
     EXPECT_EQ(pt2->data()[0], 0);
     EXPECT_EQ(pt2->data()[1], (int64_t) 2 << SCALING_FACTOR);
+}
+
+TEST_F(PaddleTensorTest, transpose_test) {
+    std::vector<size_t> shape0 = { 2, 3 };
+    std::vector<size_t> shape2 = { 3, 2 };
+    auto pt0 = _tensor_factory->template create<int64_t>(shape0);
+    auto pt2 = _tensor_factory->template create<int64_t>(shape2);
+    for (size_t i = 0; i < 6; ++i) {
+        pt0->data()[i] = i;
+    }
+    std::vector<int> axis = { 1, 0 };
+    dynamic_cast<PaddleTensor<int64_t>*>(pt0.get())->Transpose<2>(axis, pt2.get());
+
+    // | 0 1 2 |^T   | 0 3 |
+    // | 3 4 5 |   = | 1 4 |
+    //               | 2 5 |
+
+    std::vector<int64_t> res = { 0, 3, 1, 4, 2, 5 };
+
+    bool eq = std::equal(res.begin(), res.end(), pt2->data());
+
+    EXPECT_TRUE(eq);
 }
 } // namespace common

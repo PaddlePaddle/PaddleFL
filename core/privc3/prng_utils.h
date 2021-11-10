@@ -14,21 +14,60 @@
 
 #pragma once
 
+#ifdef USE_CUDA
+
+#include "core/common/prng.cu.h"
+
+#include <fstream>
+
+namespace common {
+
+inline bool equals(const block& lhs, const block& rhs) {
+    for (int i = 0; i < 16; ++i) {
+        if (lhs.arr[i] != rhs.arr[i]) {
+            return false;
+        }
+        return true;
+    }
+}
+
+inline block block_from_dev_urandom() {
+  block ret;
+  std::ifstream in("/dev/urandom");
+
+  if (in.fail()) {
+        throw std::runtime_error("open /dev/urandom  failed.");
+    }
+  in.read(ret.arr, 16);
+  return ret;
+}
+
+} // namespace common
+
+#else // USE_CUDA
 #include "core/common/prng.h"
 #include "core/common/rand_utils.h"
 
 namespace aby3 {
 
-using block = common::block;
-
-const block g_zero_block = common::g_zero_block;
-
-using PseudorandomNumberGenerator = common::PseudorandomNumberGenerator;
-
-inline block block_from_dev_urandom() { return common::block_from_dev_urandom(); }
-
-inline bool equals(const block &lhs, const block &rhs) {
+inline bool equals(const common::block &lhs, const common::block &rhs) {
   return common::equals(lhs, rhs);
 }
 
 } // namespace aby3
+#endif // USE_CUDA
+
+namespace aby3 {
+
+using block = common::block;
+
+using PseudorandomNumberGenerator = common::PseudorandomNumberGenerator;
+
+const block g_zero_block = common::g_zero_block;
+
+inline block block_from_dev_urandom() {
+    return common::block_from_dev_urandom();
+}
+
+} //namespace aby3
+

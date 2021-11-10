@@ -208,6 +208,21 @@ $$
   }
 };
 
+template <typename T>
+struct GetAttrFromTensor<platform::CPUDeviceContext, T> {
+    T operator()(const framework::Tensor* t) {
+        return t->data<T>()[0];
+    }
+};
+
+template <typename T>
+struct SetAttrToTensor<platform::CPUDeviceContext, T> {
+    void operator()(framework::Tensor* t, T val) {
+        t->data<T>()[0] = val;
+        return;
+    }
+};
+
 }  // namespace operators
 }  // namespace paddle
 

@@ -23,6 +23,9 @@
 #include "core/paddlefl_mpc/mpc_protocol/mpc_config.h"
 #include "core/paddlefl_mpc/mpc_protocol/privc_operators.h"
 #include "core/paddlefl_mpc/mpc_protocol/network/network_factory.h"
+#ifdef WITH_GRPC
+#include "core/paddlefl_mpc/mpc_protocol/network/mesh_network_grpc.h"
+#endif // WITH_GRPC
 #include "core/privc/ot.h"
 
 namespace paddle {

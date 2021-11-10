@@ -21,9 +21,15 @@ limitations under the License. */
 #include "paddle/fluid/framework/eigen.h"
 #include "paddle/fluid/framework/op_registry.h"
 
+#ifdef __NVCC__
+#include "paddle/fluid/operators/math/vol2col.h"
+#include "paddle/fluid/operators/math/im2col.h"
+#include "paddle/fluid/operators/math/math_function.h"
+#else // __NVCC__
 #include "./math/im2col.h"
 #include "./math/vol2col.h"
 #include "./math/math_function.h"
+#endif // __NVCC__
 #include "mpc_op.h"
 
 namespace paddle {
@@ -1116,14 +1122,6 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
       filter_grad->mutable_data<T>(context.GetPlace());
       auto filter_grad_dims = filter_grad->dims();
 
-      Tensor filter_grad_;
-
-      filter_grad_.mutable_data<T>(framework::make_ddim({filter_matrix_shape[0],
-                                               batch_size * groups,
-                                               out_step,
-                                               filter_matrix_shape[2]
-                                               }), context.GetPlace(), 0);
-
       math::Im2ColFunctor<math::ColFormat::kCFO, DeviceContext, T> im2col;
       math::Vol2ColFunctor<DeviceContext, T> vol2col;
 
@@ -1165,11 +1163,39 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
       Tensor batched_col_ = SwapedLeadingDims<DeviceContext, T>(context, &batched_col);
       // gemm
 
+      transformed_output_grad.Resize(framework::make_ddim({
+        transformed_output_grad.dims()[0],
+        batch_size,  groups * out_step,
+        transformed_output_grad.numel() / (
+            transformed_output_grad.dims()[0] *
+            transformed_output_grad.dims()[1] *
+            transformed_output_grad.dims()[2])
+        }));
+
+      batched_col_.Resize(framework::make_ddim({col_matrix_shape[0],
+                                               batch_size,
+                                               groups * col_matrix_shape[1],
+                                               col_matrix_shape[2]}));
+
+      Tensor filter_grad_;
+
+      filter_grad_.mutable_data<T>(framework::make_ddim({filter_matrix_shape[0],
+                                               1,
+                                               groups * out_step,
+                                               groups * filter_matrix_shape[2]
+                                               }), context.GetPlace(), 0);
+
       mpc::MpcInstance::mpc_instance()->mpc_protocol()->mpc_operators()->matmul(
-          &transformed_output_grad, &batched_col_, &filter_grad_, 0, 1);
+          &transformed_output_grad, &batched_col_, &filter_grad_, 0, 1, 1);
 
       filter_grad_.Resize(framework::make_ddim({filter_matrix_shape[0],
-                                               batch_size,
+                                               groups,
+                                               out_step,
+                                               groups,
+                                               filter_matrix_shape[2]
+                                               }));
+
+      filter_grad->Resize(framework::make_ddim({filter_matrix_shape[0],
                                                groups,
                                                out_step,
                                                filter_matrix_shape[2]
@@ -1178,17 +1204,12 @@ class GemmConvGradKernel : public MpcOpKernel<T> {
       using EigenTensor5 = paddle::framework::EigenTensor<T, 5>;
       using EigenTensor4 = paddle::framework::EigenTensor<T, 4>;
 
-      filter_grad->Resize(framework::make_ddim({filter_matrix_shape[0],
-                                               groups,
-                                               out_step,
-                                               filter_matrix_shape[2]
-                                               }));
 
       auto eigen_filter_grad_ = EigenTensor5::From(filter_grad_);
       auto eigen_filter_grad = EigenTensor4::From(*filter_grad);
 
       eigen_filter_grad.device(*dev_ctx.eigen_device()) =
-          eigen_filter_grad_.sum(Eigen::array<int,1>({1}));
+          eigen_filter_grad_.sum(Eigen::array<int,1>({3}));
 
       filter_grad->Resize(filter_grad_dims);
 

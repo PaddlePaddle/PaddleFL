@@ -18,7 +18,6 @@
 #include <algorithm>
 
 #include "paddle/fluid/platform/enforce.h"
-#include "core/common/prng.h"
 
 namespace aby3 {
 template<typename T, size_t N>
@@ -105,20 +104,19 @@ void FixedPointTensor<T, N>::share(const TensorAdapter<T>* input,
     }
 }
 
-
 //convert TensorAdapter to shares and distribute to all parties
 template<typename T, size_t N>
-void FixedPointTensor<T, N>::online_share(const size_t party, 
+void FixedPointTensor<T, N>::online_share(const size_t party,
                                           const TensorAdapter<T>* input,
                                           FixedPointTensor<T, N>* ret) {
-    // create a tensor which contains two shares to send/recv   
+    // create a tensor which contains two shares to send/recv
     auto shape = input->shape();
     std::vector<size_t> shape_ = shape;
     shape_.insert(shape_.begin(), 2);
     auto one_party_shares = tensor_factory()->template create<T>(shape_);
 
     if (party == FixedPointTensor::party()) {
-        // this party has original data: 
+        // this party has original data:
         // encrypt input into 3 shares
         auto temp = tensor_factory()->template malloc_tensor<T>(3, input->shape());
         TensorAdapter<T>* shares[3]{temp[0].get(), temp[1].get(), temp[2].get()};
@@ -127,28 +125,55 @@ void FixedPointTensor<T, N>::online_share(const size_t party,
         // share 0&1
         shares[0]->copy(ret->_share[0]);
         shares[1]->copy(ret->_share[1]);
- 
-        // send share 1&2 to next_party 
+
+#ifdef __NVCC__
+        // send share 1&2 to next_party
+        auto one_party_shares_ = tensor_factory()->template create<T>(shape_);
+
+        cudaMemcpy(one_party_shares.get()->data(), shares[1]->data(),
+                   shares[1]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+        cudaMemcpy(one_party_shares.get()->data() + shares[1]->numel(), shares[2]->data(),
+                   shares[2]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+
+        // send share 2&0 to pre_party
+        cudaMemcpy(one_party_shares_.get()->data(), shares[2]->data(),
+                   shares[2]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+        cudaMemcpy(one_party_shares_.get()->data() + shares[2]->numel(), shares[0]->data(),
+                   shares[0]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+
+        NCCL_GROUP_START
+        aby3_ctx()->network()->template send(next_party(), *one_party_shares);
+        aby3_ctx()->network()->template send(pre_party(), *one_party_shares_);
+        NCCL_GROUP_START
+#else // __NVCC__
+        // send share 1&2 to next_party
         std::copy(shares[1]->data(), shares[1]->data() + shares[1]->numel(),
                   one_party_shares.get()->data());
-        std::copy(shares[2]->data(), shares[2]->data() + shares[2]->numel(), 
+        std::copy(shares[2]->data(), shares[2]->data() + shares[2]->numel(),
                   one_party_shares.get()->data() + shares[1]->numel());
         aby3_ctx()->network()->template send(next_party(), *one_party_shares);
-        
         // send share 2&0 to pre_party
-        std::copy(shares[2]->data(), shares[2]->data() + shares[2]->numel(), 
+        std::copy(shares[2]->data(), shares[2]->data() + shares[2]->numel(),
                   one_party_shares.get()->data());
-        std::copy(shares[0]->data(), shares[0]->data() + shares[0]->numel(), 
+        std::copy(shares[0]->data(), shares[0]->data() + shares[0]->numel(),
                   one_party_shares.get()->data() + shares[2]->numel());
         aby3_ctx()->network()->template send(pre_party(), *one_party_shares);
+#endif // __NVCC__
     } else {
         // recv share from 'party' who has original data
         aby3_ctx()->network()->template recv(party, *(one_party_shares));
-        std::copy(one_party_shares->data(), one_party_shares->data() + one_party_shares->numel() / 2, 
+#ifdef __NVCC__
+        cudaMemcpy(ret->_share[0]->data(), one_party_shares.get()->data(),
+                   ret->_share[0]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+        cudaMemcpy(ret->_share[1]->data(), one_party_shares.get()->data() + ret->_share[0]->numel(),
+                   ret->_share[1]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+#else // __NVCC__
+        std::copy(one_party_shares->data(), one_party_shares->data() + one_party_shares->numel() / 2,
                   ret->_share[0]->data());
-        std::copy(one_party_shares->data() + one_party_shares->numel() / 2, 
+        std::copy(one_party_shares->data() + one_party_shares->numel() / 2,
                   one_party_shares->data() + one_party_shares->numel(),
                   ret->_share[1]->data());
+#endif // __NVCC__
     }
 }
 
@@ -274,13 +299,18 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
 // and r' in Z_{2^64} is equal to |X| / (2^63 + |X|)
 
 // detail protocol:
-// P2 randomly generates r' \in (-2^62, 2^62), randomly generates r'_0, r_0, r_1 in Z_{2^64},
-// P2 compute r'_1 = r' - r'_0, r_2 = r'/2^N - r_0 - r_1, let x2 = r_2
-// P2 send r_0, r'_0 to P0, send r_1, r'_1 to P1
-// P1 and P0 execute "reveal x - r' to P1"
-// P1 compute x1 = (x - r') / 2^N + r_1
-// P0 set x0 = r_0
-// P0, P1, P2 invoke reshare() with inputs x0, x1, x2 respectively.
+// Input: P0 (x0', x1'), P1 (x1', x2'), P2 (x2', x0')
+// P2: 1. gen r' randomly from [-2^(l-2), 2^(l-2)]
+//     2. gen r0 using preshared seed with P0
+//     3. gen r1 randomly
+//     4. compute r2=r'/2^N - r0 - r1
+//     5. x2 := r1 + r2, x0 := r0
+// P2->>P0: x2' - r'
+// P2->>P1: x0' - r', x2
+// P0: 1. x0 := r0
+//     2. x1 := (x2' - r' + x0' + x1')/2^N
+// P1: 1. x1 := (x0' - r' + x1' + x2')/2^N
+//     2. x2:= x2
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
                                        FixedPointTensor<T, N>* ret,
@@ -292,65 +322,118 @@ void FixedPointTensor<T, N>::truncate(const FixedPointTensor<T, N>* op,
     }
     std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
     if (party() == 2) {
-        for (int i = 0; i < 7; ++i) {
+        for (int i = 0; i < 6; ++i) {
             temp.emplace_back(
                 tensor_factory()->template create<T>(op->shape()));
         }
+
         // r'
         aby3_ctx()->template gen_random_private(*temp[0]);
         temp[0]->rshift(1, temp[0].get());
 
-        //r'_0, r'_1
-        aby3_ctx()->template gen_random_private(*temp[1]);
-        temp[0]->sub(temp[1].get(), temp[2].get());
-        // r, r_0, r_1
-        temp[0]->rshift(scaling_factor, temp[3].get());
-        aby3_ctx()->template gen_random_private(*temp[4]);
-        aby3_ctx()->template gen_random_private(*temp[5]);
+        // r
+        temp[0]->rshift(scaling_factor, temp[1].get());
+
+        // r_0
+        aby3_ctx()->template gen_random(*temp[2], true);
+
+        // r_1
+        aby3_ctx()->template gen_random_private(*temp[3]);
+
         // r_2
-        temp[3]->sub(temp[4].get(), temp[6].get());
-        temp[6]->sub(temp[5].get(), temp[6].get());
+        temp[1]->sub(temp[2].get(), temp[1].get());
+        temp[1]->sub(temp[3].get(), temp[1].get());
 
-        aby3_ctx()->network()->template send(1, *temp[2]);
+        // x0' - r'
+        op->share(1)->sub(temp[0].get(), temp[4].get());
+
+        // x2' - r'
+        op->share(0)->sub(temp[0].get(), temp[0].get());
+
+        // x_2 = r_2 + r_1
+        temp[1]->add(temp[3].get(), temp[1].get());
+
+        auto shape_ = op->shape();
+        shape_.insert(shape_.begin(), 2);
+        temp[5]->reshape(shape_);
+        // merge msg to save send
+#ifdef __NVCC__
+        cudaMemcpy(temp[5]->data(), temp[1]->data(),
+                   temp[1]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+        cudaMemcpy(temp[5]->data() + temp[1]->numel(), temp[4]->data(),
+                   temp[4]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+#else // __NVCC__
+        std::copy(temp[1]->data(), temp[1]->data() + temp[1]->numel(),
+                  temp[5]->data());
+        std::copy(temp[4]->data(), temp[4]->data() + temp[4]->numel(),
+                  temp[5]->data() + temp[1]->numel());
+#endif // __NVCC__
+        NCCL_GROUP_START
+        // send x_2, x0' - r' to P1
         aby3_ctx()->network()->template send(1, *temp[5]);
-        aby3_ctx()->network()->template send(0, *temp[1]);
-        aby3_ctx()->network()->template send(0, *temp[4]);
+        // send x2' - r' to P0
+        aby3_ctx()->network()->template send(0, *temp[0]);
+        NCCL_GROUP_END
 
-        temp[6]->copy(ret->mutable_share(0));
+        temp[1]->copy(ret->mutable_share(0));
+        temp[2]->copy(ret->mutable_share(1));
 
     } else if (party() == 1) {
         for (int i = 0; i < 4; ++i) {
             temp.emplace_back(
                 tensor_factory()->template create<T>(op->shape()));
         }
-        // r'_1, r_1
-        aby3_ctx()->network()->template recv(2, *temp[0]);
-        aby3_ctx()->network()->template recv(2, *temp[1]);
-        // recv x0 - r'_0 from party 0
-        aby3_ctx()->network()->template recv(0, *temp[2]);
-        //reveal x - r' to party 1
-        op->share(0)->add(op->share(1), temp[3].get());
-        temp[3]->add(temp[2].get(), temp[3].get());
-        temp[3]->sub(temp[0].get(), temp[3].get());
-        // truncate x-r'
-        temp[3]->rshift(scaling_factor, temp[3].get());
+        auto shape_ = op->shape();
+        shape_.insert(shape_.begin(), 2);
+        temp[3]->reshape(shape_);
+        // recv x_2, x'_0 - r'
+        NCCL_GROUP_START
+        aby3_ctx()->network()->template recv(2, *temp[3]);
+        NCCL_GROUP_END
+#ifdef __NVCC__
+        cudaMemcpy(temp[0]->data(), temp[3]->data(),
+                   temp[0]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+        cudaMemcpy(temp[1]->data(), temp[3]->data() + temp[0]->numel(),
+                   temp[1]->numel() * sizeof(T),cudaMemcpyDeviceToDevice);
+#else // __NVCC__
+        std::copy(temp[3]->data(), temp[3]->data() + temp[0]->numel(),
+                  temp[0]->data());
+        std::copy(temp[3]->data() + temp[0]->numel(),
+                  temp[3]->data() + temp[0]->numel() + temp[1]->numel(),
+                  temp[1]->data());
+#endif // __NVCC__
 
-        temp[3]->add(temp[1].get(), ret->mutable_share(0));
-    } else {
-        for (int i = 0; i < 3; ++i) {
+        // P1 reveals x' - r'
+        op->share(0)->add(op->share(1), temp[2].get());
+        temp[2]->add(temp[1].get(), temp[2].get());
+        // truncate x'-r'
+        temp[2]->rshift(scaling_factor, temp[2].get());
+
+        temp[2]->copy(ret->mutable_share(0));
+        temp[0]->copy(ret->mutable_share(1));
+    } else { // party == 0
+        for (int i = 0; i < 2; ++i) {
             temp.emplace_back(
                 tensor_factory()->template create<T>(op->shape()));
         }
-        // r'_0, r_0
+        // recv x'_2 - r'
+        NCCL_GROUP_START
         aby3_ctx()->network()->template recv(2, *temp[0]);
-        aby3_ctx()->network()->template recv(2, *temp[1]);
-        //send x0 - r'_0 to party 1
-        op->share(0)->sub(temp[0].get(), temp[2].get());
-        aby3_ctx()->network()->template send(1, *temp[2]);
-        temp[1]->copy(ret->mutable_share(0));
-    }
+        NCCL_GROUP_END
 
-    reshare(ret->share(0), ret->mutable_share(1));
+        // P0 reveals x' - r'
+        op->share(0)->add(op->share(1), temp[1].get());
+        temp[1]->add(temp[0].get(), temp[0].get());
+        // truncate x'-r'
+        temp[0]->rshift(scaling_factor, temp[0].get());
+
+        // x_1
+        temp[0]->copy(ret->mutable_share(1));
+
+        // x_0 = r_0
+        aby3_ctx()->template gen_random(*ret->mutable_share(0), false);
+
+    }
 
     // compensation for carry in
     auto tensor_carry_in = tensor_factory()->template create<T>(ret->shape());
@@ -418,16 +501,8 @@ void FixedPointTensor<T, N>::mul(const TensorAdapter<T>* rhs,
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::sum(FixedPointTensor<T, N>* ret) const {
     PADDLE_ENFORCE_EQ(ret->numel(), 1, "output size should be 1.");
-    T sum1 = (T) 0;
-    T sum2 = (T) 0;
-    T* iter_0 = _share[0]->data();
-    T* iter_1 = _share[1]->data();
-    for (int i = 0; i < this->numel(); ++i) {
-        sum1 += *(iter_0 + i);
-        sum2 += *(iter_1 + i);
-    }
-    assign_to_tensor(ret->_share[0], sum1);
-    assign_to_tensor(ret->_share[1], sum2);
+    _share[0]->sum(ret->mutable_share(0));
+    _share[1]->sum(ret->mutable_share(1));
 }
 
 template<typename T, size_t N>
@@ -446,15 +521,28 @@ void FixedPointTensor<T, N>::dot_mul(const CTensor<T, N1...>* rhs,
 }
 
 template<typename T, size_t N>
+void FixedPointTensor<T, N>::dot_mul(const TensorAdapter<T>* rhs, FixedPointTensor* ret) const {
+    PADDLE_ENFORCE_EQ(ret->numel(), 1, "output size should be 1.");
+
+    auto temp0 = tensor_factory()->template create<T>(this->shape());
+    auto temp1 = tensor_factory()->template create<T>(this->shape());
+    std::shared_ptr<FixedPointTensor<T, N>> temp =
+            std::make_shared<FixedPointTensor<T, N>>(temp0.get(), temp1.get());
+    this->mul(rhs, temp.get());
+    temp->sum(ret);
+}
+
+template<typename T, size_t N>
 void FixedPointTensor<T, N>::mat_mul(const FixedPointTensor<T, N>* rhs,
                                      FixedPointTensor<T, N>* ret,
                                      bool trans_lhs,
-                                     bool trans_rhs) const {
-    mul_trunc(this, rhs, ret, [trans_lhs, trans_rhs](
+                                     bool trans_rhs,
+                                     bool sum_reduce_batch) const {
+    mul_trunc(this, rhs, ret, [trans_lhs, trans_rhs, sum_reduce_batch](
             const TensorAdapter<T>* lhs,
             const TensorAdapter<T>* rhs,
             TensorAdapter<T>* ret) {
-        lhs->mat_mul(rhs, ret, trans_lhs, trans_rhs);
+        lhs->mat_mul(rhs, ret, trans_lhs, trans_rhs, sum_reduce_batch);
         });
 }
 
@@ -462,9 +550,10 @@ template<typename T, size_t N>
 void FixedPointTensor<T, N>::mat_mul(const TensorAdapter<T>* rhs,
                                      FixedPointTensor<T, N>* ret,
                                      bool trans_lhs,
-                                     bool trans_rhs) const {
-    _share[0]->mat_mul(rhs, ret->_share[0], trans_lhs, trans_rhs);
-    _share[1]->mat_mul(rhs, ret->_share[1], trans_lhs, trans_rhs);
+                                     bool trans_rhs,
+                                     bool sum_reduce_batch) const {
+    _share[0]->mat_mul(rhs, ret->_share[0], trans_lhs, trans_rhs, sum_reduce_batch);
+    _share[1]->mat_mul(rhs, ret->_share[1], trans_lhs, trans_rhs, sum_reduce_batch);
     truncate(ret, ret, rhs->scaling_factor());
 }
 
@@ -474,16 +563,17 @@ void FixedPointTensor<T, N>::div(const TensorAdapter<T>* rhs,
     PADDLE_ENFORCE_EQ(N, rhs->scaling_factor(),
                         "no match scaling factor");
 
-    auto temp = tensor_factory()->template create<T>(this->shape());
-
     double scale = std::pow(2, rhs->scaling_factor());
-    auto inverse = [scale](T d) -> T {
-                    return 1.0 * scale / d * scale; };
-    std::transform(rhs->data(), rhs->data() + rhs->numel(),
-                                temp->data(), inverse);
-    temp->scaling_factor() = rhs->scaling_factor();
+    auto temp = tensor_factory()->template create<T>(this->shape());
+    auto temp2 = tensor_factory()->template create<T>(this->shape());
+    assign_to_tensor(temp.get(), (T)(scale * scale));
 
-    this->mul(temp.get(), ret);
+    temp->scaling_factor() = rhs->scaling_factor();
+    temp2->scaling_factor() = rhs->scaling_factor();
+
+    temp->div(rhs, temp2.get());
+
+    this->mul(temp2.get(), ret);
 }
 
 template<typename T, size_t N>
@@ -533,26 +623,27 @@ void FixedPointTensor<T, N>::relu(FixedPointTensor<T, N>* ret) const {
 
     auto break_point = tensor_factory()->template create<T>(b_shape);
 
-    T* b_ptr = break_point->data();
-    for (size_t i = 0; i < break_point->numel(); ++i) {
-        b_ptr[i] = 0;
-    }
+    assign_to_tensor(break_point.get(), (T)0);
     break_point->scaling_factor() = N;
 
     //contruct coeff
-    std::vector<size_t> c_shape = {2, 2};
+    std::vector<size_t> c_shape = {4, 1};
     c_shape.insert(c_shape.end(), shape_.begin(), shape_.end());
 
     auto coeff = tensor_factory()->template create<T>(c_shape);
 
-    T* c_ptr = coeff->data();
+    auto slice = tensor_factory()->template create<T>();
+    coeff->slice(0, 3, slice.get());
 
-    for (size_t i = 0; i < 3 * this->numel(); ++i) {
-        c_ptr[i] = 0;
-    }
-    for (size_t i = 3 * this->numel(); i < 4 * this->numel(); ++i) {
-        c_ptr[i] = (T) 1 << N;
-    }
+    assign_to_tensor(slice.get(), (T)0);
+
+    coeff->slice(3, 4, slice.get());
+
+    assign_to_tensor(slice.get(), (T) 1 << N);
+
+    c_shape[0] = 2;
+    c_shape[1] = 2;
+    coeff->reshape(c_shape);
     coeff->scaling_factor() = N;
 
     this->polynomial_piecewise(coeff.get(), break_point.get(), ret);
@@ -600,10 +691,11 @@ void FixedPointTensor<T, N>::sigmoid_chebyshev(FixedPointTensor<T, N>* ret) cons
     w[5] = 0.0001825597;
     w[7] = -0.0000018848;
     w[9] = 0.0000000072;
+    double scale = pow(2, N);
+    auto slice = tensor_factory()->template create<T>();
     for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < numel; ++j) {
-            *(coeff->data() + i * numel + j) = (T) (w[i] * pow(2, N));
-        }
+        coeff->slice(i, i + 1, slice.get());
+        assign_to_tensor(slice.get(), (T) (w[i] * scale));
     }
     coeff->scaling_factor() = N;
     polynomial(coeff.get(), ret);
@@ -625,36 +717,41 @@ void FixedPointTensor<T, N>::sigmoid(FixedPointTensor<T, N>* ret) const {
 
     auto break_point = tensor_factory()->template create<T>(b_shape);
 
-    T* b_ptr = break_point->data();
-    for (size_t i = 0; i < break_point->numel(); ++i) {
-        b_ptr[i] = 0;
-    }
-    for (size_t i = 0; i < break_point->numel() / 2; ++i) {
-        b_ptr[i] = (T) (-2.5 * pow(2, N));
-    }
-    for (size_t i = break_point->numel() / 2; i < break_point->numel(); ++i) {
-        b_ptr[i] = (T) (2.5 * pow(2, N));
-    }
+    auto slice = tensor_factory()->template create<T>();
+    break_point->slice(0, 1, slice.get());
+    assign_to_tensor(slice.get(), (T) (-2.5 * pow(2, N)));
+
+    break_point->slice(1, 2, slice.get());
+    assign_to_tensor(slice.get(), (T) (2.5 * pow(2, N)));
+
     break_point->scaling_factor() = N;
 
     //contruct coeff
-    std::vector<size_t> c_shape = {3, 2};
+    std::vector<size_t> c_shape = {6, 1};
     c_shape.insert(c_shape.end(), shape_.begin(), shape_.end());
 
     auto coeff = tensor_factory()->template create<T>(c_shape);
 
-    T* c_ptr = coeff->data();
-
-    size_t numel = this->numel();
     double scale = std::pow(2, N);
-    for (size_t i = 0; i < numel; ++i) {
-        c_ptr[i] = 0.0001 * scale;
-        c_ptr[i + numel] = 0;
-        c_ptr[i + 2 * numel] = 0.5 * scale;
-        c_ptr[i + 3 * numel] = 0.17 * scale;
-        c_ptr[i + 4 * numel] = (1 - 0.0001) * scale;
-        c_ptr[i + 5 * numel] = 0;
-    }
+
+    coeff->slice(0, 1, slice.get());
+    assign_to_tensor(slice.get(), (T) (0.0001 * scale));
+    coeff->slice(1, 2, slice.get());
+    assign_to_tensor(slice.get(), (T) (0));
+    coeff->slice(2, 3, slice.get());
+    assign_to_tensor(slice.get(), (T) (0.5 * scale));
+    coeff->slice(3, 4, slice.get());
+    assign_to_tensor(slice.get(), (T) (0.17 * scale));
+    coeff->slice(4, 5, slice.get());
+    assign_to_tensor(slice.get(), (T) ((1 - 0.0001) * scale));
+    coeff->slice(5, 6, slice.get());
+    assign_to_tensor(slice.get(), (T) (0));
+
+    c_shape[0] = 3;
+    c_shape[1] = 2;
+
+    coeff->reshape(c_shape);
+
     coeff->scaling_factor() = N;
 
     this->polynomial_piecewise(coeff.get(), break_point.get(), ret);
@@ -675,7 +772,7 @@ void FixedPointTensor<T, N>::sigmoid_high_precision(FixedPointTensor<T, N>* ret)
     tensor_one->scaling_factor() = N;
     assign_to_tensor(tensor_one_share0.get(), (T) (1.0 * pow(2, N) / 3.0));
     assign_to_tensor(tensor_one_share1.get(), (T) (1.0 * pow(2, N) / 3.0));
-    
+
     FixedPointTensor tensor_one_ft(tensor_one_share0.get(), tensor_one_share1.get());
     FixedPointTensor out(temp[0].get(), temp[1].get());
     this->negative(&out);
@@ -700,39 +797,34 @@ void FixedPointTensor<T, N>::sigmoid_enhanced(FixedPointTensor<T, N>* ret) const
 
     auto break_point = tensor_factory()->template create<T>(b_shape);
 
-    T* b_ptr = break_point->data();
-    auto numel = ret->numel();
-    double scale = std::pow(2, N);
-    for (size_t i = 0; i < numel; ++i) {
-        b_ptr[i] = (T) (-5 * scale);
-        b_ptr[i + numel] = (T) (-2.5 * scale);
-        b_ptr[i + 2 * numel] = (T) (2.5 * scale);
-        b_ptr[i + 3 * numel] = (T) (5 * scale);
+    double scale = pow(2, N);
+    double bp_[4] = {-5, -2.5, 2.5, 5};
+    auto slice = tensor_factory()->template create<T>();
+    for (int i = 0; i < 4; ++i) {
+        break_point->slice(i, i + 1, slice.get());
+        assign_to_tensor(slice.get(), (T) (bp_[i] * scale));
     }
+
     break_point->scaling_factor() = N;
 
+    double w_[10] = {0.0001, 0, 0.145, 0.02776, 0.5, 0.17, 0.85498, 0.02776 ,0.9999, 0};
     //contruct coeff
-    std::vector<size_t> c_shape = {5, 2};
+    std::vector<size_t> c_shape = {10, 1};
     c_shape.insert(c_shape.end(), shape_.begin(), shape_.end());
     auto coeff = tensor_factory()->template create<T>(c_shape);
-    T* c_ptr = coeff->data();
-    for (size_t i = 0; i < numel; ++i) {
-        c_ptr[i] = 0.0001 * scale;
-        c_ptr[i + numel] = 0;
-        c_ptr[i + 2 * numel] = 0.145 * scale;
-        c_ptr[i + 3 * numel] = 0.02776 * scale;
-        c_ptr[i + 4 * numel] = 0.5 * scale;
-        c_ptr[i + 5 * numel] = 0.17 * scale;
-        c_ptr[i + 6 * numel] = 0.85498 * scale;
-        c_ptr[i + 7 * numel] = 0.02776 * scale;
-        c_ptr[i + 8 * numel] = 0.9999 * scale;
-        c_ptr[i + 9 * numel] = 0 * scale;
+    for (int i = 0; i < 10; ++i) {
+        coeff->slice(i, i + 1, slice.get());
+        assign_to_tensor(slice.get(), (T) (w_[i] * scale));
     }
+    c_shape[0] = 5;
+    c_shape[1] = 2;
+    coeff->reshape(c_shape);
     coeff->scaling_factor() = N;
 
     this->polynomial_piecewise(coeff.get(), break_point.get(), ret);
 }
 
+#ifndef USE_CUDA
 template< typename T, size_t N>
 void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
                                      bool use_relu, bool use_long_div) const {
@@ -773,27 +865,16 @@ void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
     auto exp_lower_bound = temp[10].get();
 
     auto transpose = [](const TensorAdapter<T>* in, TensorAdapter<T>* out) {
+        std::vector<int> axis{ 1, 0 };
         // suppose input dims = 2
-        const size_t col = in->shape()[1];
-        const size_t row = in->shape()[0];
-        const size_t numel = in->numel();
-
-        for (size_t k = 0; k < numel; ++k) {
-            size_t i = k / row;
-            size_t j = k % row;
-            out->data()[k] = in->data()[j * col + i];
-        }
+        dynamic_cast<const common::PaddleTensor<T>*>(in)->template Transpose<2>(axis, out);
     };
 
     auto broadcast = [](const TensorAdapter<T>* in, TensorAdapter<T>* out) {
         // suppose input dims = 2
-        // in shape = [row, 1]
         const size_t col = out->shape()[1];
-        const size_t row = out->shape()[0];
-        for (size_t k = 0; k < out->numel(); ++k) {
-            size_t i = k / col;
-            out->data()[k] = in->data()[i];
-        }
+        std::vector<int> axis{ 1, col };
+        dynamic_cast<const common::PaddleTensor<T>*>(in)->template Broadcast<2>(axis, out);
     };
 
     share(0)->copy(x.mutable_share(0));
@@ -850,6 +931,7 @@ void FixedPointTensor<T, N>::softmax(FixedPointTensor<T, N>* ret,
     x.share(0)->copy(ret->mutable_share(0));
     x.share(1)->copy(ret->mutable_share(1));
 }
+#endif // USE_CUDA
 
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
@@ -930,31 +1012,16 @@ void FixedPointTensor<T, N>::long_div(const FixedPointTensor<T, N>* rhs,
     abs(&abs_lhs, &sign_ret, ret);
 }
 
+#ifndef USE_CUDA
 // reduce last dim
 template <typename T, size_t N>
 void FixedPointTensor<T, N>::reduce(const FixedPointTensor<T, N>* input,
                                     FixedPointTensor<T, N>* ret) {
     //enfoce shape: input->shape[0 ... (n-2)] == ret shape
-    auto& shape = input->shape();
-    size_t ite_size = shape[shape.size() - 1];
-
-    T* ret_begin_ptr_0 = ret->_share[0]->data();
-    T* ret_begin_ptr_1 = ret->_share[1]->data();
-
-    T* input_begin_ptr_0 = input->_share[0]->data();
-    T* input_begin_ptr_1 = input->_share[1]->data();
-
-    for (int j = 0; j < ret->numel(); ++j) {
-        *(ret_begin_ptr_0 + j) = *(input_begin_ptr_0 + j * ite_size);
-        *(ret_begin_ptr_1 + j) = *(input_begin_ptr_1 + j * ite_size);
-        for (int i =  1; i < ite_size; ++i) {
-            *(ret_begin_ptr_0 + j) +=
-                        *(input_begin_ptr_0 + j * ite_size + i);
-            *(ret_begin_ptr_1 + j) +=
-                        *(input_begin_ptr_1 + j * ite_size + i);
-        }
-    }
+    dynamic_cast<const common::PaddleTensor<T>*>(input->_share[0])->sum_reduce_last_dim(ret->_share[0]);
+    dynamic_cast<const common::PaddleTensor<T>*>(input->_share[1])->sum_reduce_last_dim(ret->_share[1]);
 }
+#endif // USE_CUDA
 
 template< typename T, size_t N>
 void FixedPointTensor<T, N>::polynomial(const TensorAdapter<T>* coeff,
@@ -1129,11 +1196,35 @@ void FixedPointTensor<T, N>::lt(const CTensor<T, N1...>* rhs,
 }
 
 template<typename T, size_t N>
+void FixedPointTensor<T, N>::lt(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const {
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (int i = 0; i < 2; ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>(this->shape()));
+    }
+    std::shared_ptr<FixedPointTensor<T, N>> sub_result =
+        std::make_shared<FixedPointTensor<T, N>>(
+                                temp[0].get(), temp[1].get());
+    this->sub(rhs, sub_result.get());
+    ret->bit_extract(sizeof(T) * 8 - 1, sub_result.get());
+}
+
+template<typename T, size_t N>
 template<template<typename U, size_t...> class CTensor,
             size_t... N1>
 void FixedPointTensor<T, N>::leq(const CTensor<T, N1...>* rhs,
                                 BooleanTensor<T>* ret) const {
 
+    this->gt(rhs, ret);
+    auto tensor_one = tensor_factory()->
+                            template create<T>(this->shape());
+
+    assign_to_tensor(tensor_one.get(), (T) 1);
+    ret->bitwise_xor(tensor_one.get(), ret);
+}
+
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::leq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const {
     this->gt(rhs, ret);
     auto tensor_one = tensor_factory()->
                             template create<T>(this->shape());
@@ -1162,11 +1253,36 @@ void FixedPointTensor<T, N>::gt(const CTensor<T, N1...>* rhs,
 }
 
 template<typename T, size_t N>
+void FixedPointTensor<T, N>::gt(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const {
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (int i = 0; i < 2; ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>(this->shape()));
+    }
+    std::shared_ptr<FixedPointTensor<T, N>> sub_result =
+        std::make_shared<FixedPointTensor<T, N>>(
+                                    temp[0].get(), temp[1].get());
+    this->sub(rhs, sub_result.get());
+    sub_result->negative(sub_result.get());
+    ret->template bit_extract(sizeof(T) * 8 - 1, sub_result.get());
+}
+
+template<typename T, size_t N>
 template<template<typename U, size_t...> class CTensor,
             size_t... N1>
 void FixedPointTensor<T, N>::geq(const CTensor<T, N1...>* rhs,
                                 BooleanTensor<T>* ret) const {
 
+    this->lt(rhs, ret);
+    auto tensor_one = tensor_factory()->
+                            template create<T>(this->shape());
+
+    assign_to_tensor(tensor_one.get(), (T) 1);
+    ret->bitwise_xor(tensor_one.get(), ret);
+}
+
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::geq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const {
     this->lt(rhs, ret);
     auto tensor_one = tensor_factory()->
                             template create<T>(this->shape());
@@ -1188,10 +1304,37 @@ void FixedPointTensor<T, N>::eq(const CTensor<T, N1...>* rhs,
 }
 
 template<typename T, size_t N>
+void FixedPointTensor<T, N>::eq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const {
+    this->neq(rhs, ret);
+    auto tensor_one = tensor_factory()->template create<T>(this->shape());
+    assign_to_tensor(tensor_one.get(), (T) 1);
+    ret->bitwise_xor(tensor_one.get(), ret);
+}
+
+template<typename T, size_t N>
 template<template<typename U, size_t...> class CTensor,
             size_t... N1>
 void FixedPointTensor<T, N>::neq(const CTensor<T, N1...>* rhs,
                                 BooleanTensor<T>* ret) const {
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    for (int i = 0; i < 4; i ++) {
+        temp.emplace_back(tensor_factory()->
+                                template create<T>(this->shape()));
+    }
+    std::shared_ptr<BooleanTensor<T>> lt =
+            std::make_shared<BooleanTensor<T>>(
+                                temp[0].get(), temp[1].get());
+    std::shared_ptr<BooleanTensor<T>> gt =
+            std::make_shared<BooleanTensor<T>>(
+                                temp[2].get(), temp[3].get());
+
+    this->lt(rhs, lt.get());
+    this->gt(rhs, gt.get());
+    lt->bitwise_or(gt.get(), ret);
+}
+
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::neq(const TensorAdapter<T>* rhs, BooleanTensor<T>* ret) const {
     std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
     for (int i = 0; i < 4; i ++) {
         temp.emplace_back(tensor_factory()->
@@ -1246,9 +1389,50 @@ template<typename T, size_t N>
 void FixedPointTensor<T, N>::inverse_square_root(FixedPointTensor* ret,
                                                  size_t iter,
                                                  double x0) const {
-    inverse_square_root(this, ret, iter, x0);
+    auto temp = tensor_factory()->template malloc_tensor<T>(4, this->shape());
+
+    std::shared_ptr<FixedPointTensor<T, N> > sqrt =
+        std::make_shared<FixedPointTensor<T, N> >(temp[0].get(), temp[1].get());
+
+    std::shared_ptr<FixedPointTensor<T, N> > one =
+        std::make_shared<FixedPointTensor<T, N> >(temp[2].get(), temp[3].get());
+
+    this->square_root(sqrt.get(), iter, x0);
+
+    float one_share = 1. / 3;
+    assign_to_tensor(one->mutable_share(0), (T)(one_share * pow(2, N)));
+    assign_to_tensor(one->mutable_share(1), (T)(one_share * pow(2, N)));
+
+    one->long_div(sqrt.get(), ret);
 }
 
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::square_root(FixedPointTensor* ret,
+                                         size_t iter,
+                                         double x0) const {
+    auto temp = tensor_factory()->template malloc_tensor<T>(4, this->shape());
+
+    std::shared_ptr<FixedPointTensor<T, N> > x_n =
+        std::make_shared<FixedPointTensor<T, N> >(temp[0].get(), temp[1].get());
+    std::shared_ptr<FixedPointTensor<T, N> > tmp =
+        std::make_shared<FixedPointTensor<T, N> >(temp[2].get(), temp[3].get());
+
+    // split to 3 shares
+    x0 /= 3;
+
+    assign_to_tensor(x_n->mutable_share(0), (T)(x0 * pow(2, N)));
+    assign_to_tensor(x_n->mutable_share(1), (T)(x0 * pow(2, N)));
+
+    for (int i = 0; i < iter; ++i) {
+        this->long_div(x_n.get(), tmp.get());
+        x_n->add(tmp.get(), x_n.get());
+        truncate(x_n.get(), x_n.get(), 1);
+    }
+
+    x_n->share(0)->copy(ret->mutable_share(0));
+    x_n->share(1)->copy(ret->mutable_share(1));
+
+}
 // Newton's method, var naming from Quake III Arena: Q_rsqrt
 // float threehalfs = 1.5F;
 // x2 = number * 0.5F;
@@ -1271,6 +1455,8 @@ void FixedPointTensor<T, N>::inverse_square_root(const FixedPointTensor* op,
     // x2 = 0.5 * op
     truncate(op, x2.get(), 1);
 
+    // split to 3 shares
+    x0 /= 3;
     assign_to_tensor(y->mutable_share(0), (T)(x0 * pow(2, N)));
     assign_to_tensor(y->mutable_share(1), (T)(x0 * pow(2, N)));
 
@@ -1298,6 +1484,33 @@ template<typename T, size_t N>
 template<template<typename U, size_t...> class CTensor,
             size_t... N1>
 void FixedPointTensor<T, N>::max(const CTensor<T, N1...>* rhs,
+                                 FixedPointTensor* ret,
+                                 BooleanTensor<T>* cmp) const {
+    // max = lhs + (rhs - lhs) if rhs > lhs else lhs
+    std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
+    bool output_cmp = cmp != nullptr;
+    // if cmp is not null, store cmp results in cmp
+    // else, store them in tmp tensors
+    for (int i = 0; i < 2 + 2 * (!output_cmp); ++i) {
+        temp.emplace_back(
+            tensor_factory()->template create<T>(this->shape()));
+    }
+    FixedPointTensor<T, N> delta(temp[0].get(), temp[1].get());
+    sub(rhs, &delta);
+    BooleanTensor<T> sign;
+    if (output_cmp) {
+        sign = *cmp;
+    } else {
+        sign = BooleanTensor<T>(temp[2].get(), temp[3].get());
+    }
+    sign.template bit_extract(sizeof(T) * 8 - 1, &delta);
+    delta.negative(&delta);
+    sign.mul(&delta, &delta);
+    add(&delta, ret);
+}
+
+template<typename T, size_t N>
+void FixedPointTensor<T, N>::max(const TensorAdapter<T>* rhs,
                                  FixedPointTensor* ret,
                                  BooleanTensor<T>* cmp) const {
     // max = lhs + (rhs - lhs) if rhs > lhs else lhs
@@ -1379,6 +1592,36 @@ void FixedPointTensor<T, N>::max_pooling(FixedPointTensor* ret,
 }
 
 template<typename T, size_t N>
+void FixedPointTensor<T, N>::avg_pooling(FixedPointTensor* ret) const {
+    size_t k = shape()[0];
+    std::vector<std::shared_ptr<TensorAdapter<T>>> tmp;
+    for (int i = 0; i < 3; ++i) {
+        tmp.emplace_back(
+            tensor_factory()->template create<T>());
+    }
+
+    assign_to_tensor(ret->mutable_share(0), (T)0);
+    assign_to_tensor(ret->mutable_share(1), (T)0);
+
+    FixedPointTensor now(tmp[0].get(), tmp[1].get());
+
+    for (size_t i = 0; i < k; ++i) {
+        share(0)->slice(i, i + 1, tmp[0].get());
+        share(1)->slice(i, i + 1, tmp[1].get());
+
+        ret->add(&now, ret);
+    }
+
+    tmp[2]->reshape(ret->shape());
+
+    tmp[2]->scaling_factor() = N;
+    assign_to_tensor(tmp[2].get(), (T)((1 << N) / k));
+
+    ret->mul(tmp[2].get(), ret);
+
+}
+
+template<typename T, size_t N>
 void FixedPointTensor<T, N>::preds_to_indices(const FixedPointTensor* preds,
                                               FixedPointTensor* indices,
                                               float threshold) {
@@ -1448,31 +1691,44 @@ void FixedPointTensor<T, N>::calc_tp_fp_fn(
     // tp
     reduce(&true_positive, &scalar);
 
-    const T& share0 = scalar.share(0)->data()[0];
-    const T& share1 = scalar.share(1)->data()[0];
+    auto slice00 = tensor_factory()->template create<T>();
+    auto slice01 = tensor_factory()->template create<T>();
 
-    T* ret_data0 = tp_fp_fn->mutable_share(0)->data();
-    T* ret_data1 = tp_fp_fn->mutable_share(1)->data();
+    auto slice10 = tensor_factory()->template create<T>();
+    auto slice11 = tensor_factory()->template create<T>();
 
-    // assgin tp
-    ret_data0[0] = share0;
-    ret_data1[0] = share1;
+    auto slice20 = tensor_factory()->template create<T>();
+    auto slice21 = tensor_factory()->template create<T>();
+
+    tp_fp_fn->mutable_share(0)->slice(0, 1, slice00.get());
+    tp_fp_fn->mutable_share(1)->slice(0, 1, slice01.get());
+
+    tp_fp_fn->mutable_share(0)->slice(1, 2, slice10.get());
+    tp_fp_fn->mutable_share(1)->slice(1, 2, slice11.get());
+
+    tp_fp_fn->mutable_share(0)->slice(2, 3, slice20.get());
+    tp_fp_fn->mutable_share(1)->slice(2, 3, slice21.get());
+
+    FixedPointTensor res0(slice00.get(), slice01.get());
+    FixedPointTensor res1(slice10.get(), slice11.get());
+    FixedPointTensor res2(slice20.get(), slice21.get());
+
+    scalar.share(0)->copy(slice00.get());
+    scalar.share(1)->copy(slice01.get());
 
     // tp + fp
     reduce(indices, &scalar);
 
-    // direcrt aby3 sub
-    ret_data0[1] = share0 - ret_data0[0];
-    ret_data1[1] = share1 - ret_data1[0];
+    scalar.sub(&res0, &res1);
 
     // tp + fn
     reduce(labels, &scalar);
 
-    ret_data0[2] = share0 - ret_data0[0];
-    ret_data1[2] = share1 - ret_data1[0];
+    scalar.sub(&res0, &res2);
 
 }
 
+#ifndef USE_CUDA
 template<typename T, size_t N>
 void FixedPointTensor<T, N>::calc_precision_recall(
     const FixedPointTensor* tp_fp_fn,
@@ -1491,7 +1747,7 @@ void FixedPointTensor<T, N>::calc_precision_recall(
                       "for binary-classification only");
     // 5 for allocating temp tensor
     std::vector<std::shared_ptr<TensorAdapter<T>>> temp;
-    for (size_t i = 0; i < 5; ++i) {
+    for (size_t i = 0; i < 7; ++i) {
         temp.emplace_back(
             tensor_factory()->template create<T>());
     }
@@ -1507,35 +1763,39 @@ void FixedPointTensor<T, N>::calc_precision_recall(
     temp[3]->reshape(shape_one);
     FixedPointTensor scalar2(temp[2].get(), temp[3].get());
 
+    temp[4]->reshape(shape_one);
+    temp[5]->reshape(shape_one);
+    FixedPointTensor tmp_(temp[4].get(), temp[5].get());
+
     auto get = [&tp_fp_fn](size_t idx, FixedPointTensor* dest) {
-        dest->mutable_share(0)->data()[0] = tp_fp_fn->share(0)->data()[idx];
-        dest->mutable_share(1)->data()[0] = tp_fp_fn->share(1)->data()[idx];
+        tp_fp_fn->share(0)->slice(idx, idx + 1, dest->mutable_share(0));
+        tp_fp_fn->share(1)->slice(idx, idx + 1, dest->mutable_share(1));
     };
 
     get(0, &scalar);
     get(1, &scalar2);
 
     // tp + fp
-    scalar.add(&scalar2, &scalar2);
+    scalar.add(&scalar2, &tmp_);
 
-    scalar.long_div(&scalar2, &scalar2);
+    scalar.long_div(&tmp_, &tmp_);
 
-    temp[4]->reshape(shape_one);
+    temp[6]->reshape(shape_one);
 
-    scalar2.reveal(temp[4].get());
+    tmp_.reveal(temp[6].get());
 
     ret->scaling_factor() = N;
-    ret->data()[0] = temp[4]->data()[0];
+    ret->data()[0] = temp[6]->data()[0];
 
     get(2, &scalar2);
 
     // tp + fn
-    scalar.add(&scalar2, &scalar2);
+    scalar.add(&scalar2, &tmp_);
 
-    scalar.long_div(&scalar2, &scalar2);
-    scalar2.reveal(temp[4].get());
+    scalar.long_div(&tmp_, &tmp_);
+    tmp_.reveal(temp[6].get());
 
-    ret->data()[1] = temp[4]->data()[0];
+    ret->data()[1] = temp[6]->data()[0];
 
     float precision = 1.0 * ret->data()[0] / (T(1) << N);
     float recall = 1.0 * ret->data()[1] / (T(1) << N);
@@ -1546,4 +1806,9 @@ void FixedPointTensor<T, N>::calc_precision_recall(
 
     ret->data()[2] = T(f1_score * (T(1) << N));
 }
+#endif // USE_CUDA
 } // namespace aby3
+
+#ifdef USE_CUDA
+#include "./fixedpoint_tensor_imp.cu.h"
+#endif // USE_CUDA

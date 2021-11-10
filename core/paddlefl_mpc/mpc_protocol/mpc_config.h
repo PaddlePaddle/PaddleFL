@@ -60,7 +60,7 @@ public:
 
 private:
   std::unordered_map<std::string, std::string> _prop_map;
-  
+
 public:
   static const std::string ROLE;
   static const std::string NET_SIZE;
@@ -69,6 +69,7 @@ public:
   static const std::string NET_SERVER_PORT;
   static const std::string ENDPOINTS;
   static const std::string NETWORK_MODE;
+  static const std::string DEVICE_ID;
 
   // default values
   static const std::string LOCAL_ADDR_DEFAULT;

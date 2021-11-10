@@ -19,12 +19,13 @@ from __future__ import division
 from __future__ import print_function
 
 import platform
+import sys
 
 from setuptools import find_packages
 from setuptools import setup
 from version import fl_version
 
-import paddle_fl.split_learning.core.proto.gen_code
+#import paddle_fl.split_learning.core.proto.gen_code
 
 def python_version():
     """
@@ -33,10 +34,16 @@ def python_version():
     return [int(v) for v in platform.python_version().split(".")]
 
 max_version, mid_version, min_version = python_version()
-paddle_fl.split_learning.core.proto.gen_code.gen_proto_codes()
+#paddle_fl.split_learning.core.proto.gen_code.gen_proto_codes()
+
+paddle_req = 'paddlepaddle >= 1.8.5'
+
+if "--gpu" in sys.argv:
+    paddle_req = 'paddlepaddle-gpu >= 1.8.5'
+    sys.argv.remove("--gpu")
 
 REQUIRED_PACKAGES = [
-    'six >= 1.10.0', 'protobuf >= 3.1.0', 'paddlepaddle >= 1.8.5'
+    'six >= 1.10.0', 'protobuf >= 3.1.0', paddle_req
 ]
 
 if max_version < 3:

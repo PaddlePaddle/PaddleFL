@@ -92,7 +92,13 @@ public:
 
     // todo
     void matmul(const Tensor *lhs, const Tensor *rhs, Tensor *out,
-                bool trans_lhs = false, bool trans_rhs = false) override {
+                bool trans_lhs = false, bool trans_rhs = false, bool sum_reduce_batch = false) override {
+
+        if (sum_reduce_batch) {
+            PADDLE_THROW(platform::errors::Unimplemented(
+                    "sum reduce batch is not implemented."));
+        }
+
         PaddleTensor lhs_(device_ctx(), *lhs);
         PaddleTensor rhs_(device_ctx(), *rhs);
         PaddleTensor out_(device_ctx(), *out);
@@ -213,12 +219,12 @@ public:
             "inverse_square_root is not implemented."));
     }
 
-    void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, 
+    void add_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout,
                   Tensor *dx, Tensor *dy, int axis = -1) override {
         privc_op::add_grad(lhs, rhs, dout, dx, dy, axis);
     }
 
-    void elementwise_mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout, 
+    void elementwise_mul_grad(const Tensor *lhs, const Tensor *rhs, const Tensor *dout,
                   Tensor *dx, Tensor *dy, int axis = -1) override {
         PADDLE_THROW(platform::errors::Unimplemented(
             "elementwise_mul_grad is not implemented."));
@@ -277,9 +283,10 @@ public:
             "div is not implemented."));
     }
 
-     void online_share(size_t party, const Tensor *input, Tensor *out) override {
+    // TODO
+    void online_share(size_t party, const Tensor *input, Tensor *out) override {
         PADDLE_THROW(platform::errors::Unimplemented(
-            "online_share is not implemented."));
+            "online share is not implemented."));
     }
 
 private:

@@ -25,6 +25,16 @@
 #include "core/privc3/aby3_context.h"
 #include "core/common/paddle_tensor.h"
 
+#ifdef USE_CUDA
+#include "core/common/paddle_tensor_factory.cu.h"
+#include "nccl.h"
+#define NCCL_GROUP_START ncclGroupStart();
+#define NCCL_GROUP_END ncclGroupEnd();
+#else
+#define NCCL_GROUP_START ;
+#define NCCL_GROUP_END ;
+#endif
+
 namespace paddle {
 namespace mpc {
 
@@ -44,6 +54,11 @@ public:
 
     auto old_exec_ctx = current_exec_ctx;
     current_exec_ctx = exec_ctx;
+
+#ifdef USE_CUDA
+    paddle::mpc::AbstractContext::_s_stream =
+        dynamic_cast<const paddle::platform::CUDADeviceContext*>(device_ctx())->stream();
+#endif
 
     auto old_factory = _s_current_tensor_factory;
 
@@ -65,13 +80,21 @@ public:
   static const ExecutionContext *exec_ctx() { return current_exec_ctx; }
 
   static const paddle::platform::DeviceContext *device_ctx() {
+#ifdef USE_CUDA
+    return &current_exec_ctx->cuda_device_context();
+#else
     return &current_exec_ctx->device_context();
+#endif
   }
 
   static std::shared_ptr<common::TensorAdapterFactory> tensor_factory() {
     if (!_s_current_tensor_factory) {
       _s_current_tensor_factory =
+#ifdef USE_CUDA
+          std::make_shared<common::CudaPaddleTensorFactory>(device_ctx());
+#else
           std::make_shared<common::PaddleTensorFactory>(device_ctx());
+#endif
     }
     return _s_current_tensor_factory;
   }

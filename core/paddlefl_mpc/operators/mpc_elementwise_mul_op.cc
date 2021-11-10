@@ -38,7 +38,7 @@ public:
                 "The dimensions of X should be equal with the dimensions of Y. "
                 "But received the dimensions of X is [%s], the dimensions of Y is [%s]",
             ctx->GetInputDim("X"), ctx->GetInputDim("Y")));
-  
+
         ctx->ShareDim("X", /*->*/ "Out");
         ctx->ShareLoD("X", /*->*/ "Out");
     }
@@ -66,7 +66,7 @@ MPC elementwise mul Operator.
 class MpcElementwiseMulGradOp : public framework::OperatorWithKernel {
 public:
     using framework::OperatorWithKernel::OperatorWithKernel;
-  
+
     void InferShape(framework::InferShapeContext *ctx) const override {
         auto out_grad_name = framework::GradVarName("Out");
         PADDLE_ENFORCE_EQ(ctx->HasInput("X"), true, "Input(X) should not be null.");
@@ -107,16 +107,29 @@ protected:
 }  // namespace paddle
 
 namespace ops = paddle::operators;
-REGISTER_OPERATOR(mpc_elementwise_mul, ops::MpcElementwiseMulOp, 
-                 ops::MpcElementwiseMulOpMaker, 
-                 ops::MpcElementwiseMulGradMaker<paddle::framework::OpDesc>); 
+REGISTER_OPERATOR(mpc_elementwise_mul, ops::MpcElementwiseMulOp,
+                 ops::MpcElementwiseMulOpMaker,
+                 ops::MpcElementwiseMulGradMaker<paddle::framework::OpDesc>);
 
-REGISTER_OPERATOR(mpc_elementwise_mul_grad, ops::MpcElementwiseMulGradOp); 
+REGISTER_OPERATOR(mpc_elementwise_mul_grad, ops::MpcElementwiseMulGradOp);
+
+#ifdef USE_CUDA
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_elementwise_mul,
+    ops::MpcElementwiseMulKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+REGISTER_OP_CUDA_KERNEL(
+    mpc_elementwise_mul_grad,
+    ops::MpcElementwiseMulGradKernel<paddle::platform::CUDADeviceContext, int64_t>);
+
+#else // USE_CUDA
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_elementwise_mul, 
+    mpc_elementwise_mul,
     ops::MpcElementwiseMulKernel<paddle::platform::CPUDeviceContext, int64_t>);
 
 REGISTER_OP_CPU_KERNEL(
-    mpc_elementwise_mul_grad, 
+    mpc_elementwise_mul_grad,
     ops::MpcElementwiseMulGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+#endif // USE_CUDA

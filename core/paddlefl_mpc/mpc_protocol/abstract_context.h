@@ -17,7 +17,11 @@
 #include <memory>
 
 #include "core/paddlefl_mpc/mpc_protocol/abstract_network.h"
+#ifdef USE_CUDA
+#include "core/common/prng.cu.h"
+#else
 #include "core/common/prng.h"
+#endif // USE_CUDA
 #include "paddle/fluid/platform/enforce.h"
 
 namespace paddle {
@@ -51,12 +55,7 @@ public:
 
   AbstractNetwork *network() { return _network.get(); }
 
-  void set_random_seed(const block &seed, size_t idx) {
-    PADDLE_ENFORCE_LE(idx, _num_party,
-                     "prng idx should be less and equal to %d.",
-                     _num_party);
-    get_prng(idx).set_seed(seed);
-  }
+  void set_random_seed(const block &seed, size_t idx);
 
   size_t party() const { return _party; }
 
@@ -70,48 +69,32 @@ public:
 
   // generate random from prng[0] or prng[1]
   // @param next: use bool type for idx 0 or 1
-  template <typename T> T gen_random(bool next) {
-    return get_prng(next).get<T>();
-  }
+  template <typename T>
+  T gen_random(bool next);
 
   template <typename T, template <typename> class Tensor>
-  void gen_random(Tensor<T> &tensor, bool next) {
-    std::for_each(
-        tensor.data(), tensor.data() + tensor.numel(),
-        [this, next](T &val) { val = this->template gen_random<T>(next); });
-  }
+  void gen_random(Tensor<T> &tensor, bool next);
 
-  template <typename T> T gen_random_private() { return get_prng(2).get<T>(); }
+  template <typename T> T gen_random_private();
 
   template <typename T, template <typename> class Tensor>
-  void gen_random_private(Tensor<T> &tensor) {
-    std::for_each(
-        tensor.data(), tensor.data() + tensor.numel(),
-        [this](T &val) { val = this->template gen_random_private<T>(); });
-  }
+  void gen_random_private(Tensor<T> &tensor);
 
-  template <typename T> T gen_zero_sharing_arithmetic() {
-    return get_prng(0).get<T>() - get_prng(1).get<T>();
-  }
+  template <typename T>
+  T gen_zero_sharing_arithmetic();
 
   template <typename T, template <typename> class Tensor>
-  void gen_zero_sharing_arithmetic(Tensor<T> &tensor) {
-    std::for_each(tensor.data(), tensor.data() + tensor.numel(),
-                  [this](T &val) {
-                    val = this->template gen_zero_sharing_arithmetic<T>();
-                  });
-  }
+  void gen_zero_sharing_arithmetic(Tensor<T> &tensor);
 
-  template <typename T> T gen_zero_sharing_boolean() {
-    return get_prng(0).get<T>() ^ get_prng(1).get<T>();
-  }
+  template <typename T>
+  T gen_zero_sharing_boolean();
 
   template <typename T, template <typename> class Tensor>
-  void gen_zero_sharing_boolean(Tensor<T> &tensor) {
-    std::for_each(
-        tensor.data(), tensor.data() + tensor.numel(),
-        [this](T &val) { val = this->template gen_zero_sharing_boolean<T>(); });
-  }
+  void gen_zero_sharing_boolean(Tensor<T> &tensor);
+
+#ifdef USE_CUDA
+  static cudaStream_t _s_stream;
+#endif
 
 protected:
   virtual PseudorandomNumberGenerator& get_prng(size_t idx) = 0;
@@ -123,5 +106,6 @@ private:
 };
 
 } // namespace mpc
-
 } //namespace paddle
+
+#include "./abstract_context_impl.h"

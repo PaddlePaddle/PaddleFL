@@ -361,8 +361,10 @@ REGISTER_OPERATOR(mpc_conv2d, ops::ConvOp, ops::Conv2DOpMaker,
 
 REGISTER_OPERATOR(mpc_conv2d_grad, ops::ConvOpGrad);
 
+#ifndef USE_CUDA
 REGISTER_OP_CPU_KERNEL(
     mpc_conv2d, ops::GemmConvKernel<paddle::platform::CPUDeviceContext, int64_t>);
 REGISTER_OP_CPU_KERNEL(
     mpc_conv2d_grad,
     ops::GemmConvGradKernel<paddle::platform::CPUDeviceContext, int64_t>);
+#endif

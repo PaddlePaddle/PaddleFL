@@ -66,6 +66,9 @@ public:
     // element wise op, need operands' dim are same
     virtual void sub(const TensorAdapter* rhs, TensorAdapter* ret) const = 0;
 
+    // sum reduce all to one
+    virtual void sum(TensorAdapter* ret) const;
+
     virtual void negative(TensorAdapter* ret) const = 0;
 
     // element wise op, need operands' dim are same
@@ -78,7 +81,8 @@ public:
     virtual void mat_mul(const TensorAdapter* rhs,
                          TensorAdapter* ret,
                          bool trans_lhs = false,
-                         bool trans_rhs = false) const = 0;
+                         bool trans_rhs = false,
+                         bool sum_reduce_batch = false) const = 0;
 
     // element wise op, need operands' dim are same
     virtual void bitwise_xor(const TensorAdapter* rhs, TensorAdapter* ret) const = 0;
@@ -134,10 +138,15 @@ public:
     virtual const std::shared_ptr<TensorAdapter<T>> operator[](size_t index) const = 0;
 };
 
+#ifdef USE_CUDA
+template<typename T>
+inline void assign_to_tensor(TensorAdapter<T>* input, T assign_num);
+#else // USE_CUDA
 template<typename T>
 inline void assign_to_tensor(TensorAdapter<T>* input, T assign_num) {
     std::transform(input->data(), input->data() + input->numel(),
                    input->data(), [assign_num](T) { return assign_num; });
 }
+#endif // USE_CUDA
 
 } // namespace common

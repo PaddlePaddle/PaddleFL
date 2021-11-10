@@ -27,6 +27,7 @@ const std::string MpcConfig::NET_SERVER_ADDR("net_server.address");
 const std::string MpcConfig::NET_SERVER_PORT("net_server.port");
 const std::string MpcConfig::ENDPOINTS("endpoints");
 const std::string MpcConfig::NETWORK_MODE("network_mode");
+const std::string MpcConfig::DEVICE_ID("device_id");
 
 const std::string MpcConfig::LOCAL_ADDR_DEFAULT("localhost");
 const std::string MpcConfig::NET_SERVER_ADDR_DEFAULT("localhost");
