@@ -55,6 +55,47 @@ struct Expand<platform::CUDADeviceContext, T> {
 
 };
 
+template <typename T>
+__global__ void cu_compute_sum(T* dst, const T* src, int S, int N, int C, int sample_size) {
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    while (col < S * C) {
+        int s = col / C;
+        int c = col % C;
+
+        dst[col] = 0;
+
+        for (int i = 0; i < N * sample_size; ++i) {
+            int n = i / sample_size;
+            int i_ = i % sample_size;
+            dst[col] += src[s * N * C * sample_size
+                + n * C * sample_size
+                + c * sample_size
+                + i_];
+        }
+
+        col += blockDim.x * gridDim.x;
+    }
+}
+
+template <typename T>
+struct ComputeSum<platform::CUDADeviceContext, T> {
+    void operator()(const Tensor* input, int C, Tensor* sum, const framework::ExecutionContext &ctx) {
+        // Compute sum of each channel
+        // input shape: {S, N, C, H, W}
+        // output shape: {S, C}
+        // H and W is optional, compute the sum of each channel.
+        int S = input->dims()[0];
+        int N = input->dims()[1];
+        int sample_size = input->numel() / (S * N * C);
+
+        dim3 block_size = dim3(PFL_CUDA_THREAD_SIZE, 1);
+        dim3 grid_size = dim3((S * C + PFL_CUDA_THREAD_SIZE - 1) / PFL_CUDA_THREAD_SIZE, 1);
+
+        cu_compute_sum<T><<<grid_size, block_size, 0, mpc::AbstractContext::_s_stream>>>(
+            sum->data<T>(), input->data<T>(), S, N, C, sample_size);
+    }
+};
+
 }  // namespace operators
 }  // namespace paddle
 
