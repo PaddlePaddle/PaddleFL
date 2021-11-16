@@ -77,34 +77,12 @@ void TransToChannelFirst(const Tensor* input, Tensor* output, const framework::E
 }
 
 template <typename DeviceContext, typename T>
-void ComputeSum(const Tensor* input, int C, Tensor* sum, const framework::ExecutionContext &ctx) {
-    // Compute sum of each channel
-    // input shape: {S, N, C, H, W}
-    // output shape: {S, C}
-    // H and W is optional, compute the sum of each channel.
-    Tensor input_trans;
-    TransToChannelFirst<DeviceContext, T>(input, &input_trans, ctx);
-    Tensor input_slice;
-    Tensor sum_slice;
-    auto sum_slice_data = sum_slice.mutable_data<T>(framework::make_ddim({2, 1}), ctx.GetPlace());
-    auto sum_data = sum->data<T>();
-    for (size_t i = 0; i < C; ++i) {
-        input_slice = input_trans.Slice(i, i + 1);
-        auto shape = paddle::framework::vectorize<size_t>(input_slice.dims());
-        shape.erase(shape.begin());
-        std::vector<int64_t> shape_(shape.cbegin(), shape.cend());
-        DDim dim(shape_.data(), shape_.size());
-        input_slice.Resize(dim);
-        mpc_operators->sum(&input_slice, &sum_slice);
-#ifdef __NVCC__
-        cudaMemcpy(sum_data + i, sum_slice_data, sizeof(T), cudaMemcpyDeviceToDevice);
-        cudaMemcpy(sum_data + i + C, sum_slice_data + 1, sizeof(T), cudaMemcpyDeviceToDevice);
-#else // __NVCC__
-        sum_data[i] = sum_slice_data[0];
-        sum_data[i + C] = sum_slice_data[1];
-#endif // __NVCC__
-    }
-}
+struct ComputeSum {
+    void operator()(const Tensor* input,
+                    int C,
+                    Tensor* sum,
+                    const framework::ExecutionContext &ctx);
+};
 
 
 template <typename DeviceContext, typename T>
@@ -119,7 +97,8 @@ void ComputeMeanVariance(const Tensor* input, int S, int N, int C, int sample_si
     Tensor input_trans;
     TransToChannelFirst<DeviceContext, T>(input, &input_trans, ctx);
 
-    ComputeSum<DeviceContext, T>(input, C, saved_mean_e, ctx);
+    auto compute_sum = ComputeSum<DeviceContext, T>();
+    compute_sum(input, C, saved_mean_e, ctx);
     mpc_operators->scale(saved_mean_e, 1.0 / (N * sample_size), saved_mean_e); // scale
 
     Tensor saved_mean_e_expand;
@@ -130,7 +109,7 @@ void ComputeMeanVariance(const Tensor* input, int S, int N, int C, int sample_si
 
     mpc_operators->sub(input, &saved_mean_e_expand, &saved_mean_e_expand);
     mpc_operators->elementwise_mul(&saved_mean_e_expand, &saved_mean_e_expand, &saved_mean_e_expand);
-    ComputeSum<DeviceContext, T>(&saved_mean_e_expand, C, saved_variance_e, ctx);
+    compute_sum(&saved_mean_e_expand, C, saved_variance_e, ctx);
     mpc_operators->scale(saved_variance_e, 1.0 / (N * sample_size), saved_variance_e); // scale
 
 }
@@ -417,7 +396,8 @@ public:
                 dy_sum.Resize({S, C});
                 dy_sum.mutable_data<T>(ctx.GetPlace());
 
-                ComputeSum<DeviceContext, T>(d_y, C, &dy_sum, ctx); // dy_sum
+                auto compute_sum = ComputeSum<DeviceContext, T>();
+                compute_sum(d_y, C, &dy_sum, ctx); // dy_sum
 
                 // d_scale = np.sum((X - mean) / inv_std * dy, axis=0)
                 // = [np.sum(X * dy) - mean * dy_sum] * inv_std
@@ -428,7 +408,7 @@ public:
 
                 Tensor dy_mul_x_sub_mean_mul_invstd_sum;
                 dy_mul_x_sub_mean_mul_invstd_sum.mutable_data<T>({S, C}, ctx.GetPlace());
-                ComputeSum<DeviceContext, T>(&x_mul_dy, C, &dy_mul_x_sub_mean_mul_invstd_sum, ctx); // sum(X * dy)
+                compute_sum(&x_mul_dy, C, &dy_mul_x_sub_mean_mul_invstd_sum, ctx); // sum(X * dy)
 
                 Tensor dy_sum_mul_mean;
                 dy_sum_mul_mean.mutable_data<T>({S, C}, ctx.GetPlace());

@@ -2,12 +2,12 @@
 
 #### A. 环境准备
 
-* CentOS 7 (64 bit)
+* CentOS 7 (64 bit) or Ubuntu 16.04
 * Python 3.5/3.6/3.7 ( 64 bit) or above
 * pip3 9.0.1+ (64 bit)
-* PaddlePaddle 1.8.5 
+* PaddlePaddle 1.8.5 (or PaddlePaddle-GPU 1.8.5 如希望编译GPU版本)
 * Redis 5.0.8 (64 bit)
-* GCC or G++ 8.3.1
+* GCC or G++ 8.2.0+
 * cmake 3.15+
 
 #### B. 克隆源代码并编译安装
@@ -30,18 +30,36 @@ make -j$(nproc)
 ```
 cmake .. -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DPYTHON_EXECUTABLE=/usr/local/python/bin/python3.8 -DPYTHON_INCLUDE_DIRS=/usr/local/python/include/python3.8/ -DBUILD_PADDLE_FROM_SOURCE=ON -DWITH_GRPC=ON
 ```
+可以通过`-DWITH_GPU`决定编译GPU版本还是CPU版本. 注意, GPU版本只支持在CUDAPlace运行.
+
 如果您事先安装好了PaddlePaddle，希望只编译PaddleFL，那么将上面命令中 "-DBUILD_PADDLE_FROM_SOURCE=ON" 改为 "-DBUILD_PADDLE_FROM_SOURCE=OFF" 即可。
 
 
 3.安装paddle (如果选择从源代码构建paddle):
+CPU版:
 ```sh
 pip3 install ./third_party/paddle/src/extern_paddle-build/python/dist/paddlepaddle-1.8.5-cp38-cp38-linux_x86_64.whl -U
 ```
+
+GPU版:
+```sh
+pip3 install ./third_party/paddle/src/extern_paddle-build/python/dist/paddlepaddle_gpu-1.8.5-cp38-cp38-linux_x86_64.whl -U
+```
+
 4.安装PaddleFL对应的安装包
 
+CPU版:
 ```sh
 make install
 cd /path/to/PaddleFL/python
 ${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel
+pip3 install dist/***.whl -U
+```
+
+GPU版本:
+```sh
+make install
+cd /path/to/PaddleFL/python
+${PYTHON_EXECUTABLE} setup.py sdist bdist_wheel --gpu
 pip3 install dist/***.whl -U
 ```

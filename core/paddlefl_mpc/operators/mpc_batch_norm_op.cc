@@ -387,6 +387,33 @@ struct Expand<platform::CPUDeviceContext, T> {
 
 };
 
+template <typename T>
+struct ComputeSum<platform::CPUDeviceContext, T> {
+    void operator()(const Tensor* input, int C, Tensor* sum, const framework::ExecutionContext &ctx) {
+        // Compute sum of each channel
+        // input shape: {S, N, C, H, W}
+        // output shape: {S, C}
+        // H and W is optional, compute the sum of each channel.
+        Tensor input_trans;
+        TransToChannelFirst<platform::CPUDeviceContext, T>(input, &input_trans, ctx);
+        Tensor input_slice;
+        Tensor sum_slice;
+        auto sum_slice_data = sum_slice.mutable_data<T>(framework::make_ddim({2, 1}), ctx.GetPlace());
+        auto sum_data = sum->data<T>();
+        for (size_t i = 0; i < C; ++i) {
+            input_slice = input_trans.Slice(i, i + 1);
+            auto shape = paddle::framework::vectorize<size_t>(input_slice.dims());
+            shape.erase(shape.begin());
+            std::vector<int64_t> shape_(shape.cbegin(), shape.cend());
+            DDim dim(shape_.data(), shape_.size());
+            input_slice.Resize(dim);
+            mpc_operators->sum(&input_slice, &sum_slice);
+            sum_data[i] = sum_slice_data[0];
+            sum_data[i + C] = sum_slice_data[1];
+        }
+    }
+};
+
 std::shared_ptr<mpc::MpcOperators> mpc_operators;
 
 }  // namespace operators
