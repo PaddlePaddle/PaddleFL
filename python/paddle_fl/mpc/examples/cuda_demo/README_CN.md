@@ -13,6 +13,11 @@ NCCL_SOCKET_IFNAME=$IP_INTERFACE $PYTHON_EXECUTABLE cuda_demo.py $PARTY_ID $PART
     PARTY_ID指定计算参与方的ID值为0, 1, 或 2,
     PARTY0_IP_ADDR为参与方0的IP地址.
 
+可以通过IP地址获取IP接口名称:
+```sh
+ifconfig | grep -B1 "<ip-address>" | awk 'NR==1{print $1}'
+```
+
 注意, 可以通过环境变量传递其他NCCL参数.
 
 Demo脚本`cuda_demo.py`默认使用0号CUDA 设备, 如希望使用其他CUDA设备或在单机多卡

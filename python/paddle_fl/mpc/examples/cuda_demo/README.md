@@ -13,6 +13,11 @@ where IP_INTERFACE specifies which IP interface to use for communication,
       PARTY_ID is the ID of computation party, which is 0, 1, or 2,
       PARTY0_IP_ADDR represents the IP address of party 0.
 
+You can get interface name by ip address:
+```sh
+ifconfig | grep -B1 "<ip-address>" | awk 'NR==1{print $1}'
+```
+
 Note that you can also pass other arguments to NCCL using enviroment variables.
 
 In the demo script `cuda_demo.py`, CUDA devive 0 is selected.
