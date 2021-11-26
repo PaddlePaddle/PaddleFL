@@ -88,7 +88,6 @@ if (USE_ABY3_TRUNC1)
 endif(USE_ABY3_TRUNC1)
 
 add_subdirectory(core/common)
-add_subdirectory(feature/he)
 if (NOT WITH_GPU)
     add_subdirectory(core/privc)
 endif()
@@ -172,9 +171,6 @@ install(TARGETS paddle_enc mpc_data_utils
     LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH}
     LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
 
-set(FEATURE_LIB "${CMAKE_SOURCE_DIR}/feature/python/libs")
-install(TARGETS he_utils LIBRARY DESTINATION ${FEATURE_LIB})
- 
 if (WITH_PSI)
     install(TARGETS psi LIBRARY DESTINATION ${PADDLE_ENCRYPTED_LIB_PATH})
 endif()
