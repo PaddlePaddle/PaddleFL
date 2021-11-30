@@ -57,7 +57,7 @@ class TestOpBatchNorm(test_op_base.TestOpBase):
     def test_batch_norm(self):
 
         data_1 = np.array(
-            [[10, 10, 10], [50, 50, 50]]).astype('float32')
+            [[1, 1, 1], [5, 5, 5]]).astype('float32')
         
         expected_out = np.array(
             [[-1, -1, -1], [1, 1, 1]]).astype('float32')
