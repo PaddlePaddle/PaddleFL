@@ -16,7 +16,8 @@ Decrypt Prediction Data.
 """
 import sys
 import os
-from process_data import decrypt_data_to_file
+import process_data
+
 
 decrypt_file=sys.argv[1]
 BATCH_SIZE=128
@@ -25,13 +26,15 @@ class_num = 2
 mpc_infer_data_dir = "./mpc_infer_data/"
 prediction_file = mpc_infer_data_dir + "mnist_debug_prediction"
 
+process_data.protocol = sys.argv[2]
+
 if os.path.exists(decrypt_file):
     os.remove(decrypt_file)
 
 if class_num == 2:
-    decrypt_data_to_file(prediction_file, (BATCH_SIZE,), decrypt_file)
+    process_data.decrypt_data_to_file(prediction_file, (BATCH_SIZE,), decrypt_file)
 elif class_num == 10:
-    decrypt_data_to_file(prediction_file, (BATCH_SIZE, 10), decrypt_file)
+    process_data.decrypt_data_to_file(prediction_file, (BATCH_SIZE, 10), decrypt_file)
 else:
     raise ValueError("class_num should be 2 or 10, but received {}.".format(class_num))
 

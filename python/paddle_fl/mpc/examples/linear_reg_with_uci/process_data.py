@@ -22,7 +22,8 @@ import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-mpc_du = get_datautils('aby3')
+protocol="aby3"
+mpc_du = get_datautils(protocol)
 sample_reader = paddle.dataset.uci_housing.train()
 
 
@@ -30,7 +31,8 @@ def generate_encrypted_data():
     """
     generate encrypted samples
     """
-
+    global protocol
+    mpc_du = get_datautils(protocol)
     def encrypted_housing_features():
         """
         feature reader
@@ -45,8 +47,8 @@ def generate_encrypted_data():
         for instance in sample_reader():
             yield mpc_du.make_shares(instance[1])
 
-    mpc_du.save_shares(encrypted_housing_features, "/tmp/house_feature")
-    mpc_du.save_shares(encrypted_housing_labels, "/tmp/house_label")
+    mpc_du.save_shares(encrypted_housing_features, "./mpc_data/house_feature")
+    mpc_du.save_shares(encrypted_housing_labels, "./mpc_data/house_label")
 
 
 def generate_encrypted_data_online(role, server, port):
@@ -65,7 +67,7 @@ def generate_encrypted_data_online(role, server, port):
         main_program = fluid.Program()
         startup_program = fluid.Program()
         with fluid.program_guard(main_program, startup_program):
-            pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+            pfl_mpc.init(protocol, int(role), "localhost", server, int(port))
             input = fluid.data(name='input', shape=[feature_num], dtype='float32')
             out = pfl_mpc.layers.share(input, party_id=data_location_party)
 
@@ -105,16 +107,24 @@ def load_decrypt_data(filepath, shape, decrypted_file):
     """
     load the encrypted data and reconstruct
     """
+    global protocol
+    mpc_du = get_datautils(protocol)
     if os.path.exists(decrypted_file):
         os.remove(decrypted_file)
     part_readers = []
-    for id in six.moves.range(3):
-        part_readers.append(
-            mpc_du.load_shares(
-                filepath, id=id, shape=shape))
-    mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
-                                              part_readers[2])
-
+    if protocol == "aby3":
+        for id in six.moves.range(3):
+            part_readers.append(
+                mpc_du.load_shares(
+                    filepath, id=id, shape=shape))
+        mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1],
+                                                part_readers[2])
+    elif protocol == "privc":
+        for id in six.moves.range(2):
+            part_readers.append(
+                mpc_du.load_shares(
+                    filepath, id=id, shape=shape))
+        mpc_share_reader = paddle.reader.compose(part_readers[0], part_readers[1])
     for instance in mpc_share_reader():
         p = mpc_du.reconstruct(np.array(instance))
         with open(decrypted_file, 'a+') as f:

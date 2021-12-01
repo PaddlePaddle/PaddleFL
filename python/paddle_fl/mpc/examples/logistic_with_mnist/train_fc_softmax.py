@@ -35,7 +35,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("fluid")
 logger.setLevel(logging.INFO)
 
-mpc_protocol_name = 'aby3'
+mpc_protocol_name = sys.argv[4]
 mpc_du = get_datautils(mpc_protocol_name)
 
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -115,7 +115,7 @@ def infer():
         step += 1
         prediction = exe.run(program=infer_program, feed=sample, fetch_list=[softmax])
         with open(prediction_file_part, 'ab') as f:
-            f.write(np.array(prediction).tostring())
+            f.write(np.array(prediction).tobytes())
         if step % 10 == 0:
             end_time = time.time()
             logger.info('MPC infer of step={}, cost time in seconds:{}'.format(step, (end_time - start_time)))

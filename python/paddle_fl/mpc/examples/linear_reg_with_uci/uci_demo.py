@@ -26,8 +26,10 @@ import paddle_fl.mpc as pfl_mpc
 from paddle_fl.mpc.data_utils.data_utils import get_datautils
 import process_data
 
-mpc_protocol_name = 'aby3'
+
+mpc_protocol_name = sys.argv[4]
 mpc_du = get_datautils(mpc_protocol_name)
+process_data.protocol = sys.argv[4]
 
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
 pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port))
@@ -41,14 +43,14 @@ BATCH_SIZE = 10
 mpc_data_dir = "./mpc_data/"
 
 # generate share online
-feature_reader, label_reader = process_data.generate_encrypted_data_online(role, server, port)
+#feature_reader, label_reader = process_data.generate_encrypted_data_online(role, server, port)
 
-"""
-# load shares from file
+
+#load shares from file
 feature_reader = mpc_du.load_shares(
     mpc_data_dir + "house_feature", id=role, shape=(13, ))
 label_reader = mpc_du.load_shares(mpc_data_dir + "house_label", id=role, shape=(1, ))
-"""
+
 batch_feature = mpc_du.batch(feature_reader, BATCH_SIZE, drop_last=True)
 batch_label = mpc_du.batch(label_reader, BATCH_SIZE, drop_last=True)
 
@@ -111,7 +113,7 @@ for epoch_id in range(epoch_num):
         #print('Epoch={}, Step={}, batch_cost={:.4f} s, Loss={},'.format(
         #    epoch_id, step, (step_end - step_start), mpc_loss))
         with open(loss_file, 'ab') as f:
-            f.write(np.array(mpc_loss).tostring())
+            f.write(np.array(mpc_loss).tobytes())
         step += 1
  
     end_time = time.time()
@@ -124,6 +126,6 @@ for sample in loader():
                          feed=sample,
                          fetch_list=[y_pre])
     with open(prediction_file, 'ab') as f:
-        f.write(np.array(prediction).tostring())
-    print("revealed result: {}".format(process_data.decrypt_online(prediction, (2, BATCH_SIZE))))
-    break
+        f.write(np.array(prediction).tobytes())
+    #print("revealed result: {}".format(process_data.decrypt_online(prediction, (2, BATCH_SIZE))))
+    #break

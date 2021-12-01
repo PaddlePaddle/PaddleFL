@@ -27,9 +27,11 @@ import paddle.fluid as fluid
 import paddle_fl.mpc as pfl_mpc
 from paddle_fl.mpc.data_utils.data_utils import get_datautils
 
-mpc_protocol_name = 'aby3'
-mpc_du= get_datautils(mpc_protocol_name)
+
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
+mpc_protocol_name = sys.argv[4]
+mpc_du = get_datautils(mpc_protocol_name)
+
 # modify host(localhost).
 pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port))
 role = int(role)
@@ -116,4 +118,4 @@ if os.path.exists(prediction_file):
 for sample in test_loader():
     prediction = exe.run(program=infer_program, feed=sample, fetch_list=[cost])
     with open(prediction_file, 'ab') as f:
-        f.write(np.array(prediction).tostring())
+        f.write(np.array(prediction).tobytes())

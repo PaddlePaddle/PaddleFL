@@ -22,6 +22,8 @@ import process_data
 decrypt_loss_file=sys.argv[1]
 decrypt_prediction_file=sys.argv[2]
 BATCH_SIZE=10
+
+process_data.protocol = sys.argv[3]
 process_data.load_decrypt_data("./mpc_infer_data/uci_loss", (1, ), decrypt_loss_file)
 print("uci_loss done")
 process_data.load_decrypt_data("./mpc_infer_data/uci_prediction", (BATCH_SIZE, ), decrypt_prediction_file)

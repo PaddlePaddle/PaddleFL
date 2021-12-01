@@ -8,7 +8,7 @@ This document introduces how to run MNIST demo based on Paddle-MPC, which has tw
 
 #### (1). Prepare Data
 
-Generate encrypted training and testing data utilizing `generate_encrypted_data()` and `generate_encrypted_test_data()` in `process_data.py` script. Users can run the script with command `python process_data.py` to generate encrypted feature and label in given directory, e.g., `./mpc_data/`. Users can specify `class_num` (2 or 10) to determine the encrypted data is for `logisticfc_sigmoid`(two classes) or `lenet` and `logistic_fc_softmax`(10 classes) network.  Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `mnist2_feature.part0` means it is a feature file of party 0.
+Generate encrypted training and testing data utilizing `generate_encrypted_data()` and `generate_encrypted_test_data()` in `process_data.py` script. Users can run the script with command `python3 process_data.py aby3` or `python3 process_data.py privc` to generate encrypted feature and label in given directory, e.g., `./mpc_data/`. Users can specify `class_num` (2 or 10) to determine the encrypted data is for `logisticfc_sigmoid`(two classes) or `lenet` and `logistic_fc_softmax`(10 classes) network.  Different suffix names are used for these files to indicate the ownership of different computation parties. For instance, a file named `mnist2_feature.part0` means it is a feature file of party 0.
 
 #### (2). Launch Demo with A Shell Script
 
@@ -21,10 +21,13 @@ export LOCALHOST=/your/localhost
 export REDIS_PORT=/your/redis/port
 ```
 
-Launch demo with the `run_standalone.sh` script. The concrete command is:
+Launch demo with the `run_standalone_**.sh` script. The concrete command is:
 
 ```bash
-bash run_standalone.sh train_fc_sigmoid.py
+`if aby3`
+bash run_standalone_aby3.sh train_fc_sigmoid.py
+`if privc`
+bash run_standalone_privc.sh train_fc_sigmoid.py
 ```
 
 The information of current epoch and step will be displayed on screen while training, as well as the total cost time when traning finished.
@@ -33,14 +36,15 @@ Besides, predictions would be made in this demo once training is finished. The p
 
 #### (3). Decrypt Data
 
-Decrypt the saved prediction data and save the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py decrypt_file`. The decrypted prediction results would be saved into `decrypt_file`.
+Decrypt the saved prediction data and save the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python3 decrypt_save.py decrypt_file aby3` or `python3 decrypt_save.py decrypt_file privc`. The decrypted prediction results would be saved into `decrypt_file`.
 
 ```python
 import sys
 
 decrypt_file=sys.argv[1]
 import process_data
-process_data.decrypt_data_to_file("/tmp/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
+process_data.protocol=sys.argv[2]
+process_data.decrypt_data_to_file("./mpc_infer_data/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 
 
@@ -73,22 +77,23 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 Launch demo on each computation party with the following command,
 
 ```
-$PYTHON_EXECUTABLE train_fc_sigmoid.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE train_fc_sigmoid.py $PARTY_ID $SERVER $PORT $PROTOCOL
 ```
 
-where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively.
+where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively, PROTOCOL is the MPC protocol that users choose.
 
 Similarly, predictions with cypher text format would be saved in `./mpc_infer_data/` directory, for example, a file named `mnist_output_prediction.part0` for party 0.
 
 #### (5). Decrypt Prediction Data
 
-Each computation party sends  `mnist_output_prediction.part` file in `./mpc_infer_data/` directory to the `./mpc_infer_data/` directory of data owner. Data owner decrypts the prediction data and saves the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python decrypt_save.py decrypt_file`. The decrypted prediction results would be saved into file `decrypt_file`.
+Each computation party sends  `mnist_output_prediction.part` file in `./mpc_infer_data/` directory to the `./mpc_infer_data/` directory of data owner. Data owner decrypts the prediction data and saves the decrypted prediction results into a specified file using `decrypt_data_to_file()` in `process_data.py` script. For example, users can write the following code into a python script named `decrypt_save.py`, and then run the script with command `python3 decrypt_save.py decrypt_file aby3` or `python3 decrypt_save.py decrypt_file privc`. The decrypted prediction results would be saved into file `decrypt_file`.
 
 ```python
 import sys
 
 decrypt_file=sys.argv[1]
 import process_data
+process_data.protocol=sys.argv[2]
 process_data.decrypt_data_to_file("./mpc_infer_data/mnist_output_prediction", (BATCH_SIZE,), decrypt_file)
 ```
 
