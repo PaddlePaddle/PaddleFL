@@ -49,7 +49,7 @@ def generate_encrypted_data():
     mpc_du.save_shares(encrypted_housing_labels, "/tmp/house_label")
 
 
-def generate_encrypted_data_online(role, server, port):
+def generate_encrypted_data_online(role, server, port,  selfaddr="localhost"):
     """
     generate encrypted samples
     """
@@ -65,7 +65,7 @@ def generate_encrypted_data_online(role, server, port):
         main_program = fluid.Program()
         startup_program = fluid.Program()
         with fluid.program_guard(main_program, startup_program):
-            pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
+            pfl_mpc.init("aby3", int(role), selfaddr, server, int(port))
             input = fluid.data(name='input', shape=[feature_num], dtype='float32')
             out = pfl_mpc.layers.share(input, party_id=data_location_party)
 

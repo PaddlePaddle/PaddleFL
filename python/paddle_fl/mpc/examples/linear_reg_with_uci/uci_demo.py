@@ -30,7 +30,12 @@ mpc_protocol_name = 'aby3'
 mpc_du = get_datautils(mpc_protocol_name)
 
 role, server, port = sys.argv[1], sys.argv[2], sys.argv[3]
-pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port))
+
+selfaddr="localhost"
+if len(sys.argv) >= 5:
+    selfaddr=sys.argv[4]
+
+pfl_mpc.init(mpc_protocol_name, int(role), selfaddr, server, int(port))
 #pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port), "localhost:90001;localhost:90002;localhost:90003", "gloo")
 #pfl_mpc.init(mpc_protocol_name, int(role), "localhost", server, int(port), "localhost:90001;localhost:90002;localhost:90003", "grpc")
 
@@ -41,7 +46,7 @@ BATCH_SIZE = 10
 mpc_data_dir = "./mpc_data/"
 
 # generate share online
-feature_reader, label_reader = process_data.generate_encrypted_data_online(role, server, port)
+feature_reader, label_reader = process_data.generate_encrypted_data_online(role, server, port, selfaddr)
 
 """
 # load shares from file
@@ -96,7 +101,7 @@ for epoch_id in range(epoch_num):
     start_time = time.time()
     step = 0
 
-    # Method 1: feed data directly 
+    # Method 1: feed data directly
     # for feature, label in zip(batch_feature(), batch_label()):
     #     mpc_loss = exe.run(feed={"x": feature, "y": label}, fetch_list=[avg_loss])
 
@@ -113,7 +118,7 @@ for epoch_id in range(epoch_num):
         with open(loss_file, 'ab') as f:
             f.write(np.array(mpc_loss).tostring())
         step += 1
- 
+
     end_time = time.time()
     print('Mpc Training of Epoch={} Batch_size={}, epoch_cost={:.4f} s'
           .format(epoch_id, BATCH_SIZE, (end_time - start_time)))

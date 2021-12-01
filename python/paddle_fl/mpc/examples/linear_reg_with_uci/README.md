@@ -84,19 +84,7 @@ Data owner encrypts data. Concrete operations are consistent with “Prepare Dat
 
 According to the suffix of file name, distribute encrypted data files to `/tmp ` directories of all 3 computation parties. For example, send `house_feature.part0` and `house_label.part0` to `/tmp` of party 0 with `scp` command.
 
-#### (3). Modify uci_demo.py
-
-Each computation party makes the following modifications on `uci_demo.py` according to the environment of machine.
-
-* Modify IP Information
-
-  Modify `localhost` in the following code as the IP address of the machine.
-
-  ```python
-  pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
-  ```
-
-#### (4). Launch Demo on Each Party
+#### (3). Launch Demo on Each Party
 
 **Note** that Redis service is necessary for demo running. Remember to clear the cache of Redis server before launching demo on each computation party, in order to avoid any negative influences caused by the cached records in Redis. The following command can be used for clear Redis, where REDIS_BIN is the executable binary of redis-cli, SERVER and PORT represent the IP and port of Redis server respectively.
 
@@ -107,16 +95,16 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 Launch demo on each computation party with the following command,
 
 ```
-$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT $SELF_ADDR
 ```
 
-where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively.
+where PYTHON_EXECUTABLE is the python which installs PaddleFL, PARTY_ID is the ID of computation party, which is 0, 1, or 2, SERVER and PORT represent the IP and port of Redis server respectively, SELF_ADDR represents the IP address of the machine.
 
 Similarly, training loss with cypher text format would be printed on the screen of each computation party. And at the same time, the loss and predictions would be saved in `/tmp` directory.
 
 **Note** that remember to delete the loss and prediction files in `/tmp` directory generated in last running, in case of any influence on the decrypted results of current running.
 
-#### (5). Decrypt Loss and Prediction Data
+#### (4). Decrypt Loss and Prediction Data
 
 Each computation party sends `uci_loss.part` and `uci_prediction.part` files in `/tmp` directory to the `/tmp` directory of data owner. Data owner decrypts and gets the plain text of loss and predictions with ` load_decrypt_data()` in `process_data.py`.
 
