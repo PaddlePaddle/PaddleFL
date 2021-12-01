@@ -15,16 +15,13 @@
 mpc metrics test server-side 
 """
 
-import sys
-sys.path.append("../core")
-
 from concurrent import futures
 import time
 import grpc
 import gen_test_file
 import metrics_plain
 
-from federal_feature_engineering_server import FederalFeatureEngineeringServer
+from paddle_fl.feature_engineering.core.federated_feature_engineering_server import FederatedFeatureEngineeringServer
 
 SERVER_ADRESS = 'localhost:50051'
 
@@ -51,7 +48,7 @@ def postive_ratio_test_server(file_name):
     """
     labels, features = gen_test_file.read_file(file_name)
     server = gen_server()
-    fed_fea_eng_server = FederalFeatureEngineeringServer()
+    fed_fea_eng_server = FederatedFeatureEngineeringServer()
     fed_fea_eng_server.serve(server)
     fed_fea_eng_server.get_positive_ratio(features)
 
@@ -62,7 +59,7 @@ def woe_test_server(file_name):
     """
     labels, features = gen_test_file.read_file(file_name)
     server = gen_server()
-    fed_fea_eng_server = FederalFeatureEngineeringServer()
+    fed_fea_eng_server = FederatedFeatureEngineeringServer()
     fed_fea_eng_server.serve(server)
     woe_list = fed_fea_eng_server.get_woe(features)
     print("server woe is \n", woe_list)
@@ -74,7 +71,7 @@ def iv_test_server(file_name):
     """
     labels, features = gen_test_file.read_file(file_name)
     server = gen_server()
-    fed_fea_eng_server = FederalFeatureEngineeringServer()
+    fed_fea_eng_server = FederatedFeatureEngineeringServer()
     fed_fea_eng_server.serve(server)
     iv_list = fed_fea_eng_server.get_iv(features)
     print("server iv is \n", iv_list)

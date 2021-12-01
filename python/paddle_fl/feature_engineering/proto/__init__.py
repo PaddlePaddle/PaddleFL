@@ -11,8 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License
-"""
-init
-"""
-from .federal_feature_engineering_client import FederalFeatureEngineeringClient
-from .federal_feature_engineering_server import FederalFeatureEngineeringServer

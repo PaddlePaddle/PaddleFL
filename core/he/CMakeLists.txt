@@ -12,3 +12,6 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 add_library(he_utils MODULE ${PYBIND_HE_SRCS})
 target_link_libraries(he_utils PRIVATE pybind gmp gmpxx)
 set_target_properties(he_utils PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
+
+set(FEATURE_LIB "${CMAKE_SOURCE_DIR}/python/paddle_fl/feature_engineering/libs")
+install(TARGETS he_utils LIBRARY DESTINATION ${FEATURE_LIB})
