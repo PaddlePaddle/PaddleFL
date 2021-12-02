@@ -85,20 +85,8 @@ fi
 
 `house_feature.part0`和`house_label.part0`发送到party0的/tmp目录下。
 
-#### 3. 计算party修改uci_demo.py脚本
 
-各计算party根据自己的机器环境，对uci_demo.py做如下改动：
-
-* 修改IP信息
-
-  将脚本如下内容中的`localhost`修改为自己的IP地址：
-
-  ```python
-  pfl_mpc.init("aby3", int(role), "localhost", server, int(port))
-  ```
-
-
-#### 4. 各计算party启动demo
+#### 3. 各计算party启动demo
 
 **注意**：运行需要用到redis服务。为了确保redis中已保存的数据不会影响demo的运行，请在各计算party启动demo之前，使用如下命令清空redis。其中，REDIS_BIN表示redis-cli可执行程序，SERVER和PORT分别表示redis server的IP地址和端口号。
 
@@ -109,16 +97,16 @@ $REDIS_BIN -h $SERVER -p $PORT flushall
 在各计算party分别执行以下命令，启动demo：
 
 ```
-$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT
+$PYTHON_EXECUTABLE uci_demo.py $PARTY_ID $SERVER $PORT $SELF_ADDR
 ```
 
-其中，PYTHON_EXECUTABLE表示自己安装了PaddleFL的python，PARTY_ID表示计算party的编号，值为0、1或2，SERVER和PORT分别表示redis server的IP地址和端口号。
+其中，PYTHON_EXECUTABLE表示自己安装了PaddleFL的python，PARTY_ID表示计算party的编号，值为0、1或2，SERVER和PORT分别表示redis server的IP地址和端口号, SELF_ADDR为自己的IP地址。
 
 同样地，运行之后将在各计算party的屏幕上打印训练过程中的密文loss数据。同时，对应的密文loss和prediction数据将会保存到`/tmp`目录下的文件中，文件命名格式类似于步骤1中所述。
 
 **注意**：再次启动运行demo之前，请先将上次在`/tmp`保存的loss和prediction文件删除，以免影响本次密文数据的恢复结果。
 
-#### 5. 数据方解密loss和prediction
+#### 4. 数据方解密loss和prediction
 
 各计算party将`/tmp`目录下的`uci_loss.part`和`uci_prediction.part`文件发送到数据方的/tmp目录下。数据方使用process_data.py脚本中的load_decrypt_data()解密恢复出loss数据和prediction数据。
 
