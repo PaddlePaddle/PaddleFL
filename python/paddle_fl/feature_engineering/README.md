@@ -35,13 +35,7 @@ make -j48
 make install
 ```
 
-3.生成grpc_pb
-```
-cd /path/to/PaddleFL/python
-python3 paddle_fl/feature_engineering/proto/run_protogen.py
-```
-
-4.pip打包并安装
+3.pip打包并安装
 ```
 cd /path/to/PaddleFL/python/paddle_fl
 mkdir build && cd build
