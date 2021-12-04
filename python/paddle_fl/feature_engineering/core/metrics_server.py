@@ -21,12 +21,9 @@ import random
 import numpy as np
 import grpc
 
-import sys
-sys.path.append("../libs")
-
 import he_utils as hu
-import metrics_pb2
-import metrics_pb2_grpc
+from ..proto import metrics_pb2
+from ..proto import metrics_pb2_grpc
 
 
 class MpcPositiveRatioServicer(metrics_pb2_grpc.MpcPositiveRatioServicer):

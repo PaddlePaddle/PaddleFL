@@ -714,6 +714,36 @@ function(py_proto_compile TARGET_NAME)
   add_custom_target(${TARGET_NAME} ALL DEPENDS ${py_srcs} protobuf)
 endfunction()
 
+function(py_proto_grpc_compile TARGET_NAME)
+  set(oneValueArgs PROTO PROTO_PATH)
+  set(multiValueArgs SRCS)
+  set(options "")
+  cmake_parse_arguments(py_proto_grpc_compile "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  get_filename_component(ABS_PROTO ${py_proto_grpc_compile_PROTO} ABSOLUTE)
+  get_filename_component(PROTO_WE ${py_proto_grpc_compile_PROTO} NAME_WE)
+  #get_filename_component(PROTO_PATH ${ABS_PROTO} PATH)
+  set(PROTO_PATH ${py_proto_grpc_compile_PROTO_PATH})
+
+  set(grpc_proto_py "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_WE}_pb2.py")
+  set(grpc_grpc_py "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_WE}_pb2_grpc.py")
+  
+  set(py_srcs)
+  list(APPEND py_srcs "${grpc_proto_py}" "${grpc_grpc_py}")
+
+  add_custom_command(
+          OUTPUT "${grpc_proto_py}" "${grpc_grpc_py}"
+          COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+          ARGS --grpc_python_out "${CMAKE_CURRENT_BINARY_DIR}" -I "${PROTO_PATH}"
+          --plugin=protoc-gen-grpc_python="${GRPC_PYTHON_PLUGIN}" "${ABS_PROTO}"
+          COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+          ARGS --python_out "${CMAKE_CURRENT_BINARY_DIR}" -I "${PROTO_PATH}"
+          "${ABS_PROTO}"
+          DEPENDS "${ABS_PROTO}" ${PROTOBUF_PROTOC_EXECUTABLE} extern_grpc)
+
+  add_custom_target(${TARGET_NAME} ALL DEPENDS ${py_srcs} protobuf extern_grpc)
+endfunction()
+
 function(py_test TARGET_NAME)
   if(WITH_TESTING)
     set(options "")

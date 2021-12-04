@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 """
-Federal feature engineering server-side interface
+Federated feature engineering server-side interface
 support postive_ratio, woe, iv, ks, auc
 """
 
 import threading
-import metrics_server as ms
+from . import metrics_server as ms
 
-class FederalFeatureEngineeringServer(object):
+class FederatedFeatureEngineeringServer(object):
     """
-    Federal feature engineering server-side implementation
+    Federated feature engineering server-side implementation
     """
     def serve(self, server):
         """

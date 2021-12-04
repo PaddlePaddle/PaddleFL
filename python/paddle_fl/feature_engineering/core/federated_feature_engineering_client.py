@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 """
-Federal feature engineering client-side
+Federated feature engineering client-side
 support postive_ratio, woe, iv, ks, auc
 """
 
-import metrics_client as mc
+from . import metrics_client as mc
 
-class FederalFeatureEngineeringClient(object):
+class FederatedFeatureEngineeringClient(object):
     """
-    Federal feature engineering client-side implementation
+    Federated feature engineering client-side implementation
     """
     def __init__(self, key_len=1024):
         """

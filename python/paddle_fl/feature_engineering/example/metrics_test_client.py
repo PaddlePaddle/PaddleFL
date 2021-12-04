@@ -15,15 +15,12 @@
 mpc metrics test client-side 
 """
 
-import sys
-sys.path.append("../core")
-
 import time
 import grpc
 import gen_test_file
 import metrics_plain
 
-from federal_feature_engineering_client import FederalFeatureEngineeringClient
+from paddle_fl.feature_engineering.core.federated_feature_engineering_client import FederatedFeatureEngineeringClient
 
 SERVER_ADRESS = 'localhost:50051'
 
@@ -48,7 +45,7 @@ def postive_ratio_test_client(file_name):
     """
     labels, features = gen_test_file.read_file(file_name)
 
-    fed_fea_eng_client = FederalFeatureEngineeringClient(1024)
+    fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
     channel = gen_client_channel(SERVER_ADRESS)
     fed_fea_eng_client.connect(channel)
     result = fed_fea_eng_client.get_positive_ratio(labels)
@@ -63,7 +60,7 @@ def woe_test_client(file_name):
     """
     labels, features = gen_test_file.read_file(file_name)
 
-    fed_fea_eng_client = FederalFeatureEngineeringClient(1024)
+    fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
     channel = gen_client_channel(SERVER_ADRESS)
     fed_fea_eng_client.connect(channel)
     result = fed_fea_eng_client.get_woe(labels)
@@ -78,7 +75,7 @@ def iv_test_client(file_name):
     """
     labels, features = gen_test_file.read_file(file_name)
 
-    fed_fea_eng_client = FederalFeatureEngineeringClient(1024)
+    fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
     channel = gen_client_channel(SERVER_ADRESS)
     fed_fea_eng_client.connect(channel)
     result = fed_fea_eng_client.get_iv(labels)
