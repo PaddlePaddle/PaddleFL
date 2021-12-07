@@ -16,6 +16,7 @@ get plain metrcis for test
 """
 
 import math
+import numpy as np
 
 def get_plain_pos_ratio(labels, features):
     """
@@ -122,3 +123,86 @@ def get_plain_iv(labels, features):
         iv_list.append(iv)
     
     return iv_list
+
+
+def get_plain_ks(labels, features):
+    """
+    get plain ks for test
+    """
+    labels = [item for sublist in labels for item in sublist] 
+    total_pos = sum(labels)
+    total_neg = len(labels) - total_pos
+    ks_list = []
+    for feature_idx in range(len(features[0])):
+        pos_sum = {}
+        neg_sum = {}
+        feature_bin = {}
+        for sample_index in range(len(labels)):
+            feature_value = features[sample_index][feature_idx]
+            if(feature_value in feature_bin):
+                pos_sum[feature_value] = pos_sum[feature_value] + labels[sample_index]
+                feature_bin[feature_value] += 1
+            else:
+                pos_sum[feature_value] = labels[sample_index]
+                feature_bin[feature_value] = 1
+        
+        pos_sum = dict(sorted(pos_sum.items(), key = lambda item:item[0]))
+
+        ks = -1
+        cum_pos = 0
+        cum_neg = 0
+        for key, value in pos_sum.items():
+            neg_sum[key] = feature_bin[key] - pos_sum[key]
+            cum_pos += pos_sum[key]
+            cum_neg += neg_sum[key]
+            ks_temp = round(abs(cum_pos / total_pos - cum_neg / total_neg), 6)
+            ks = max(ks_temp, ks)
+        
+        ks_list.append(ks)
+    
+    return ks_list
+
+
+def get_plain_auc(labels, features):
+    """
+    get plain auc for test
+    """
+    labels = [item for sublist in labels for item in sublist] 
+    total_pos = sum(labels)
+    total_neg = len(labels) - total_pos
+    auc_list = []
+    num_thresholds = 4095
+    for feature_idx in range(len(features[0])):
+        stat_pos_sum = {}
+        stat_neg_sum = {}
+        feature_bin = {}
+        feature_values = [val[feature_idx] for val in features]
+        Max = np.max(feature_values)
+        Min = np.min(feature_values)
+        feature_values = (feature_values - Min) / (Max - Min)
+        for sample_index in range(len(labels)):
+            bin_idx = feature_values[sample_index] * num_thresholds
+            if(bin_idx in feature_bin):
+                stat_pos_sum[bin_idx] = stat_pos_sum[bin_idx] + labels[sample_index]
+                feature_bin[bin_idx] += 1
+            else:
+                stat_pos_sum[bin_idx] = labels[sample_index]
+                feature_bin[bin_idx] = 1
+        
+        stat_pos_sum = dict(sorted(stat_pos_sum.items(), key = lambda item:item[0], reverse=True))
+
+        tot_pos = 0.0
+        tot_neg = 0.0
+        auc = 0.0
+        for key, value in stat_pos_sum.items():
+            stat_neg_sum = feature_bin[key] - stat_pos_sum[key]
+            tot_pos_prev = tot_pos
+            tot_neg_prev = tot_neg
+            tot_pos += stat_pos_sum[key]
+            tot_neg += stat_neg_sum
+            auc += abs((tot_neg - tot_neg_prev) * (tot_pos + tot_pos_prev) /2)
+        
+        auc = auc / tot_pos / tot_neg
+        auc_list.append(round(auc, 6))
+    
+    return auc_list

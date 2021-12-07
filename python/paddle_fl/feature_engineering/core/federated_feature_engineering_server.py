@@ -47,7 +47,7 @@ class FederatedFeatureEngineeringServer(object):
 
     def get_woe(self, features):
         """
-        reutrn woe to server
+        return woe to server
         params:
             features: a feature list in the shape of (sample_size, features_size)
                       e.g. [[4, 3, 1], [1, 2, 5],...,[2, 3 ,2]] (feature_size = 3)
@@ -68,12 +68,12 @@ class FederatedFeatureEngineeringServer(object):
     
     def get_iv(self, features):
         """
-        reutrn iv to server
+        return iv to server
         params:
             features: a feature list in the shape of (sample_size, features_size)
                       e.g. [[4, 3, 1], [1, 2, 5],...,[2, 3 ,2]] (feature_size = 3)
         return:
-            an list corresponding to the iv of each feature
+            a list corresponding to the iv of each feature
             e.g. [0.56653, 0.56653]    
         """
         iv_list = []
@@ -85,3 +85,63 @@ class FederatedFeatureEngineeringServer(object):
         stop_event.wait()
         self._server.stop(90)
         return iv_list
+
+    def get_woe_iv(self, features):
+        """
+        return woe, iv to server
+        params:
+            features: a feature list in the shape of (sample_size, features_size)
+                      e.g. [[4, 3, 1], [1, 2, 5],...,[2, 3 ,2]] (feature_size = 3)
+        return:
+            a tuple of woe and iv   
+        """
+        woe_list = []
+        iv_list = []
+        stop_event = threading.Event()
+        ms.metrics_pb2_grpc.add_MpcIVServicer_to_server(
+                                    ms.MpcIVServicer(features, stop_event, iv_list, woe_list), 
+                                    self._server)
+        self._server.start()
+        stop_event.wait()
+        self._server.stop(90)
+        return woe_list, iv_list
+
+    def get_ks(self, features):
+        """
+        return ks to server
+        params:
+            features: a feature list in the shape of (sample_size, features_size)
+                      e.g. [[4, 3, 1], [1, 2, 5],...,[2, 3 ,2]] (feature_size = 3)
+        return:
+            a list corresponding to the ks of each feature
+            e.g. [0.3, 0.3]    
+        """
+        ks_list = []
+        stop_event = threading.Event()
+        ms.metrics_pb2_grpc.add_MpcKSServicer_to_server(
+                                    ms.MpcKSServicer(features, stop_event, ks_list), 
+                                    self._server)
+        self._server.start()
+        stop_event.wait()
+        self._server.stop(90)
+        return ks_list
+
+    def get_auc(self, features):
+        """
+        return auc to server
+        params:
+            features: a feature list in the shape of (sample_size, features_size)
+                      e.g. [[4, 3, 1], [1, 2, 5],...,[2, 3 ,2]] (feature_size = 3)
+        return:
+            a list corresponding to the auc of each feature
+            e.g. [0.33, 0.33]    
+        """
+        auc_list = []
+        stop_event = threading.Event()
+        ms.metrics_pb2_grpc.add_MpcAUCServicer_to_server(
+                                    ms.MpcAUCServicer(features, stop_event, auc_list), 
+                                    self._server)
+        self._server.start()
+        stop_event.wait()
+        self._server.stop(90)
+        return auc_list

@@ -37,7 +37,7 @@ class FederatedFeatureEngineeringClient(object):
 
     def get_positive_ratio(self, labels):
         """
-        reutrn postive ratio to client
+        return postive ratio to client
         params:
             labels: a list in the shape of (sample_size, 1)
                     labels[i] is either 0 or 1, represents negative and positive resp.
@@ -51,7 +51,7 @@ class FederatedFeatureEngineeringClient(object):
 
     def get_woe(self, labels):
         """
-        reutrn woe to client
+        return woe to client
         params:
             labels: a list in the shape of (sample_size, 1)
                     labels[i] is either 0 or 1, represents negative and positive resp.
@@ -65,14 +65,51 @@ class FederatedFeatureEngineeringClient(object):
 
     def get_iv(self, labels):
         """
-        reutrn iv to client
+        return iv to client
         params:
             labels: a list in the shape of (sample_size, 1)
                     labels[i] is either 0 or 1, represents negative and positive resp.
                     e.g. [[1], [0], [1],...,[1]]
         return:
-            an list corresponding to the iv of each feature
+            a list corresponding to the iv of each feature
             e.g. [0.56653, 0.56653]
         """
         return mc.get_mpc_iv_alice(self._channel, labels, self._paillier)
 
+    def get_woe_iv(self, labels):
+        """
+        return woe, iv to client
+        params:
+            labels: a list in the shape of (sample_size, 1)
+                    labels[i] is either 0 or 1, represents negative and positive resp.
+                    e.g. [[1], [0], [1],...,[1]]
+        return:
+            a tuple of woe and iv
+        """
+        return mc.get_mpc_iv_alice(self._channel, labels, self._paillier, True)
+    
+    def get_ks(self, labels):
+        """
+        reutrn ks to client
+        params:
+            labels: a list in the shape of (sample_size, 1)
+                    labels[i] is either 0 or 1, represents negative and positive resp.
+                    e.g. [[1], [0], [1],...,[1]]
+        return:
+            a list corresponding to the ks of each feature
+            e.g. [0.3, 0.3]
+        """
+        return mc.get_mpc_ks_alice(self._channel, labels, self._paillier)
+
+    def get_auc(self, labels):
+        """
+        reutrn auc to client
+        params:
+            labels: a list in the shape of (sample_size, 1)
+                    labels[i] is either 0 or 1, represents negative and positive resp.
+                    e.g. [[1], [0], [1],...,[1]]
+        return:
+            a list corresponding to the auc of each feature
+            e.g. [0.33, 0.33]
+        """
+        return mc.get_mpc_auc_alice(self._channel, labels, self._paillier)
