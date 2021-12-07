@@ -77,12 +77,52 @@ def iv_test_server(file_name):
     print("server iv is \n", iv_list)
 
 
+def woe_iv_test_server(file_name):
+    """
+    woe, iv test
+    """
+    labels, features = gen_test_file.read_file(file_name)
+    server = gen_server()
+    fed_fea_eng_server = FederatedFeatureEngineeringServer()
+    fed_fea_eng_server.serve(server)
+    woe, iv = fed_fea_eng_server.get_woe_iv(features)
+    print("server woe is \n", woe)
+    print("server iv is \n", iv)
+
+
+def ks_test_server(file_name):
+    """
+    ks test
+    """
+    labels, features = gen_test_file.read_file(file_name)
+    server = gen_server()
+    fed_fea_eng_server = FederatedFeatureEngineeringServer()
+    fed_fea_eng_server.serve(server)
+    ks_list = fed_fea_eng_server.get_ks(features)
+    print("server ks is \n", ks_list)
+
+
+def auc_test_server(file_name):
+    """
+    auc test
+    """
+    labels, features = gen_test_file.read_file(file_name)
+    server = gen_server()
+    fed_fea_eng_server = FederatedFeatureEngineeringServer()
+    fed_fea_eng_server.serve(server)
+    auc_list = fed_fea_eng_server.get_auc(features)
+    print("server auc is \n", auc_list)
+
+
 if __name__ == '__main__':
     file_name = "test_data.txt"
     time_start = time.time()
     postive_ratio_test_server(file_name)
     woe_test_server(file_name)
     iv_test_server(file_name)
+    ks_test_server(file_name)
+    auc_test_server(file_name)
+    woe_iv_test_server(file_name)
     time_end = time.time()
     print("time cost ", time_end - time_start, 's')
 

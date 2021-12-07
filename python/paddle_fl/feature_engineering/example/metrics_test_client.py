@@ -83,20 +83,85 @@ def iv_test_client(file_name):
     plain_result = metrics_plain.get_plain_iv(labels, features)
     print("client plain iv is \n", plain_result)
 
+
+def woe_iv_test_client(file_name):
+    """
+    woe,iv test
+    """
+    labels, features = gen_test_file.read_file(file_name)
+
+    fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
+    channel = gen_client_channel(SERVER_ADRESS)
+    fed_fea_eng_client.connect(channel)
+    woe, iv = fed_fea_eng_client.get_woe_iv(labels)
+    print("client mpc woe is \n", woe)
+    plain_result = metrics_plain.get_plain_woe(labels, features)
+    print("client plain woe is \n", plain_result)
+    print("client mpc iv is \n", iv)
+    plain_result = metrics_plain.get_plain_iv(labels, features)
+    print("client plain iv is \n", plain_result)
+
+
+def ks_test_client(file_name):
+    """
+    ks test
+    """
+    labels, features = gen_test_file.read_file(file_name)
+
+    fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
+    channel = gen_client_channel(SERVER_ADRESS)
+    fed_fea_eng_client.connect(channel)
+    result = fed_fea_eng_client.get_ks(labels)
+    print("client mpc ks is \n", result)
+    plain_result = metrics_plain.get_plain_ks(labels, features)
+    print("client plain ks is \n", plain_result)
+
+
+def auc_test_client(file_name):
+    """
+    auc test
+    """
+    labels, features = gen_test_file.read_file(file_name)
+
+    fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
+    channel = gen_client_channel(SERVER_ADRESS)
+    fed_fea_eng_client.connect(channel)
+    result = fed_fea_eng_client.get_auc(labels)
+    print("client mpc auc is \n", result)
+    plain_result = metrics_plain.get_plain_auc(labels, features)
+    print("client plain auc is \n", plain_result)
+
 if __name__ == '__main__':
     file_name = "test_data.txt"
     time_cost = []
     time_start = time.time()
+    #postive_ratio
     postive_ratio_test_client(file_name)
     time_pos_ratio = time.time()
     time_cost.append(time_pos_ratio - time_start)
+    #woe
     woe_test_client(file_name)
     time_woe = time.time()
     time_cost.append(time_woe - time_pos_ratio)
+    #iv
     iv_test_client(file_name)
     time_iv = time.time()
     time_cost.append(time_iv - time_woe)
+    #ks
+    ks_test_client(file_name)
+    time_ks = time.time()
+    time_cost.append(time_ks - time_iv)
+    #auc
+    auc_test_client(file_name)
+    time_auc = time.time()
+    time_cost.append(time_auc - time_ks)
+    time_end = time.time()
+    #woe and iv
+    woe_iv_test_client(file_name)
+    time_end = time.time()
+    time_cost.append(time_end - time_auc) 
+    # total time
     time_cost = gen_test_file.np.array(time_cost)
     gen_test_file.np.savetxt("time.txt", time_cost, fmt='%f', delimiter=',')
-    print("time cost ", time_iv - time_start, 's')
+    print("time cost ", time_end - time_start, 's')
     

@@ -129,6 +129,8 @@ PYBIND11_MODULE(he_utils, m) {
         }
     });
 
+    // choose scaling_factor 64-bit to meet the float precision requirement
+    // suppose millions data  20(data size) + 23(float fraction) < 64
     m.def("cal_blind_iv", [](const mpz_class & a, const mpz_class &b, 
                        const int64_t &total_pos, const int64_t &total_neg){
         double woe = 0.0;
@@ -161,6 +163,45 @@ PYBIND11_MODULE(he_utils, m) {
     m.def("cal_unblind_iv",[](const mpz_class &a){
         mpf_class result = mpf_class(a) / (mpf_class(1) << 128);
         return result.get_d();
+    });
+
+    m.def("cal_blind_ks", [](const mpz_class & a, const mpz_class &b, 
+                       const int64_t &total_pos, const int64_t &total_neg){
+ 
+        mpz_class scaling_factor = mpz_class(1) << 64;
+        mpz_class blind_ks = abs(a * mpz_class(scaling_factor / total_pos)
+                             - b * mpz_class(scaling_factor / total_neg));
+        return blind_ks;
+    });
+
+    m.def("cal_max_ks", [](const std::vector<mpz_class> & ks) {
+        mpz_class max_ks(-1);
+        for (auto _ks : ks) {
+            max_ks = max_ks > _ks ? max_ks : _ks;
+        }
+        mpf_class result = mpf_class(max_ks) / (mpf_class(1) << 64);
+        return result.get_d();
+    });
+
+    m.def("cal_blind_auc", [](const std::vector<mpz_class> &pos, 
+                              const std::vector<mpz_class> &neg){
+        mpz_class auc(0);
+        for(uint32_t i = 0; i < pos.size(); ++i) {
+            auc += pos[i] * neg[i];
+        }
+        return auc;
+    });
+
+    m.def("cal_unblind_auc", [](const std::vector<mpz_class> &blind_auc,
+                                const int64_t &total_pos,
+                                const int64_t &total_neg){
+        std::vector<double> auc;
+        auc.reserve(blind_auc.size());
+        for(uint32_t i = 0; i < blind_auc.size(); ++i) {
+            mpf_class temp = mpf_class(blind_auc[i]) / mpf_class(2 * total_pos * total_neg);
+            auc.emplace_back(temp.get_d());
+        }
+        return auc;
     });
 }
 }

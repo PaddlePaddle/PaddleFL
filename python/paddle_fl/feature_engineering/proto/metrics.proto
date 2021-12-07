@@ -47,6 +47,8 @@ service MpcIV {
 
     rpc GetEncIV(EncFeatureMetricDict) returns (EncFeatureMetric);
 
+    rpc SendWOE(FeatureMetricDict) returns (Status);
+
     rpc SendIV(FeatureMetric) returns (Status);
 }
 
@@ -58,7 +60,7 @@ service MpcKS {
 
     rpc GetCumLablesSum (EncSampleLabels) returns (FeatureLabelsSum);
 
-    rpc GetEncKS(EncFeatureMetricDict) returns (EncFeatureMetricDict);
+    rpc GetEncKS(EncFeatureMetricDict) returns (EncFeatureMetricList);
 
     rpc SendKS(FeatureMetric) returns (Status);
 }
@@ -73,7 +75,7 @@ service MpcAUC {
 
     rpc GetEncAUC(EncFeatureMetric) returns (EncFeatureMetric);
 
-    rpc SendKS(FeatureMetric) returns (Status);
+    rpc SendAUC(FeatureMetric) returns (Status);
 }
 
 message Sample {
@@ -139,4 +141,14 @@ message EncFeatureMetricDict {
 message EncBinMetric {
     int32 bins_size = 1;
     map<int32, bytes> value_dict = 2;
+}
+
+message EncFeatureMetricList {
+    int32 feature_size = 1;
+    repeated EncBinMetricList values = 2;
+}
+
+message EncBinMetricList {
+    int32 bins_size = 1;
+    repeated bytes value = 2;
 }
