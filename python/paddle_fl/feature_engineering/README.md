@@ -1,6 +1,6 @@
 ## 联邦特征工程
 
-支持计算正样本占比、woe、iv
+支持计算正样本占比、woe、iv、ks、auc
 
 ## 单独编译
 
@@ -43,7 +43,7 @@ python3 ../feature_engineering/setup.py sdist bdist_wheel
 pip3 install dist/paddle_fl_feature_engineering-1.2.0-py3-none-any.whl -U
 ```
 ## 跟随paddlefl编译
-不久后将支持
+参照 docs/source/md/compile_and_install_cn.md 编译paddle_fl即可
 
 ## 测试
 

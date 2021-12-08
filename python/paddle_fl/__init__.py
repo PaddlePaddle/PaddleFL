@@ -14,3 +14,4 @@
 
 from . import mpc
 from . import paddle_fl
+from . import feature_engineering
