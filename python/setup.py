@@ -72,11 +72,17 @@ packages = [
     'paddle_fl.split_learning.core.table',
     'paddle_fl.split_learning.core.proto',
     'paddle_fl.split_learning.core.static',
+    'paddle_fl.feature_engineering',
+    'paddle_fl.feature_engineering.core',
+    'paddle_fl.feature_engineering.proto'
 ]
 package_data = {
     'paddle_fl.mpc': [
         'libs/*', 'libs/third_party/*', 'libs/third_party/openssl/*',
         'libs/third_party/openssl/engines/*'
+    ],
+    'paddle_fl.feature_engineering': [
+        'libs/*'
     ]
 }
 package_dir = {
@@ -105,6 +111,9 @@ package_dir = {
     'paddle_fl.paddle_fl.core.strategy': './paddle_fl/paddle_fl/core/strategy',
     'paddle_fl.paddle_fl.core.strategy.details':
     './paddle_fl/paddle_fl/core/strategy/details',
+    'paddle_fl.feature_engineering': './paddle_fl/feature_engineering',
+    'paddle_fl.feature_engineering.core': './paddle_fl/feature_engineering/core',
+    'paddle_fl.feature_engineering.proto': './paddle_fl/feature_engineering/proto' 
 }
 
 setup(
