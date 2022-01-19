@@ -17,6 +17,7 @@ server-side(bob)
 """
 
 from concurrent import futures
+import logging
 import random
 import numpy as np
 import grpc
@@ -25,6 +26,9 @@ import he_utils as hu
 from ..proto import metrics_pb2
 from ..proto import metrics_pb2_grpc
 
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class MpcPositiveRatioServicer(metrics_pb2_grpc.MpcPositiveRatioServicer):
     """
@@ -43,11 +47,14 @@ class MpcPositiveRatioServicer(metrics_pb2_grpc.MpcPositiveRatioServicer):
         self._features = features
         self._feature_size = len(features[0])
         self._stop_event = stop_event
+        logger.info('feature size: {0}, sample size: {1}'.format(
+                                    self._feature_size, self._sample_size))
 
     def SyncSampleSize(self, request, context):
         """
         client sync sample size and feature size with server
         """
+        logger.info('received client\'s sample size: {}'.format(request.sample_size))
         if request.sample_size == self._sample_size:
             return metrics_pb2.Sample(sample_size = self._sample_size,
                                       feature_size = self._feature_size)
@@ -61,20 +68,24 @@ class MpcPositiveRatioServicer(metrics_pb2_grpc.MpcPositiveRatioServicer):
         paillier = hu.Paillier()
         paillier.import_pk(request.pk)
         self._paillier = paillier
+        logger.info('received pub key')
         return metrics_pb2.Status(code = 1)
     
-    def GetLablesSum(self, request, context):
+    def GetLabelsSum(self, request, context):
         """
         client get labels sum from server
         """
         batch_size = request.sample_size 
         if (self._sample_size != batch_size):
             raise ValueError("sample size not equal")
+        logger.info('decoding labels')
         self._enc_labels = self._paillier.batch_decode(request.labels)
         
         all_pos_sum = [] 
         all_neg_sum = []
+        logger.info('calculating labels sum:')
         for feature_idx in range(self._feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             pos_sum = {}
             neg_sum = {}
             feature_bin = {}
@@ -103,7 +114,7 @@ class MpcPositiveRatioServicer(metrics_pb2_grpc.MpcPositiveRatioServicer):
             
             all_pos_sum.append(pos_sum)
             all_neg_sum.append(neg_sum)
-        
+
         feature_labels_sum = metrics_pb2.FeatureLabelsSum(feature_size = self._feature_size,
                                                           labels = [])
         for feature_idx in range(self._feature_size):
@@ -112,6 +123,7 @@ class MpcPositiveRatioServicer(metrics_pb2_grpc.MpcPositiveRatioServicer):
                                                       negative_sum = all_neg_sum[feature_idx])
             feature_labels_sum.labels.append(bin_labels_sum)
         self._stop_event.set()
+        logger.info('sending labels sum')
         return feature_labels_sum
 
 
@@ -134,11 +146,14 @@ class MpcWOEServicer(metrics_pb2_grpc.MpcWOEServicer):
         self._feature_size = len(features[0])
         self._stop_event = stop_event
         self._woe_list = woe_list
+        logger.info('feature size: {0}, sample size: {1}'.format(
+                                    self._feature_size, self._sample_size))
 
     def SyncSampleSize(self, request, context):
         """
         client sync sample size and feature size with server
         """
+        logger.info('received client\'s sample size: {}'.format(request.sample_size))
         if request.sample_size == self._sample_size:
             return metrics_pb2.Sample(sample_size = self._sample_size,
                                       feature_size = self._feature_size)
@@ -152,20 +167,24 @@ class MpcWOEServicer(metrics_pb2_grpc.MpcWOEServicer):
         paillier = hu.Paillier()
         paillier.import_pk(request.pk)
         self._paillier = paillier
+        logger.info('received pub key')
         return metrics_pb2.Status(code = 1)
     
-    def GetLablesSum(self, request, context):
+    def GetLabelsSum(self, request, context):
         """
         client get labels sum from server
         """
         batch_size = request.sample_size 
         if (self._sample_size != batch_size):
             raise ValueError("sample size not equal")
+        logger.info('decoding labels')
         self._enc_labels = self._paillier.batch_decode(request.labels)
         
         all_pos_sum = [] 
         all_neg_sum = []
+        logger.info('calculating labels sum:')
         for feature_idx in range(self._feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             pos_sum = {}
             neg_sum = {}
             feature_bin = {}
@@ -202,7 +221,7 @@ class MpcWOEServicer(metrics_pb2_grpc.MpcWOEServicer):
                                                       positive_sum = all_pos_sum[feature_idx],
                                                       negative_sum = all_neg_sum[feature_idx])
             feature_labels_sum.labels.append(bin_labels_sum)
-
+        logger.info('sending labels sum')
         return feature_labels_sum
     
     def SendWOE(self, request, context):
@@ -215,6 +234,7 @@ class MpcWOEServicer(metrics_pb2_grpc.MpcWOEServicer):
             for key in woe_dict.keys():
                 woe_dict_[key] = round(woe_dict[key], 6)
             self._woe_list.append(woe_dict_)
+        logger.info('received woe')
         self._stop_event.set()
         return metrics_pb2.Status(code = 1)
 
@@ -240,11 +260,14 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
         self._stop_event = stop_event
         self._iv_list = iv_list
         self._woe_list = woe_list
+        logger.info('feature size: {0}, sample size: {1}'.format(
+                                    self._feature_size, self._sample_size))
 
     def SyncSampleSize(self, request, context):
         """
         client sync sample size and feature size with server
         """
+        logger.info('received client\'s sample size: {}'.format(request.sample_size))
         if request.sample_size == self._sample_size:
             return metrics_pb2.Sample(sample_size = self._sample_size,
                                       feature_size = self._feature_size)
@@ -258,21 +281,25 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
         paillier = hu.Paillier()
         paillier.import_pk(request.pk)
         self._paillier = paillier
+        logger.info('received pub key')
         return metrics_pb2.Status(code = 1)
     
-    def GetLablesSum(self, request, context):
+    def GetLabelsSum(self, request, context):
         """
         client get labels sum from server
         """
         batch_size = request.sample_size 
         if (self._sample_size != batch_size):
             raise ValueError("sample size not equal")
+        logger.info('decoding labels')
         self._enc_labels = self._paillier.batch_decode(request.labels)
         
         all_pos_sum = [] 
         all_neg_sum = []
         self._all_bind_r_inv = []
+        logger.info('calculating labels sum:')
         for feature_idx in range(self._feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             pos_sum = {}
             neg_sum = {}
             blind_r_inv_dict = {}
@@ -312,6 +339,7 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
                                                       positive_sum = all_pos_sum[feature_idx],
                                                       negative_sum = all_neg_sum[feature_idx])
             feature_labels_sum.labels.append(bin_labels_sum)
+        logger.info('sending labels sum')
         return feature_labels_sum
     
     def GetEncIV(self, request, context):
@@ -319,8 +347,10 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
         client get enc iv 
         """
         all_iv = []
-
+        logger.info('received blind encryptd iv')
+        logger.info('calculating unblind iv')
         for feature_idx in range(request.feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             blind_iv_dict = {}
             recved_dict = request.values[feature_idx].value_dict
             iv = self._paillier.encrypt_int64_t(0)
@@ -331,7 +361,7 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
                 iv = self._paillier.homm_add(iv, blind_iv_dict[key])
 
             all_iv.append(self._paillier.encode_cipher_bytes(iv))
-
+        logger.info('sending unblind encryptd iv')
         return metrics_pb2.EncFeatureMetric(feature_size = len(all_iv),
                                             values = all_iv)
         
@@ -342,6 +372,7 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
         iv_list = request.values
         for feature_idx in range(len(iv_list)):
             self._iv_list.append(round(iv_list[feature_idx], 6))
+        logger.info('received iv')
         self._stop_event.set()
         return metrics_pb2.Status(code = 1)
     
@@ -355,6 +386,7 @@ class MpcIVServicer(metrics_pb2_grpc.MpcIVServicer):
             for key in woe_dict.keys():
                 woe_dict_[key] = round(woe_dict[key], 6)
             self._woe_list.append(woe_dict_)
+        logger.info('received woe')
         return metrics_pb2.Status(code = 1)
 
 
@@ -377,11 +409,14 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
         self._feature_size = len(features[0])
         self._stop_event = stop_event
         self._ks_list = ks_list
+        logger.info('feature size: {0}, sample size: {1}'.format(
+                                    self._feature_size, self._sample_size))
 
     def SyncSampleSize(self, request, context):
         """
         client sync sample size and feature size with server
         """
+        logger.info('received client\'s sample size: {}'.format(request.sample_size))
         if request.sample_size == self._sample_size:
             return metrics_pb2.Sample(sample_size = self._sample_size,
                                       feature_size = self._feature_size)
@@ -395,21 +430,25 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
         paillier = hu.Paillier()
         paillier.import_pk(request.pk)
         self._paillier = paillier
+        logger.info('received pub key')
         return metrics_pb2.Status(code = 1)
     
-    def GetCumLablesSum(self, request, context):
+    def GetCumLabelsSum(self, request, context):
         """
         client get cum labels sum from server
         """
         batch_size = request.sample_size 
         if (self._sample_size != batch_size):
             raise ValueError("sample size not equal")
+        logger.info('decoding labels')
         self._enc_labels = self._paillier.batch_decode(request.labels)
         
         all_pos_cum_sum = [] 
         all_neg_cum_sum = []
         self._all_bind_r_inv = []
+        logger.info('calculating cum labels sum:')
         for feature_idx in range(self._feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             pos_sum = {}
             neg_sum = {}
             blind_r_inv_dict = {}
@@ -461,15 +500,19 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
                                                       positive_sum = all_pos_cum_sum[feature_idx],
                                                       negative_sum = all_neg_cum_sum[feature_idx])
             feature_labels_sum.labels.append(bin_labels_sum)
+        logger.info('sending cum labels sum')
         return feature_labels_sum
     
     def GetEncKS(self, request, context):
         """
         client get enc ks 
         """
+        logger.info('received blind encryptd ks')
+        logger.info('calculating unblind ks')
         all_ks = metrics_pb2.EncFeatureMetricList(feature_size = request.feature_size, 
                                                   values = [])
         for feature_idx in range(request.feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             blind_ks_list = []
             recved_dict = request.values[feature_idx].value_dict
             for key in recved_dict.keys():
@@ -482,7 +525,7 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
             enc_bin_metric_list = metrics_pb2.EncBinMetricList(bins_size = len(blind_ks_list),
                                                                value = blind_ks_list)
             all_ks.values.append(enc_bin_metric_list)
-
+        logger.info('sending unblind encryptd ks')
         return all_ks
         
     def SendKS(self, request, context):
@@ -492,6 +535,7 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
         ks_list = request.values
         for feature_idx in range(len(ks_list)):
             self._ks_list.append(round(ks_list[feature_idx], 6))
+        logger.info('received ks')
         self._stop_event.set()
         return metrics_pb2.Status(code = 1)
 
@@ -516,11 +560,14 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
         self._stop_event = stop_event
         self._auc_list = auc_list
         self._num_thresholds = num_thresholds
+        logger.info('feature size: {0}, sample size: {1}'.format(
+                                    self._feature_size, self._sample_size))
 
     def SyncSampleSize(self, request, context):
         """
         client sync sample size and feature size with server
         """
+        logger.info('received client\'s sample size: {}'.format(request.sample_size))
         if request.sample_size == self._sample_size:
             return metrics_pb2.Sample(sample_size = self._sample_size,
                                       feature_size = self._feature_size)
@@ -534,21 +581,25 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
         paillier = hu.Paillier()
         paillier.import_pk(request.pk)
         self._paillier = paillier
+        logger.info('received pub key')
         return metrics_pb2.Status(code = 1)
     
-    def GetLablesSum(self, request, context):
+    def GetLabelsSum(self, request, context):
         """
         client get blind auc from server
         """
         batch_size = request.sample_size 
         if (self._sample_size != batch_size):
             raise ValueError("sample size not equal")
+        logger.info('decoding labels')
         self._enc_labels = self._paillier.batch_decode(request.labels)
         
         all_pos_sum = [] 
         all_neg_sum = []
         self._all_auc_blind = []
+        logger.info('calculating labels sum:')
         for feature_idx in range(self._feature_size):
+            logger.info('processing feature idx {}'.format(feature_idx))
             stat_pos_sum = {}
             stat_neg_sum = {}
             feature_bin = {}
@@ -613,6 +664,7 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
                                                       positive_sum = all_pos_sum[feature_idx],
                                                       negative_sum = all_neg_sum[feature_idx])
             feature_labels_sum.labels.append(bin_labels_sum)
+        logger.info('sending labels sum')
         return feature_labels_sum
     
     def GetEncAUC(self, request, context):
@@ -620,6 +672,8 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
         client get enc auc 
         """
         all_auc_ = []
+        logger.info('received blind encryptd auc')
+        logger.info('calculating unblind auc')
         for feature_idx in range(request.feature_size):
             enc_auc = self._paillier.decode(request.values[feature_idx])
             enc_auc = self._paillier.homm_minus(enc_auc, self._all_auc_blind[feature_idx])
@@ -627,6 +681,7 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
 
         all_auc = metrics_pb2.EncFeatureMetric(feature_size = request.feature_size, 
                                                values = all_auc_)
+        logger.info('sending unblind encryptd auc')
         return all_auc
         
     def SendAUC(self, request, context):
@@ -636,5 +691,6 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
         auc_list = request.values
         for feature_idx in range(len(auc_list)):
             self._auc_list.append(round(auc_list[feature_idx], 6))
+        logger.info('received auc')
         self._stop_event.set()
         return metrics_pb2.Status(code = 1)

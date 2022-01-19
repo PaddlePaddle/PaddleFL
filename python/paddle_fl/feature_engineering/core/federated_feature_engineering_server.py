@@ -15,9 +15,13 @@
 Federated feature engineering server-side interface
 support postive_ratio, woe, iv, ks, auc
 """
-
+import logging
 import threading
 from . import metrics_server as ms
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class FederatedFeatureEngineeringServer(object):
     """
@@ -41,8 +45,10 @@ class FederatedFeatureEngineeringServer(object):
                                     ms.MpcPositiveRatioServicer(features, stop_event), 
                                     self._server)
         self._server.start()
+        logger.info('mpc positive ratio servicer start')
         stop_event.wait()
         self._server.stop(90)
+        logger.info('mpc positive ratio servicer stop')
         return {}
 
     def get_woe(self, features):
@@ -62,8 +68,10 @@ class FederatedFeatureEngineeringServer(object):
                                     ms.MpcWOEServicer(features, stop_event, woe_list), 
                                     self._server)
         self._server.start()
+        logger.info('mpc woe servicer start')
         stop_event.wait()
         self._server.stop(90)
+        logger.info('mpc woe servicer stop')
         return woe_list
     
     def get_iv(self, features):
@@ -82,8 +90,10 @@ class FederatedFeatureEngineeringServer(object):
                                     ms.MpcIVServicer(features, stop_event, iv_list), 
                                     self._server)
         self._server.start()
+        logger.info('mpc iv servicer start')
         stop_event.wait()
         self._server.stop(90)
+        logger.info('mpc iv servicer stop')
         return iv_list
 
     def get_woe_iv(self, features):
@@ -102,8 +112,10 @@ class FederatedFeatureEngineeringServer(object):
                                     ms.MpcIVServicer(features, stop_event, iv_list, woe_list), 
                                     self._server)
         self._server.start()
+        logger.info('mpc woe, iv servicer start')
         stop_event.wait()
         self._server.stop(90)
+        logger.info('mpc woe, iv servicer stop')
         return woe_list, iv_list
 
     def get_ks(self, features):
@@ -122,8 +134,10 @@ class FederatedFeatureEngineeringServer(object):
                                     ms.MpcKSServicer(features, stop_event, ks_list), 
                                     self._server)
         self._server.start()
+        logger.info('mpc ks servicer start')
         stop_event.wait()
         self._server.stop(90)
+        logger.info('mpc ks servicer stop')
         return ks_list
 
     def get_auc(self, features):
@@ -142,6 +156,8 @@ class FederatedFeatureEngineeringServer(object):
                                     ms.MpcAUCServicer(features, stop_event, auc_list), 
                                     self._server)
         self._server.start()
+        logger.info('mpc auc servicer start')
         stop_event.wait()
         self._server.stop(90)
+        logger.info('mpc auc servicer stop')
         return auc_list

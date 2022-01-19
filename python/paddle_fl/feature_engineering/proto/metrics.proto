@@ -21,7 +21,7 @@ service MpcPositiveRatio {
 
     rpc SendPubkey(Pubkey) returns (Status);
 
-    rpc GetLablesSum(EncSampleLabels) returns (FeatureLabelsSum);
+    rpc GetLabelsSum(EncSampleLabels) returns (FeatureLabelsSum);
 
 }
 
@@ -31,7 +31,7 @@ service MpcWOE {
 
     rpc SendPubkey(Pubkey) returns (Status);
 
-    rpc GetLablesSum (EncSampleLabels) returns (FeatureLabelsSum);
+    rpc GetLabelsSum (EncSampleLabels) returns (FeatureLabelsSum);
 
     rpc SendWOE(FeatureMetricDict) returns (Status);
     
@@ -43,7 +43,7 @@ service MpcIV {
 
     rpc SendPubkey(Pubkey) returns (Status);
 
-    rpc GetLablesSum (EncSampleLabels) returns (FeatureLabelsSum);
+    rpc GetLabelsSum (EncSampleLabels) returns (FeatureLabelsSum);
 
     rpc GetEncIV(EncFeatureMetricDict) returns (EncFeatureMetric);
 
@@ -58,7 +58,7 @@ service MpcKS {
 
     rpc SendPubkey(Pubkey) returns (Status);
 
-    rpc GetCumLablesSum (EncSampleLabels) returns (FeatureLabelsSum);
+    rpc GetCumLabelsSum (EncSampleLabels) returns (FeatureLabelsSum);
 
     rpc GetEncKS(EncFeatureMetricDict) returns (EncFeatureMetricList);
 
@@ -71,7 +71,7 @@ service MpcAUC {
 
     rpc SendPubkey(Pubkey) returns (Status);
 
-    rpc GetLablesSum (EncSampleLabels) returns (FeatureLabelsSum);
+    rpc GetLabelsSum (EncSampleLabels) returns (FeatureLabelsSum);
 
     rpc GetEncAUC(EncFeatureMetric) returns (EncFeatureMetric);
 

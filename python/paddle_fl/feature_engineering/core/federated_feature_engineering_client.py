@@ -15,8 +15,12 @@
 Federated feature engineering client-side
 support postive_ratio, woe, iv, ks, auc
 """
-
+import logging
 from . import metrics_client as mc
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class FederatedFeatureEngineeringClient(object):
     """
@@ -28,6 +32,7 @@ class FederatedFeatureEngineeringClient(object):
         """
         self._paillier = mc.hu.Paillier()
         self._paillier.keygen(key_len)
+        logger.info('keygen done, key_len is {} bits'.format(key_len))
 
     def connect(self, channel):
         """

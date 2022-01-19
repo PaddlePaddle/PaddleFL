@@ -8,10 +8,11 @@
 * CentOS 7 (64 bit) or Ubuntu 16.04
 * Python 3.5/3.6/3.7 ( 64 bit) or above
 * pip3 9.0.1+ (64 bit)
-* GCC or G++ 8.2.0+
+* GCC or G++ 4.8.5+
 * cmake 3.15+
 * grpcio
 * grpcio-tools
+* patchelf
 
 
 ### 克隆源码并安装
