@@ -49,9 +49,9 @@ def postive_ratio_test_client(file_name):
     channel = gen_client_channel(SERVER_ADRESS)
     fed_fea_eng_client.connect(channel)
     result = fed_fea_eng_client.get_positive_ratio(labels)
-    print("client mpc positive ratio is \n", result)
+    #print("client mpc positive ratio is \n", result)
     plain_result = metrics_plain.get_plain_pos_ratio(labels, features)
-    print("client plain positive ratio is \n", plain_result)
+    #print("client plain positive ratio is \n", plain_result)
 
 
 def woe_test_client(file_name):
