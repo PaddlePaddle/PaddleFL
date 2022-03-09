@@ -84,7 +84,17 @@ def read_file(file_name):
     """
     sample = np.loadtxt(file_name, dtype=np.int32, delimiter=',')
     sample = sample.tolist()
-    labels = [val[:1] for val in sample]
+    labels = [[int(val[:1][0])] for val in sample]
+    features = [val[1:] for val in sample]
+    return labels, features
+
+def read_file_float(file_name):
+    """
+    read file
+    """
+    sample = np.loadtxt(file_name, dtype=np.float32, delimiter=',')
+    sample = sample.tolist()
+    labels = [[int(val[:1][0])] for val in sample]
     features = [val[1:] for val in sample]
     return labels, features
 
