@@ -94,7 +94,7 @@ def ks_test_server(file_name):
     """
     ks test
     """
-    labels, features = gen_test_file.read_file(file_name)
+    labels, features = gen_test_file.read_file_float(file_name)
     server = gen_server()
     fed_fea_eng_server = FederatedFeatureEngineeringServer()
     fed_fea_eng_server.serve(server)
@@ -106,7 +106,7 @@ def auc_test_server(file_name):
     """
     auc test
     """
-    labels, features = gen_test_file.read_file(file_name)
+    labels, features = gen_test_file.read_file_float(file_name)
     server = gen_server()
     fed_fea_eng_server = FederatedFeatureEngineeringServer()
     fed_fea_eng_server.serve(server)
@@ -117,6 +117,8 @@ def auc_test_server(file_name):
 if __name__ == '__main__':
     file_name = "test_data.txt"
     time_start = time.time()
+    ks_test_server(file_name)
+    auc_test_server(file_name)
     postive_ratio_test_server(file_name)
     woe_test_server(file_name)
     iv_test_server(file_name)
@@ -125,4 +127,3 @@ if __name__ == '__main__':
     woe_iv_test_server(file_name)
     time_end = time.time()
     print("time cost ", time_end - time_start, 's')
-

@@ -20,6 +20,7 @@ from concurrent import futures
 import logging
 import random
 import numpy as np
+import pandas as pd
 import grpc
 
 import he_utils as hu
@@ -394,7 +395,7 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
     """
     ks servicer implementation
     """
-    def __init__(self, features, stop_event, ks_list):
+    def __init__(self, features, stop_event, ks_list, num_thresholds=2047):
         """
         load feature to server
         prams:
@@ -403,12 +404,14 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
             stop_event: control the server shutdown when the server does not 
                         participate in the protocol
             ks_list: server store the result in ks_list
+            num_thresholds: num of bins
         """
         self._sample_size = len(features)
         self._features = features
         self._feature_size = len(features[0])
         self._stop_event = stop_event
         self._ks_list = ks_list
+        self._num_thresholds = num_thresholds
         logger.info('feature size: {0}, sample size: {1}'.format(
                                     self._feature_size, self._sample_size))
 
@@ -453,8 +456,17 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
             neg_sum = {}
             blind_r_inv_dict = {}
             feature_bin = {}
+            feature_values = [val[feature_idx] for val in self._features]
+            # quantile-based discretization,cut feature into equal-sized buckets,return integer indicators of the bins
+            feature_values = pd.qcut(feature_values, q=self._num_thresholds,labels=False, retbins=False, duplicates="drop")
+            # get max bin index, fill nan with this value
+            max_bin_idx = int(max(feature_values) + 1)
             for sample_index in range(self._sample_size):
-                feature_value = self._features[sample_index][feature_idx]
+                feature_value = feature_values[sample_index]
+                if np.isnan(feature_value):
+                    feature_value = max_bin_idx
+                else:
+                    feature_value = int(feature_value)
                 if(feature_value in feature_bin):
                     pos_sum[feature_value] = self._paillier.homm_add(pos_sum[feature_value], 
                                                              self._enc_labels[sample_index])
@@ -544,7 +556,7 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
     """
     auc servicer implementation
     """
-    def __init__(self, features, stop_event, auc_list, num_thresholds=4095):
+    def __init__(self, features, stop_event, auc_list, num_thresholds=2047):
         """
         load feature to server
         prams:
@@ -604,11 +616,15 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
             stat_neg_sum = {}
             feature_bin = {}
             feature_values = [val[feature_idx] for val in self._features]
-            Max = np.max(feature_values)
-            Min = np.min(feature_values)
-            feature_values = (feature_values - Min) / (Max - Min)
+            # quantile-based discretization,cut feature into equal-sized buckets,return integer indicators of the bins
+            feature_values = pd.qcut(feature_values, q=self._num_thresholds,labels=False, retbins=False, duplicates="drop")
+            # get max bin index, fill nan with this value
+            max_bin_idx = int(max(feature_values) + 1)
             for sample_index in range(self._sample_size):
-                bin_idx = int(feature_values[sample_index] * self._num_thresholds)
+                if np.isnan(feature_values[sample_index]):
+                    bin_idx = max_bin_idx
+                else:
+                    bin_idx = int(feature_values[sample_index])
                 if(bin_idx in feature_bin):
                     stat_pos_sum[bin_idx] = self._paillier.homm_add(stat_pos_sum[bin_idx], 
                                                                     self._enc_labels[sample_index])

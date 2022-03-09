@@ -13,6 +13,7 @@
 * grpcio
 * grpcio-tools
 * patchelf
+* pandas
 
 
 ### 克隆源码并安装
