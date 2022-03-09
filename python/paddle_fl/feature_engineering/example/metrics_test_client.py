@@ -106,7 +106,7 @@ def ks_test_client(file_name):
     """
     ks test
     """
-    labels, features = gen_test_file.read_file(file_name)
+    labels, features = gen_test_file.read_file_float(file_name)
 
     fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
     channel = gen_client_channel(SERVER_ADRESS)
@@ -121,7 +121,7 @@ def auc_test_client(file_name):
     """
     auc test
     """
-    labels, features = gen_test_file.read_file(file_name)
+    labels, features = gen_test_file.read_file_float(file_name)
 
     fed_fea_eng_client = FederatedFeatureEngineeringClient(1024)
     channel = gen_client_channel(SERVER_ADRESS)

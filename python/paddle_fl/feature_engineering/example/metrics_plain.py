@@ -16,6 +16,7 @@ get plain metrcis for test
 """
 
 import math
+import pandas as pd
 import numpy as np
 
 def get_plain_pos_ratio(labels, features):
@@ -133,12 +134,20 @@ def get_plain_ks(labels, features):
     total_pos = sum(labels)
     total_neg = len(labels) - total_pos
     ks_list = []
+    num_thresholds = 2047
     for feature_idx in range(len(features[0])):
         pos_sum = {}
         neg_sum = {}
         feature_bin = {}
+        feature_values = [val[feature_idx] for val in features]
+        feature_values = pd.qcut(feature_values, q=num_thresholds,labels=False, retbins=False, duplicates="drop")
+        max_bin_idx = int(max(feature_values) + 1)
         for sample_index in range(len(labels)):
-            feature_value = features[sample_index][feature_idx]
+            feature_value = feature_values[sample_index]
+            if np.isnan(feature_value):
+                feature_value = max_bin_idx
+            else:
+                feature_value = int(feature_value)
             if(feature_value in feature_bin):
                 pos_sum[feature_value] = pos_sum[feature_value] + labels[sample_index]
                 feature_bin[feature_value] += 1
@@ -171,17 +180,19 @@ def get_plain_auc(labels, features):
     total_pos = sum(labels)
     total_neg = len(labels) - total_pos
     auc_list = []
-    num_thresholds = 4095
+    num_thresholds = 2047
     for feature_idx in range(len(features[0])):
         stat_pos_sum = {}
         stat_neg_sum = {}
         feature_bin = {}
         feature_values = [val[feature_idx] for val in features]
-        Max = np.max(feature_values)
-        Min = np.min(feature_values)
-        feature_values = (feature_values - Min) / (Max - Min)
+        feature_values = pd.qcut(feature_values, q=num_thresholds,labels=False, retbins=False, duplicates="drop")
+        max_bin_idx = int(max(feature_values) + 1)
         for sample_index in range(len(labels)):
-            bin_idx = feature_values[sample_index] * num_thresholds
+            if np.isnan(feature_values[sample_index]):
+                bin_idx = max_bin_idx
+            else:
+                bin_idx = int(feature_values[sample_index]) 
             if(bin_idx in feature_bin):
                 stat_pos_sum[bin_idx] = stat_pos_sum[bin_idx] + labels[sample_index]
                 feature_bin[bin_idx] += 1
