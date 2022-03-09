@@ -404,6 +404,7 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
             stop_event: control the server shutdown when the server does not 
                         participate in the protocol
             ks_list: server store the result in ks_list
+            num_thresholds: num of bins
         """
         self._sample_size = len(features)
         self._features = features
@@ -456,7 +457,9 @@ class MpcKSServicer(metrics_pb2_grpc.MpcKSServicer):
             blind_r_inv_dict = {}
             feature_bin = {}
             feature_values = [val[feature_idx] for val in self._features]
+            # quantile-based discretization,cut feature into equal-sized buckets,return integer indicators of the bins
             feature_values = pd.qcut(feature_values, q=self._num_thresholds,labels=False, retbins=False, duplicates="drop")
+            # get max bin index, fill nan with this value
             max_bin_idx = int(max(feature_values) + 1)
             for sample_index in range(self._sample_size):
                 feature_value = feature_values[sample_index]
@@ -613,7 +616,9 @@ class MpcAUCServicer(metrics_pb2_grpc.MpcAUCServicer):
             stat_neg_sum = {}
             feature_bin = {}
             feature_values = [val[feature_idx] for val in self._features]
-            feature_values = pd.qcut(feature_values, q=self._num_thresholds,labels=False, retbins=False, duplicates="drop") 
+            # quantile-based discretization,cut feature into equal-sized buckets,return integer indicators of the bins
+            feature_values = pd.qcut(feature_values, q=self._num_thresholds,labels=False, retbins=False, duplicates="drop")
+            # get max bin index, fill nan with this value
             max_bin_idx = int(max(feature_values) + 1)
             for sample_index in range(self._sample_size):
                 if np.isnan(feature_values[sample_index]):
