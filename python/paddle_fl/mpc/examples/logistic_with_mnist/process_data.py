@@ -139,7 +139,10 @@ def decrypt_data_to_file(filepath, shape, decrypted_filepath):
         p = mpc_du.reconstruct(np.array(instance))
         with open(decrypted_filepath, 'a+') as f:
             for i in p:
-                f.write(str(np.argmax(i)) + '\n')
+                if i > 0.5: 
+                    f.write(str(1) + '\n') 
+                else : 
+                    f.write(str(0) + '\n')
 
 
 def decrypt_bs_data_to_file(filepath, shape, decrypted_filepath):
