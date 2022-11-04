@@ -1,0 +1,90 @@
+{	"scheduler": "Greedy",
+	"isIID": 0,
+	"group": "A",
+
+	"total_jobs": 3,
+	"total_clients": 100,
+	"client_per_round": 10,
+	"drop_r": 0.1,
+
+	"CnnEm": {
+		"No": 0,
+		"rounds": 1,
+		"local_epochs": 5,
+		"batch_size": 10,
+		"sample_on_client": 1248,
+
+		"model": "cnn",
+		"dataset": "emnist_letter",
+		"learning_rate": 0.1,
+		"optimizer": "adam",
+		"loss_function": "categorical_crossentropy"},
+
+	"VGG": {
+		"No": 1,
+		"rounds": 1,
+		"local_epochs": 5,
+		"batch_size": 30,
+		"sample_on_client": 500,
+
+		"model": "vgg16",
+		"dataset": "cifar10",
+		"learning_rate": 0.1,
+		"optimizer": "adam",
+		"loss_function": "categorical_crossentropy"},
+
+	"Lenet": {
+		"No": 2,
+		"rounds": 1,
+		"local_epochs": 5,
+		"batch_size": 64,
+		"sample_on_client": 2400,
+
+		"model": "Lenet",
+		"dataset": "emnist_digital",
+		"learning_rate": 1e-4,
+		"optimizer": "adam",
+		"loss_function": "categorical_crossentropy"},
+
+
+
+
+	"CnnFM": {
+		"No": 0,
+		"rounds": 1,
+		"local_epochs": 5,
+		"batch_size": 10,
+		"sample_on_client": 600,
+
+		"model": "cnn",
+		"dataset": "fashion_mnist",
+		"learning_rate": 0.1,
+		"optimizer": "adam",
+		"loss_function": "categorical_crossentropy"},
+
+	"Resnet": {
+		"No": 1,
+		"rounds": 1,
+		"local_epochs": 5,
+		"batch_size": 30,
+		"sample_on_client": 500,
+
+		"model": "resnet18",
+		"dataset": "cifar10",
+		"learning_rate": 0.1,
+		"optimizer": "RMSprop",
+		"loss_function": "categorical_crossentropy"},
+
+	"Alexnet": {
+		"No": 2,
+		"rounds": 1,
+		"local_epochs": 5,
+		"batch_size": 64,
+		"sample_on_client": 600,
+
+		"model": "Alexnet",
+		"dataset": "mnist",
+		"learning_rate": 1e-4,
+		"optimizer": "adam",
+		"loss_function": "categorical_crossentropy"}
+}
