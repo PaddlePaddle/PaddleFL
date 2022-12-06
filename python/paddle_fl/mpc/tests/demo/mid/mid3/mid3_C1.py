@@ -1,0 +1,149 @@
+import unittest
+from multiprocessing import Manager
+import numpy as np
+import paddle.fluid as fluid
+import paddle_fl.mpc as pfl_mpc
+import test_op_base
+from paddle_fl.mpc.data_utils.data_utils import get_datautils
+
+aby3 = get_datautils('aby3')
+
+class Solution(test_op_base.TestOpBase):
+    def findMedianSortedArrays(self, **kwargs):
+        def getKthElement(k):
+            num = 3
+            index1, index2, index3 = 0, 0, 0
+            op_sub = pfl_mpc.layers.elementwise_sub(x=x, y=y)
+            op_gt = pfl_mpc.layers.greater_than(x=x, y=zero)
+            while True:
+                if (index1 == d_1_length and index2 == d_2_length):
+                    return d_3[:,index3 + k - 1:index3 + k],index1, index2, index3 + k,2,index3 + k
+                if (index2 == d_2_length and index3 == d_3_length):
+                    return d_1[:,index1 + k - 1:index1 + k],index1 + k , index2, index3,0,index1 + k
+                if (index1 == d_1_length and index3 == d_3_length):
+                    return d_2[:,index2 + k - 1:index2 + k],index1, index2 + k, index3,1,index2 + k
+                if index1 == d_1_length:
+                    num = num - 1
+                if index2 == d_2_length:
+                    num = num - 1
+                if index3 == d_3_length:
+                    num = num - 1
+                if k == 1:
+                    d_tmp = exe.run(feed={'x': d_1[:,index1:index1+1], 'y': d_2[:,index2:index2+1],'zero': d_zero}, fetch_list=[op_sub])
+                    results = exe.run(feed={'x': d_tmp[0],'y':d_2[:,index2:index2+1], 'zero': d_zero}, fetch_list=[op_gt])
+                    if results[0] == 1:
+                        d_tmp = exe.run(feed={'x': d_2[:, index2:index2+1], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_sub])
+                        results = exe.run(feed={'x': d_tmp[0], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                        if results[0] == 1:
+                            return d_3[:,index3:index3+1],index1, index2, index3 + 1,2,index3 + 1
+                        else:
+                            return d_2[:,index2:index2+1],index1, index2 + 1, index3,1,index2 + 1
+                    else:
+                        d_tmp = exe.run(feed={'x': d_1[:, index1:index1+1], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_sub])
+                        results = exe.run(feed={'x': d_tmp[0], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                        if results[0] == 1:
+                            return d_3[:,index3:index3+1],index1, index2, index3 + 1,2,index3 + 1
+                        else:
+                            return d_1[:,index1:index1+1],index1 + 1, index2, index3,0,index1 + 1
+                if k == 2:
+                    newIndex1 = min(index1, d_1_length - 1)
+                    newIndex2 = min(index2, d_2_length - 1)
+                    newIndex3 = min(index3, d_3_length - 1)
+                else:
+                    newIndex1 = min(index1 + k // num - 1, d_1_length - 1)
+                    newIndex2 = min(index2 + k // num - 1, d_2_length - 1)
+                    newIndex3 = min(index3 + k // num - 1, d_3_length - 1)
+                d_tmp = exe.run(feed={'x': d_1[:,newIndex1:newIndex1+1], 'y': d_2[:,newIndex2:newIndex2+1], 'zero': d_zero}, fetch_list=[op_sub])
+                results = exe.run(feed={'x': d_tmp[0],'y': d_2[:,newIndex2:newIndex2+1], 'zero': d_zero}, fetch_list=[op_gt])
+                if results[0] == 1:
+                    d_tmp = exe.run(feed={'x': d_2[:, newIndex2:newIndex2+1], 'y': d_3[:, newIndex3:newIndex3+1], 'zero': d_zero}, fetch_list=[op_sub])
+                    results = exe.run(feed={'x': d_tmp[0], 'y': d_3[:, newIndex3:newIndex3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                    if results[0] == 1:
+                        k -= newIndex3 - index3 + 1
+                        index3 = newIndex3 + 1
+                    else:
+                        k -= newIndex2 - index2 + 1
+                        index2 = newIndex2 + 1
+                else:
+                    d_tmp = exe.run(feed={'x': d_1[:, newIndex1:newIndex1+1], 'y': d_3[:, newIndex3:newIndex3+1], 'zero': d_zero}, fetch_list=[op_sub])
+                    results = exe.run(feed={'x': d_tmp[0], 'y': d_3[:, newIndex3:newIndex3+1], 'zero': d_zero},fetch_list=[op_gt])
+                    if results[0] == 1:
+                        k -= newIndex3 - index3 + 1
+                        index3 = newIndex3 + 1
+                    else:
+                        k -= newIndex1 - index1 + 1
+                        index1 = newIndex1 + 1
+
+        def getNextElement(index1,index2,index3,num):
+            op_sub = pfl_mpc.layers.elementwise_sub(x=x, y=y)
+            op_gt = pfl_mpc.layers.greater_than(x=x, y=zero)
+            if(num == 0 and index1 == d_1_length):
+                d_tmp = exe.run(feed={'x': d_2[:,index2:index2+1], 'y': d_3[:,index3:index3+1],'zero': d_zero}, fetch_list=[op_sub])
+                results = exe.run(feed={'x': d_tmp[0],'y':d_3[:,index3:index3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                if results[0] == 1:
+                    return d_3[:,index3:index3+1]
+                else:
+                    return d_2[:,index2:index2+1]     
+            if(num == 1 and index2 == d_2_length):
+                d_tmp = exe.run(feed={'x': d_1[:,index1:index1+1], 'y': d_3[:,index3:index3+1],'zero': d_zero}, fetch_list=[op_sub])
+                results = exe.run(feed={'x': d_tmp[0],'y':d_3[:,index3:index3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                if results[0] == 1:
+                    return d_3[:,index3:index3+1]
+                else:
+                    return d_1[:,index1:index1+1]               
+            if(num == 2 and index3 == d_3_length):
+                d_tmp = exe.run(feed={'x': d_1[:,index1:index1+1], 'y': d_2[:,index2:index2+1],'zero': d_zero}, fetch_list=[op_sub])
+                results = exe.run(feed={'x': d_tmp[0],'y':d_2[:,index2:index2+1], 'zero': d_zero}, fetch_list=[op_gt])
+                if results[0] == 1:
+                    return d_2[:,index2:index2+1]
+                else:
+                    return d_1[:,index1:index1+1]  
+            else:
+                d_tmp = exe.run(feed={'x': d_1[:,index1:index1+1], 'y': d_2[:,index2:index2+1],'zero': d_zero}, fetch_list=[op_sub])
+                results = exe.run(feed={'x': d_tmp[0],'y':d_2[:,index2:index2+1], 'zero': d_zero}, fetch_list=[op_gt])
+                if results[0] == 1:
+                    d_tmp = exe.run(feed={'x': d_2[:, index2:index2+1], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_sub])
+                    results = exe.run(feed={'x': d_tmp[0], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                    if results[0] == 1:
+                        return d_3[:,index3:index3+1]
+                    else:
+                        return d_2[:,index2:index2+1]
+                else:
+                    d_tmp = exe.run(feed={'x': d_1[:, index1:index1+1], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_sub])
+                    results = exe.run(feed={'x': d_tmp[0], 'y': d_3[:, index3:index3+1], 'zero': d_zero}, fetch_list=[op_gt])
+                    if results[0] == 1:
+                        return d_3[:,index3:index3+1]
+                    else:
+                        return d_1[:,index1:index1+1]              
+
+        role = 1
+        d_1 = np.load('data_C1_P1.npy',allow_pickle=True)
+        d_2 = np.load('data_C1_P2.npy',allow_pickle=True)
+        d_3 = np.load('data_C1_P3.npy',allow_pickle=True)
+        d_zero = np.full((1), fill_value=0).astype('float32')
+        pfl_mpc.init("aby3", role, "localhost", self.server, int(self.port))
+        x = pfl_mpc.data(name='x', shape=[1], dtype='int64')
+        y = pfl_mpc.data(name='y', shape=[1], dtype='int64')
+        zero = fluid.data(name='zero', shape=[1], dtype='float32')
+        op_add = pfl_mpc.layers.elementwise_add(x=x, y=y)
+        math_mul = pfl_mpc.layers.elementwise_mul(x, y)
+        exe = fluid.Executor(place=fluid.CPUPlace())
+
+        d_1_length, d_2_length, d_3_length = d_1.shape[1], d_2.shape[1], d_3.shape[1]
+        totalLength = d_1_length + d_2_length + d_3_length
+        if totalLength % 2 == 1:
+            results = getKthElement((totalLength + 1) // 2)
+            np.save('result_C1.npy', results[0])
+        else:
+            mid_pre = getKthElement((totalLength) // 2)
+            mid_post = getNextElement(mid_pre[1],mid_pre[2],mid_pre[3],mid_pre[4])
+            tmp = exe.run(feed={'x': mid_pre[0],'y':mid_post,'zero': d_zero}, fetch_list=[op_add])
+            d_tmp = np.load('data_C1_tmp.npy',allow_pickle=True)
+            results = exe.run(feed={'x': tmp[0],'y':d_tmp,'zero': d_zero}, fetch_list=[math_mul])
+            np.save('result_C1.npy', results[0])
+
+    def test_mid3_C1(self):
+        ret = self.multi_party_run1(target=self.findMedianSortedArrays)
+
+if __name__ == '__main__':
+    unittest.main()

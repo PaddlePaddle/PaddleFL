@@ -1,0 +1,35 @@
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.017s
+
+OK
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:2138: DeprecationWarning: an integer is required (got type paddle.fluid.core_avx.op_proto_and_checker_maker.OpRole).  Implicit conversion to integers using __int__ is deprecated, and may be removed in a future version of Python.
+  self.desc._set_attr(name, val)
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:541: DeprecationWarning: `np.bool` is a deprecated alias for the builtin `bool`. To silence this warning, use `bool` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.bool_` here.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  elif dtype == np.bool:
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.129s
+
+OK
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:2138: DeprecationWarning: an integer is required (got type paddle.fluid.core_avx.op_proto_and_checker_maker.OpRole).  Implicit conversion to integers using __int__ is deprecated, and may be removed in a future version of Python.
+  self.desc._set_attr(name, val)
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:541: DeprecationWarning: `np.bool` is a deprecated alias for the builtin `bool`. To silence this warning, use `bool` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.bool_` here.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  elif dtype == np.bool:
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.964s
+
+OK
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:2138: DeprecationWarning: an integer is required (got type paddle.fluid.core_avx.op_proto_and_checker_maker.OpRole).  Implicit conversion to integers using __int__ is deprecated, and may be removed in a future version of Python.
+  self.desc._set_attr(name, val)
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:541: DeprecationWarning: `np.bool` is a deprecated alias for the builtin `bool`. To silence this warning, use `bool` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.bool_` here.
+Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+  elif dtype == np.bool:
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.759s
+
+OK
