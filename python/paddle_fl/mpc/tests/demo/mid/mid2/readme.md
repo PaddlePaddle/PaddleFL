@@ -9,7 +9,7 @@
 1. 双方本地对自己的原始数据升序排列。
 2. 将双方排序好的数据按照aby3秘密共享的形式拆分，每方数据分为三份。
 3. 将三份数据交给三个不同的计算节点（本demo中的run.sh文件提供了单机模拟三方的示例，实际使用中拆开运行即可）。
-4. 双方使用Paddlefl提供的基础运算算子，按照[leetcode上的寻找两个有序数组的中位数算法（题解方法一：二分查找）](https://leetcode.cn/problems/median-of-two-sorted-arrays/solution/xun-zhao-liang-ge-you-xu-shu-zu-de-zhong-wei-s-114/)进行两方联合计算。
+4. 三个计算方使用Paddlefl提供的基础运算算子，按照[leetcode上的寻找两个有序数组的中位数算法（题解方法一：二分查找）](https://leetcode.cn/problems/median-of-two-sorted-arrays/solution/xun-zhao-liang-ge-you-xu-shu-zu-de-zhong-wei-s-114/)进行多方联合计算。
 5. 将秘密共享形式的计算结果交给数据合并方（由于本demo是单机模拟三方，这一步在实际使用中需要自行实现）。
 6. 重构计算结果。
 

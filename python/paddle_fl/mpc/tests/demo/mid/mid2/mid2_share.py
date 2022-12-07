@@ -21,7 +21,7 @@ if __name__ == '__main__':
         if total % 2 == 1:
             total_data = np.append(data_1,data_2)
             print(np.sort(total_data)[total // 2:total // 2 + 1])
-            print(total_data)
+            print(np.sort(total_data))
         else:
             total_data = np.append(data_1,data_2)
             print((np.sort(total_data)[total // 2 - 1:total // 2] + np.sort(total_data)[total // 2:total // 2 + 1]) * 0.5)
