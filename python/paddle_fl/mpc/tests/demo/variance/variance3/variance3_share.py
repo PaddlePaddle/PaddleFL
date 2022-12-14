@@ -71,6 +71,7 @@ if __name__ == '__main__':
         np.save('data_C1_tmp.npy', data_tmp_all3shares[1])
         np.save('data_C2_tmp.npy', data_tmp_all3shares[2])
 
-        contentall = contentall_0 + contentall_1 + contentall_2
+        contentall = np.append(contentall_0,contentall_1)
+        contentall = np.append(contentall,contentall_2)
         variance3 = np.var(contentall, ddof = 1)
         print(variance3)
