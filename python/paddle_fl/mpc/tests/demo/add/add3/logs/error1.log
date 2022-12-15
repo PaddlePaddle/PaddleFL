@@ -1,0 +1,12 @@
+/usr/local/python/lib/python3.8/site-packages/requests/__init__.py:102: RequestsDependencyWarning: urllib3 (1.26.6) or chardet (5.1.0)/charset_normalizer (2.0.1) doesn't match a supported version!
+  warnings.warn("urllib3 ({}) or chardet ({})/charset_normalizer ({}) doesn't match a supported "
+W1215 09:19:09.892583  9906 operator.cc:187] mpc_init raises an exception gloo::EnforceNotMet, [enforce fail at /root/compile/PaddleFL/build/third_party/gloo/src/extern_gloo/gloo/rendezvous/redis_store.cc:53] reply->integer == 1. 0 vs 1. Key 'Paddle-mpc/1' already set
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/framework.py:2138: DeprecationWarning: an integer is required (got type paddle.fluid.core_avx.op_proto_and_checker_maker.OpRole).  Implicit conversion to integers using __int__ is deprecated, and may be removed in a future version of Python.
+  self.desc._set_attr(name, val)
+/usr/local/python/lib/python3.8/site-packages/paddle/fluid/executor.py:1069: UserWarning: The following exception is not an EOF exception.
+  warnings.warn(
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.056s
+
+OK
