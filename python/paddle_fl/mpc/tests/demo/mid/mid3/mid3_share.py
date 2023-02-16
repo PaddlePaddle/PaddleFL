@@ -37,13 +37,13 @@ if __name__ == '__main__':
         if total % 2 == 1:
             total_data = np.append(data_1,data_2)
             total_data = np.append(total_data,data_3)
-            print(np.sort(total_data)[total // 2:total // 2 + 1])
-            print(np.sort(total_data))
+            print(np.sort(total_data)[total // 2:total // 2 + 1]) // Median calculated in clear text
+            #print(np.sort(total_data))
         else:
             total_data = np.append(data_1,data_2)
             total_data = np.append(total_data,data_3)
-            print((np.sort(total_data)[total // 2 - 1:total // 2] + np.sort(total_data)[total // 2:total // 2 + 1]) * 0.5)
-            print(np.sort(total_data))
+            print((np.sort(total_data)[total // 2 - 1:total // 2] + np.sort(total_data)[total // 2:total // 2 + 1]) * 0.5) // Median calculated in clear text
+            #print(np.sort(total_data))
             data_tmp = np.array([0.5])
             data_tmp_shares = aby3.make_shares(data_tmp)
             data_tmp_all3shares = np.array([aby3.get_shares(data_tmp_shares, i) for i in range(3)])
