@@ -2,7 +2,7 @@
 
 ## 应用场景
 
-三个数据方想要在不暴露自己的原始数据的前提下联合计算中位数。
+三个数据方使用三个计算节点在不暴露自己的原始数据的前提下联合计算中位数。
 
 ## 算法原理及整体流程
 
@@ -15,7 +15,7 @@
 
 ## 代码执行过程
 
-1. `python3 data.py` 生成三方原始数据，得到Input-P1.list和Input-P2.list。
+1. `python3 data.py` 生成三方原始数据，得到Input-P1.list、Input-P2.list和Input-P3.list。
 2. `python3 mid2_share.py` 将三方原始数据排序并拆分，得到data_C0_P1.npy、data_C1_P1.npy、data_C2_P1.npy、data_C0_P2.npy、data_C1_P2.npy、data_C2_P2.npy、data_C0_P3.npy、data_C1_P3.npy、data_C2_P3.npy，如果三方数据量之和为偶数，还将得到data_C0_tmp.npy、data_C1_tmp.npy、data_C2_tmp.npy，同时会在命令行打印应当得到的中位数计算结果。
 3. 在真正的多方运算时需要分发第2步中的秘密数据（本demo不需要这一步）。
 4. `python3 flush.py` 清除redis中上一次残留的注册信息，以免下面运行的三方进程连接到错误的地方。
