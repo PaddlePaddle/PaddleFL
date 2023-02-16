@@ -27,8 +27,8 @@ if __name__ == '__main__':
 
         data_1 = np.sort(contentall_1)
         data_2 = np.sort(contentall_2)
-        print(data_1)
-        print(data_2)
+        #print(data_1)
+        #print(data_2)
         len_1, len_2 = data_1.shape[0], data_2.shape[0]
         total = len_1 + len_2
 
