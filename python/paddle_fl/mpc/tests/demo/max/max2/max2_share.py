@@ -41,5 +41,5 @@ if __name__ == '__main__':
         np.save('data_C2_P1.npy', data_2_all3shares[2])
 
         contentall = np.append(contentall_0,contentall_1)
-        print(np.max(contentall)) // Maximum calculated in clear text
+        print(np.max(contentall)) #Maximum calculated in clear text
 

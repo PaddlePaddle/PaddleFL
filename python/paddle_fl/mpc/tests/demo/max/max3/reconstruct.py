@@ -26,4 +26,4 @@ if __name__ == '__main__':
         return_results.append(result_C1)
         return_results.append(result_C2)
         revealed = aby3.reconstruct(np.array(return_results))
-        print(revealed)
+        print(revealed) #Maximum obtained after ciphertext calculation and decryption
