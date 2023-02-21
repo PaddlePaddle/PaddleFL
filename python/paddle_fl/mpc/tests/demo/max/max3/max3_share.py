@@ -53,5 +53,5 @@ if __name__ == '__main__':
 
         contentall = np.append(contentall_0,contentall_1)
         contentall = np.append(contentall,contentall_2)
-        print(np.max(contentall))
+        print(np.max(contentall)) #Maximum calculated in clear text
 
